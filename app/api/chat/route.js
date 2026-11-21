@@ -434,34 +434,164 @@ Night blindness is caused by the deficiency of which vitamin?
 - **ආවේණික සත්වයෙක් යනු:** ලෝකයේ වෙනත් කිසිදු රටක ස්වභාවිකව නොමැති, එක් නිශ්චිත රටක පමණක් ජීවත්වන සතුන් වේ.`;
   }
 
-  // 10. GENERAL HELPFUL LESSON RESPONSE
-  return `👨‍🏫 **ආදරණීය පුතා/දුව! මම "පහ දිනන හපන්නු 190+" පේපර් පන්තියේ ප්‍රවීණ AI ගුරුතුමා.**
+  // 10. SINHALA MOTHER TONGUE & GRAMMAR (මව්බස හා වියරණ)
+  if (
+    q.includes("නාම") ||
+    q.includes("ක්‍රියා") ||
+    q.includes("යුගල") ||
+    q.includes("විරුද්ධ") ||
+    q.includes("සමාන") ||
+    q.includes("ලිංග") ||
+    q.includes("සිංහල") ||
+    q.includes("වියරණ") ||
+    q.includes("grammar")
+  ) {
+    return `👨‍🏫 **ආදරණීය දරුවා, මව්බස සිංහල සහ වියරණ පිළිබඳ ගුරු විග්‍රහය මෙන්න:**
 
-ඔබ ඇසූ ප්‍රශ්නයට මම සතුටින් මඟපෙන්වන්නම්. 190+ පන්තියේ අපේ අරමුණ දරුවන්ගේ වේගය හා දැනුම දෙකම ඉහළම මට්ටමට ගෙන ඒමයි!
+## 📘 1. විෂය නිර්දේශය හා ගුරු මාර්ගෝපදේශය අනුව (NIE Guide):
 
-## 📘 1. විෂය නිර්දේශය හා ගුරු මාර්ගෝපදේශය අනුව:
-- 5 ශ්‍රේණිය විභාගයේදී පරිසරය තේමා 16, මව්බස සිංහල, ශිෂ්‍යත්ව ගණිතය, දෙවන බස දෙමළ සහ ඉංග්‍රීසි යන විෂයන් සියල්ලෙන්ම ප්‍රශ්න අසනු ලැබේ.
-- ඔබේ ප්‍රශ්නය විෂය කරුණක් නම් (උදා: පැළෑටි හා බීජ, රජවරුන්, ආහාර හා විටමින්, ජලය, සරල යන්ත්‍ර, ගණිත ගැටළු), මට ඒ මාතෘකාව කෙලින්ම ලියන්න. මම විෂය නිර්දේශයේ කරුණුත් සමඟම ඔබට විස්තර කර දෙන්නම්.
+| නාම පද වර්ගය | අර්ථ දැක්වීම | විභාග උදාහරණ |
+| :--- | :--- | :--- |
+| **ද්‍රව්‍ය වාචී නාම** | ඇසට පෙනෙන, අතින් ඇල්ලිය හැකි ද්‍රව්‍ය | පොත, මේසය, ගස, පැන්සල |
+| **ගුණ වාචී නාම** | වස්තුවක හෝ සත්වයෙකුගේ ස්වභාවය / ගුණය | සුදු, රතු, ලස්සන, උස, මිටි |
+| **ක්‍රියා වාචී නාම** | සිදුකරන ක්‍රියාවක නම හැඟවීම | දිවීම, කියවීම, ලිවීම, ඉගෙනීම |
+| **භාව වාචී නාම** | සිතින් පමණක් තේරුම් ගත හැකි අදහස් | සතුට, දුක, කරුණාව, බිය, ආදරය |
+
+| පද වර්ගය | උදාහරණ 1 | උදාහරණ 2 | උදාහරණ 3 |
+| :--- | :--- | :--- | :--- |
+| **යුගල පද** | අතපය, කෑමබීම, ගහකොළ | ගෙවල්දොරවල්, ඇඳුම්පැළඳුම් | දුවාදරුවන්, නෑදෑහිතමිතුරන් |
+| **විරුද්ධ පද** | ආලෝකය ⇄ අන්ධකාරය | උද්‍යෝගිමත් ⇄ උදාසීන | සාමකාමී ⇄ කලහකාරී |
+| **සමාන පද** | නෙත = ඇස, නයන | මව = මෑණියන්, මාතා | සඳ = හඳ, චන්ද්‍රයා, නිශාකර |
 
 ## 💡 2. අමතර දැනුම සහ 190+ විභාග රහස්:
-- **ගුරු අවවාදය:** දිනකට පසුගිය හෝ ආදර්ශ ප්‍රශ්න පත්‍ර 2ක් වේලාව බලා පිළිතුරු ලියා පුහුණු වන්න.
-- ඔබ කැමති නම් **"ප්‍රශ්නයක් අහන්න"** කියා මෙහි ලියන්න; මම ඔබට විභාග ආදර්ශ ප්‍රශ්නයක් ලබා දී ඔබේ දැනුම පරීක්ෂා කරන්නම්!
+- **උක්ත-ආඛ්‍යාත පද සම්බන්ධය:** වාක්‍යයක උක්තය (කර්තෘ) ඒක වචන නම්, ආඛ්‍යාතයද (ක්‍රියාව) ඒක වචන විය යුතුය!
+  - *උදාහරණය:* ළමයා පාසල් **යයි** (යති වැරදියි). ළමයි පාසල් **යති**.`;
+  }
 
-ඔබට අද ඉගෙන ගැනීමට අවශ්‍ය මාතෘකාව හෝ ප්‍රශ්නය කුමක්ද දරුවා?`;
+  // 11. TAMIL AS SECOND LANGUAGE (දෙවන බස දෙමළ)
+  if (
+    q.includes("දෙමළ") ||
+    q.includes("tamil") ||
+    q.includes("vanakkam") ||
+    q.includes("නන්රි")
+  ) {
+    return `👨‍🏫 **ආදරණීය දරුවා, 5 ශ්‍රේණිය දෙවන බස දෙමළ පාඩම් විග්‍රහය මෙන්න:**
+
+## 📘 1. විෂය නිර්දේශය හා ගුරු මාර්ගෝපදේශය අනුව:
+
+| දෙමළ වචනය (Tamil) | සිංහල උච්චාරණය | සිංහල තේරුම |
+| :--- | :--- | :--- |
+| **வணக்கம்** | වනක්කම් | ආයුබෝවන් |
+| **நன்றி** | නන්රි | ස්තූතියි |
+| **வாருங்கள்** | වාරුංගල් | එන්න |
+| **போங்கள்** | පෝංගල් | යන්න |
+| **அம்மா / அப்பா** | අම්මා / අප්පා | අම්මා / තාත්තා |
+| **அண்ணன் / தம்பி** | අන්නන් / තම්බි | අයියා / මල්ලී |
+| **அக்கா / தங்கை** | අක්කා / තංගෛ | අක්කා / නංගී |
+
+## 💡 2. අමතර දැනුම සහ 190+ විභාග රහස්:
+- 5 ශ්‍රේණිය ශිෂ්‍යත්ව ප්‍රශ්න පත්‍රයේ දෙවන බස දෙමළ ප්‍රශ්න 4ක් හෝ 5ක් අනිවාර්යයෙන්ම අසනු ලැබේ.
+- 1 සිට 19 දක්වා වන දෙමළ සංවාද දිනපතා ශබ්ද නඟා කියා පුරුදු වන්න.`;
+  }
+
+  // 12. ENGLISH LANGUAGE (ABOE)
+  if (
+    q.includes("ඉංග්‍රීසි") ||
+    q.includes("english") ||
+    q.includes("aboe") ||
+    q.includes("vocabulary")
+  ) {
+    return `👨‍🏫 **ආදරණීය දරුවා, 5 ශ්‍රේණිය ඉංග්‍රීසි (English ABOE) විභාග සාරාංශය:**
+
+## 📘 1. විෂය නිර්දේශය හා ගුරු මාර්ගෝපදේශය අනුව:
+
+| English Word | Sinhala Meaning | Opposites (විරුද්ධ පද) |
+| :--- | :--- | :--- |
+| **Clean** | පිරිසිදු | **Dirty** (අපිරිසිදු) |
+| **Big** | විශාල | **Small** (කුඩා) |
+| **Hot** | උණුසුම් | **Cold** (ශීතල) |
+| **Happy** | සතුටු | **Sad** (දුක්බර) |
+| **Fast** | වේගවත් | **Slow** (සෙමින්) |
+| **Strong** | ශක්තිමත් | **Weak** (දුර්වල) |
+
+| Singular (ඒක වචන) | Plural (බහු වචන) | නීතිය / රහස |
+| :--- | :--- | :--- |
+| **Child** | **Children** | සම්පූර්ණයෙන්ම වෙනස් වේ |
+| **Tooth** | **Teeth** | oo ➔ ee බවට පත්වේ |
+| **Leaf** | **Leaves** | f ➔ ves බවට පත්වේ |
+| **Mango** | **Mangoes** | o අවසන් නම් es එකතු වේ |
+
+## 💡 2. අමතර දැනුම සහ 190+ විභාග රහස්:
+- ප්‍රශ්න පත්‍රයේ පින්තූර බලා වාක්‍ය පිරවීමේදී (Picture-based questions) ක්‍රියා පදයේ **-ing** ස්වරූපය (e.g. The boy is *running*) නිවැරදිව ලිවීමට වගබලාගන්න.`;
+  }
+
+  // 13. EXAM SECRETS & 190+ STRATEGY (ශිෂ්‍යත්ව විභාග රහස්)
+  if (
+    q.includes("190") ||
+    q.includes("ලකුණු") ||
+    q.includes("පාඩම්") ||
+    q.includes("කාලය") ||
+    q.includes("ක්‍රම") ||
+    q.includes("tips") ||
+    q.includes("secrets") ||
+    q.includes("marks")
+  ) {
+    return `👨‍🏫 **ආදරණීය දරුවා, ශිෂ්‍යත්වයෙන් 190+ ලබාගැනීමේ රන් නීති 4 මෙන්න:**
+
+## 📘 1. විෂය නිර්දේශය හා විභාග මණ්ඩල රහස්:
+
+| පියවර | කළ යුතු කාර්යය | සාර්ථකත්වයේ රහස |
+| :--- | :--- | :--- |
+| **1 වන පියවර** | ප්‍රශ්න පත්‍ර I කාල කළමනාකරණය | එක් ප්‍රශ්නයකට උපරිම තත්පර 45ක් පමණක් වැය කරන්න |
+| **2 වන පියවර** | පරිසරය තේමා 16 සම්පූර්ණ කිරීම | රූප සටහන් හා පරීක්ෂණ සියල්ල ප්‍රායෝගිකව මතක තබාගන්න |
+| **3 වන පියවර** | ගණිත කෙටි ක්‍රම භාවිතය | ත්‍රිකෝණ සංඛ්‍යා, ඔරලෝසු හා අත් අතට දීම් ගැටළු කෙටි ක්‍රමයෙන් විසඳන්න |
+| **4 වන පියවර** | ප්‍රශ්න පත්‍ර II පිරිසිදු අත්අකුරු | අක්ෂර වින්‍යාසය නිවැරදිව හා පැහැදිලි අත්අකුරින් ලියන්න |
+
+## 💡 2. අමතර දැනුම සහ 190+ විභාග රහස්:
+- **දිනපතා පුහුණුව:** දිනකට ආදර්ශ ප්‍රශ්න පත්‍ර 2ක් වේලාව බලා පිළිතුරු ලියා විවරණ වීඩියෝව නැරඹීමෙන් ඔබේ වේගය හා දැනුම දෙගුණ වේ.
+- **මතක තබාගන්න:** *"කොපි කරන්නත් බෑ.. සම කරන්නත් බෑ... ඒ තමයි පහ දිනන හපන්නු 190+ පේපර් පන්තිය!"*`;
+  }
+
+  // 14. GENERAL HELPFUL LESSON RESPONSE
+  return `👨‍🏫 **ආදරණීය පුතා/දුව! මම "පහ දිනන හපන්නු 190+" පේපර් පන්තියේ ප්‍රවීණ AI ගුරුතුමා.**
+
+ඔබ ඇසූ ප්‍රශ්නයට මම ඉතා සතුටින් මඟපෙන්වන්නම්. 190+ පන්තියේ අපේ එකම අරමුණ ඔබව දිවයිනේ ඉහළම ලකුණු මට්ටමට ගෙන ඒමයි!
+
+## 📘 1. විෂය නිර්දේශය හා ගුරු මාර්ගෝපදේශය අනුව:
+- **පරිසරය (තේමා 16):** ශාක හා බීජ, සතුන්, ආහාර හා විටමින්, ජලය, සරල යන්ත්‍ර, අපේ ඉතිහාසය හා රජවරුන්.
+- **මව්බස සිංහල:** නාම පද, ක්‍රියා පද, යුගල පද, සමාන හා විරුද්ධ පද, අක්ෂර වින්‍යාසය.
+- **ශිෂ්‍යත්ව ගණිතය:** ත්‍රිකෝණ සංඛ්‍යා, ඔරලෝසු ගැටළු, රටා හා වේගවත් කෙටි උපක්‍රම.
+- **දෙවන බස දෙමළ:** 1-19 සංවාද, වචන මාලාව හා අර්ථ.
+- **ඉංග්‍රීසි (ABOE):** පින්තූර විස්තර කිරීම්, Plurals, Opposites.
+
+## 💡 2. අමතර දැනුම සහ 190+ විභාග රහස්:
+- ඔබට දැනගැනීමට අවශ්‍ය ඕනෑම මාතෘකාවක් (උදා: *"විටමින් ගැන කියන්න"*, *"නාම පද ගැන කියන්න"*, *"සරල යන්ත්‍ර මොනවාද"*) කෙලින්ම මගෙන් අහන්න.
+- ඔබගේ දැනුම පරීක්ෂා කිරීමට අවශ්‍ය නම් **"ප්‍රශ්නයක් අහන්න"** කියා මෙහි ලියන්න; මම ඔබට විභාග ආදර්ශ ප්‍රශ්නයක් ලබා දෙන්නම්!`;
 }
 
+// Read the Groq API key from environment variable as configured
+const apiKey = process.env.GROQ_API_KEY;
+
 export async function POST(req) {
+  let lastUserMsg = "";
+  let language = "si";
+  let messages = [];
+
   try {
     const body = await req.json();
-    const { messages = [], language = "si", customApiKey } = body;
+    messages = body.messages || [];
+    language = body.language || "si";
+    const customApiKey = body.customApiKey;
 
-    const lastUserMsg =
+    lastUserMsg =
       [...messages].reverse().find((m) => m.role === "user")?.content || "";
 
-    // Candidate API keys: prioritize customApiKey if provided by user, else env
-    const groqKey =
-      (customApiKey?.startsWith("gsk_") ? customApiKey : null) ||
-      process.env.GROQ_API_KEY;
+    // Candidate API key: process.env.GROQ_API_KEY or user-provided custom key
+    const activeKey =
+      apiKey ||
+      (customApiKey && typeof customApiKey === "string" && customApiKey.startsWith("gsk_") && customApiKey.length > 20
+        ? customApiKey
+        : null);
 
     let langInstruction = "Respond in Sinhala (සිංහල).";
     if (language === "en") langInstruction = "Respond in English.";
@@ -472,33 +602,33 @@ REMEMBER: You are the beloved Master Teacher (ප්‍රවීණ ගුරු
 ## 📘 1. විෂය නිර්දේශය හා ගුරු මාර්ගෝපදේශය අනුව
 ## 💡 2. අමතර දැනුම සහ 190+ විභාග රහස්
 TABLES & ORDERLY PRESENTATION:
-Whenever presenting classifications, comparisons, vitamins, kings, plants, machines, or facts, ALWAYS format the key facts as a neat, clean Markdown Table (| Column | Column |). Keep spacing, headings, and bullet points orderly and easy for Grade 5 children to read without visual clutter.
+Whenever presenting classifications, comparisons, vitamins, kings, plants, machines, grammar, or facts, ALWAYS format the key facts as a neat, clean Markdown Table (| Column | Column |). Keep spacing, headings, and bullet points orderly and easy for Grade 5 children to read without visual clutter.
 When the student answers a question, evaluate whether their answer is correct or incorrect based on the question in the conversation history!`;
 
-    // Format recent message history (last 10 messages) to maintain fast responses without bloating
-    const recentMessages = messages.slice(-10).map((m) => ({
-      role: m.role === "assistant" ? "assistant" : "user",
-      content: m.content || "",
-    }));
+    // 1. If an active Groq API key is present, attempt live LLM generation
+    if (activeKey) {
+      // Format recent message history (last 10 messages) to maintain fast responses
+      const recentMessages = messages.slice(-10).map((m) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.content || "",
+      }));
 
-    const groqMessages = [
-      { role: "system", content: fullSystemPrompt },
-      ...recentMessages,
-    ];
+      const groqMessages = [
+        { role: "system", content: fullSystemPrompt },
+        ...recentMessages,
+      ];
 
-    // 1. Try Groq API models with individual timeouts (gpt-oss-120b primary, qwen fallback)
-    if (groqKey) {
-      const candidateModels = ["openai/gpt-oss-120b", "qwen/qwen3.8-27b"];
+      const candidateModels = ["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "qwen/qwen3.8-27b"];
 
       for (const mod of candidateModels) {
         const modelCtrl = new AbortController();
-        const timer = setTimeout(() => modelCtrl.abort(), 16000);
+        const timer = setTimeout(() => modelCtrl.abort(), 7500); // 7.5s safe timeout for Vercel/serverless
 
         try {
           const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${groqKey}`,
+              Authorization: `Bearer ${activeKey}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -519,7 +649,7 @@ When the student answers a question, evaluate whether their answer is correct or
               text = gData.choices[0].message.reasoning.trim();
             }
 
-            if (text && text.length > 10) {
+            if (text && text.length > 5) {
               return NextResponse.json({
                 reply: text,
                 source: `groq-${mod}`,
@@ -535,7 +665,6 @@ When the student answers a question, evaluate whether their answer is correct or
     }
 
     // 2. High-intelligence NIE Grade 5 Smart Engine Fallback
-    // Evaluates quiz answers dynamically and covers all Grade 5 scholarship subjects
     const fallbackReply = getSmartCurriculumResponse(lastUserMsg, language, messages);
 
     return NextResponse.json({
@@ -545,12 +674,12 @@ When the student answers a question, evaluate whether their answer is correct or
     });
   } catch (err) {
     console.error("Chat route error:", err);
-    return NextResponse.json(
-      {
-        reply: "කරුණාකර මොහොතකින් නැවත උත්සාහ කරන්න. (Please try again in a moment.)",
-        error: err.message,
-      },
-      { status: 500 }
-    );
+    // Never fail with 500 error! Return high quality fallback
+    const emergencyReply = getSmartCurriculumResponse(lastUserMsg, language, messages);
+    return NextResponse.json({
+      reply: emergencyReply,
+      source: "emergency-fallback",
+      language,
+    });
   }
 }

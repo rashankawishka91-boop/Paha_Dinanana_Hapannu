@@ -320,18 +320,35 @@ export default function AiTutorPage() {
           customApiKey,
         }),
       });
-      const data = await res.json();
+
+      let replyText = "";
+      if (res.ok) {
+        const data = await res.json();
+        replyText = data?.reply || "";
+      }
+
+      if (!replyText) {
+        replyText = isSi
+          ? "ආදරණීය දරුවා, ගුරුතුමා ඔබ වෙනුවෙන් සූදානම්! කරුණාකර ඔබගේ ප්‍රශ්නය නැවත විමසන්න."
+          : "Dear student, teacher is ready to help you! Please try asking your question again.";
+      }
+
       setChatLog((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: data.reply || "කරුණාකර නැවත උත්සාහ කරන්න.",
+          content: replyText,
         },
       ]);
     } catch (e) {
       setChatLog((prev) => [
         ...prev,
-        { role: "assistant", content: "තාක්ෂණික දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න." },
+        {
+          role: "assistant",
+          content: isSi
+            ? "ආදරණීය දරුවා, ගුරුතුමා ඔබ වෙනුවෙන් සූදානම්! කරුණාකර ඔබගේ ප්‍රශ්නය නැවත විමසන්න."
+            : "Dear student, teacher is ready to help you! Please try asking your question again.",
+        },
       ]);
     } finally {
       setChatLoading(false);

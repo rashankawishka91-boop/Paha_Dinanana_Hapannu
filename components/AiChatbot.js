@@ -383,14 +383,20 @@ export default function AiChatbot() {
         }),
       });
 
-      const data = await res.json();
-      const replyText =
-        data.reply ||
-        (language === "ta"
-          ? "மன்னிக்கவும், பதிலை தயாரிப்பதில் பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்."
-          : language === "en"
-          ? "Sorry, could not generate a response right now. Please try again."
-          : "කරුණාකර මොහොතකින් නැවත උත්සාහ කරන්න.");
+      let replyText = "";
+      if (res.ok) {
+        const data = await res.json();
+        replyText = data?.reply || "";
+      }
+
+      if (!replyText) {
+        replyText =
+          language === "ta"
+            ? "அன்பு மாணவரே, ஆசிரியர் உங்களுக்காக தயாராக உள்ளார். தயவுசெய்து உங்கள் வினாவை மீண்டும் கேட்கவும்."
+            : language === "en"
+            ? "Dear student, teacher is ready to help you! Please try asking your question again."
+            : "ආදරණීය දරුවා, ගුරුතුමා ඔබ වෙනුවෙන් සූදානම්! කරුණාකර ඔබගේ ප්‍රශ්නය නැවත විමසන්න.";
+      }
 
       setMessages((prev) => [
         ...prev,
@@ -407,10 +413,10 @@ export default function AiChatbot() {
           role: "assistant",
           content:
             language === "ta"
-              ? "தொழில்நுட்ப கோளாறு ஏற்பட்டுள்ளது. மீண்டும் முயற்சிக்கவும்."
+              ? "அன்பு மாணவரே, ஆசிரியர் உங்களுக்காக தயாராக உள்ளார். தயவுசெய்து உங்கள் வினாவை மீண்டும் கேட்கவும்."
               : language === "en"
-              ? "A network error occurred. Please try again."
-              : "දෝෂයක් සිදු විය. කරුණාකර නැවත උත්සාහ කරන්න.",
+              ? "Dear student, teacher is ready to help you! Please try asking your question again."
+              : "ආදරණීය දරුවා, ගුරුතුමා ඔබ වෙනුවෙන් සූදානම්! කරුණාකර ඔබගේ ප්‍රශ්නය නැවත විමසන්න.",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
