@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 620" width="100%" height="100%">
+  <defs>
+    <linearGradient id="paperBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fdfbf7"/>
+    </linearGradient>
+    <filter id="pShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#pShadow)" transform="rotate(-2 250 310)">
+    <!-- Main Sheet -->
+    <rect x="50" y="40" width="400" height="540" rx="14" fill="url(#paperBg)" stroke="#e2d2be" stroke-width="2"/>
+
+    <!-- Header bar -->
+    <rect x="70" y="60" width="360" height="70" rx="8" fill="#380d19"/>
+    <text x="250" y="90" font-family="'Noto Sans Sinhala', sans-serif" font-size="16" font-weight="bold" fill="#ffbe38" text-anchor="middle">5 ශ්‍රේණිය ශිෂ්‍යත්ව පළාත් ප්‍රශ්න පත්‍රය</text>
+    <text x="250" y="112" font-family="'Noto Sans Sinhala', sans-serif" font-size="11" fill="#fff" text-anchor="middle">පහ දිනන හපන්නු 190+ විශේෂ පුහුණුව · දිනකට පේපර් 2ක්</text>
+
+    <!-- Sub-header metadata -->
+    <rect x="70" y="145" width="220" height="24" rx="4" fill="#f4ebd9"/>
+    <text x="80" y="161" font-family="'Noto Sans Sinhala', sans-serif" font-size="11" fill="#442211" font-weight="bold">විෂයයන්: පරිසරය | මව්බස | ගණිතය | දෙමළ | ඉංග්‍රීසි</text>
+
+    <rect x="310" y="145" width="120" height="24" rx="4" fill="#f4ebd9"/>
+    <text x="370" y="161" font-family="sans-serif" font-size="11" fill="#442211" font-weight="bold" text-anchor="middle">කාලය: පැය 1යි</text>
+
+    <!-- Question lines mockup -->
+    <g fill="#d8c8b4" opacity="0.6">
+      <rect x="70" y="190" width="20" height="12" rx="3" fill="#380d19"/>
+      <rect x="100" y="190" width="300" height="10" rx="2"/>
+      <rect x="100" y="206" width="240" height="10" rx="2"/>
+
+      <rect x="100" y="226" width="70" height="8" rx="2" fill="#aa243c" opacity="0.4"/>
+      <rect x="190" y="226" width="70" height="8" rx="2"/>
+      <rect x="280" y="226" width="70" height="8" rx="2"/>
+
+      <rect x="70" y="255" width="20" height="12" rx="3" fill="#380d19"/>
+      <rect x="100" y="255" width="280" height="10" rx="2"/>
+      <rect x="100" y="271" width="320" height="10" rx="2"/>
+
+      <rect x="70" y="315" width="20" height="12" rx="3" fill="#380d19"/>
+      <rect x="100" y="315" width="260" height="10" rx="2"/>
+      <rect x="100" y="331" width="290" height="10" rx="2"/>
+
+      <rect x="70" y="375" width="20" height="12" rx="3" fill="#380d19"/>
+      <rect x="100" y="375" width="310" height="10" rx="2"/>
+      <rect x="100" y="391" width="230" height="10" rx="2"/>
+    </g>
+
+    <!-- Provincial Exam Badge -->
+    <g transform="translate(100, 440)">
+      <rect x="0" y="0" width="300" height="60" rx="10" fill="#fff5e4" stroke="#f5a623" stroke-width="2" stroke-dasharray="4,4"/>
+      <text x="150" y="26" font-family="'Noto Sans Sinhala', sans-serif" font-size="13" font-weight="bold" fill="#aa243c" text-anchor="middle">බස්නාහිර / දකුණු / වයඹ පළාත් පේපර්</text>
+      <text x="150" y="46" font-family="'Noto Sans Sinhala', sans-serif" font-size="11" fill="#664422" text-anchor="middle">සෑම ප්‍රශ්නයකටම සවිස්තරාත්මක විවරණ සහිතයි</text>
+    </g>
+
+    <!-- 100/100 or 190+ Red Stamp -->
+    <g transform="translate(330, 260) rotate(-15)">
+      <rect x="0" y="0" width="110" height="70" rx="10" fill="none" stroke="#d62828" stroke-width="4"/>
+      <rect x="4" y="4" width="102" height="62" rx="8" fill="none" stroke="#d62828" stroke-width="1.5" stroke-dasharray="2,2"/>
+      <text x="55" y="34" font-family="sans-serif" font-size="24" font-weight="900" fill="#d62828" text-anchor="middle">190+</text>
+      <text x="55" y="54" font-family="'Noto Sans Sinhala', sans-serif" font-size="11" font-weight="bold" fill="#d62828" text-anchor="middle">විශිෂ්ට සාමාර්ථ</text>
+    </g>
+  </g>
+</svg>
+

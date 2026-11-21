@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" opacity="0.16">
+  <defs>
+    <radialGradient id="dotGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffbe38" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#ffbe38" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Subtle Grid Lines -->
+  <path d="M 0,100 L 400,100 M 0,200 L 400,200 M 0,300 L 400,300 M 100,0 L 100,400 M 200,0 L 200,400 M 300,0 L 300,400" stroke="#f5a623" stroke-width="0.5" stroke-dasharray="4,8" />
+  
+  <!-- Book Icon -->
+  <g transform="translate(40, 40) scale(0.9)" stroke="#ffd572" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 4 28 C 16 22, 28 22, 40 28 L 40 68 C 28 62, 16 62, 4 68 Z" />
+    <path d="M 76 28 C 64 22, 52 22, 40 28 L 40 68 C 52 62, 64 62, 76 68 Z" />
+    <path d="M 40 28 L 40 68" />
+  </g>
+
+  <!-- Math Symbols -->
+  <text x="240" y="65" font-family="serif" font-size="28" font-weight="bold" fill="#ffd572" opacity="0.75">π</text>
+  <text x="320" y="70" font-family="sans-serif" font-size="24" font-weight="bold" fill="#ffbe38" opacity="0.75">√x</text>
+  <text x="60" y="160" font-family="sans-serif" font-size="26" font-weight="bold" fill="#ffd572" opacity="0.75">190+</text>
+
+  <!-- Graduation Cap -->
+  <g transform="translate(140, 130) scale(0.85)" stroke="#ffd572" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="35,10 70,25 35,40 0,25" />
+    <path d="M 12 30 L 12 50 C 12 58, 58 58, 58 50 L 58 30" />
+    <path d="M 70 25 L 75 45" />
+  </g>
+
+  <!-- Pencil / Pen -->
+  <g transform="translate(240, 140) rotate(45) scale(0.8)" stroke="#ffbe38" stroke-width="2" fill="none" stroke-linecap="round">
+    <polygon points="0,0 30,0 25,10 5,10" />
+    <rect x="0" y="10" width="30" height="50" rx="3" />
+    <polygon points="0,60 30,60 15,80" />
+  </g>
+
+  <!-- Trophy Motif -->
+  <g transform="translate(320, 220) scale(0.75)" stroke="#ffd572" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 10 10 L 40 10 L 40 30 C 40 42, 10 42, 10 30 Z" />
+    <path d="M 10 18 C 0 18, 0 28, 10 28" />
+    <path d="M 40 18 C 50 18, 50 28, 40 28" />
+    <path d="M 25 42 L 25 55" />
+    <rect x="15" y="55" width="20" height="8" rx="2" />
+  </g>
+
+  <!-- Star Badges -->
+  <polygon points="70,250 74,262 86,262 76,270 80,282 70,274 60,282 64,270 54,262 66,262" fill="#ffbe38" opacity="0.6"/>
+  <polygon points="230,330 233,339 242,339 235,345 238,354 230,348 222,354 225,345 218,339 227,339" fill="#ffd572" opacity="0.5"/>
+
+  <!-- Compass / Ruler Geometry -->
+  <g transform="translate(120, 250) scale(0.8)" stroke="#ffbe38" stroke-width="2" fill="none" stroke-linecap="round">
+    <circle cx="30" cy="30" r="22" stroke-dasharray="3,3" />
+    <line x1="30" y1="5" x2="30" y2="55" />
+    <line x1="5" y1="30" x2="55" y2="30" />
+  </g>
+
+  <!-- Glowing Aura Nodes -->
+  <circle cx="200" cy="200" r="40" fill="url(#dotGlow)" />
+  <circle cx="40" cy="360" r="30" fill="url(#dotGlow)" />
+  <circle cx="360" cy="40" r="30" fill="url(#dotGlow)" />
+</svg>
+
