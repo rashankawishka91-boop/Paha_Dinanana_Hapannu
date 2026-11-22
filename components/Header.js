@@ -4,25 +4,25 @@ import { useApp } from "../lib/Provider";
 
 export default function Header() {
   const { S, me, login, lang, toggleLang, t } = useApp();
+  const isSi = lang === "si";
 
   return (
     <header className="hd centered-hd">
       {/* Left side: Language switcher & AI Tutor link */}
       <div className="hd-side hd-left">
         <button
-          className="ghost"
+          className="hd-btn hd-btn-ghost"
           onClick={toggleLang}
-          style={{ fontSize: "0.82rem", padding: "7px 14px" }}
-          title={lang === "si" ? "Change to English" : "භාෂාව සිංහලට මාරු කරන්න"}
+          title={isSi ? "Switch to English" : "භාෂාව සිංහලට මාරු කරන්න"}
         >
-          🌐 {lang === "si" ? "English" : "සිංහල"}
+          🌐 <span>{isSi ? "English" : "සිංහල"}</span>
         </button>
         <Link
           href="/ai-tutor"
-          className="btn ghost ai-nav-link"
-          style={{ fontSize: "0.82rem", padding: "7px 14px", display: "inline-flex", alignItems: "center", gap: "6px" }}
+          className="hd-btn hd-btn-ai"
+          title={isSi ? "190+ ප්‍රවීණ AI ගුරුතුමා" : "190+ AI Tutor"}
         >
-          🤖 <span className="ai-nav-text">{lang === "si" ? "190+ AI සහයක" : "190+ AI Tutor"}</span>
+          🤖 <span>{isSi ? "190+ AI සහයක" : "190+ AI Tutor"}</span>
         </Link>
       </div>
 
@@ -43,44 +43,41 @@ export default function Header() {
           href="https://wa.me/94771234567"
           target="_blank"
           rel="noopener noreferrer"
-          className="btn whatsapp-btn"
-          style={{ fontSize: "0.82rem", padding: "7px 14px" }}
+          className="hd-btn hd-btn-whatsapp"
+          title="WhatsApp"
         >
-          💬 {lang === "si" ? "වට්ස්ඇප්" : "WhatsApp"}
+          💬 <span>{isSi ? "වට්ස්ඇප්" : "WhatsApp"}</span>
         </a>
 
         {me ? (
           <>
             <Link
-              className="btn"
+              className="hd-btn hd-btn-primary"
               href={me.admin ? "/admin" : "/dashboard"}
-              style={{ fontSize: "0.82rem", padding: "7px 16px" }}
             >
-              👤 {me.name?.split(" ")[0]} ({me.admin ? (lang === "si" ? "පාලක" : "Admin") : (lang === "si" ? "පුවරුව" : "Dashboard")})
+              👤 <span>{me.name?.split(" ")[0]} ({me.admin ? (isSi ? "පාලක" : "Admin") : (isSi ? "පුවරුව" : "Dashboard")})</span>
             </Link>
             <button
-              className="ghost"
+              className="hd-btn hd-btn-ghost"
               onClick={() => login(null)}
-              style={{ fontSize: "0.82rem", padding: "7px 12px" }}
+              title={t("logout")}
             >
-              {t("logout")}
+              <span>{t("logout")}</span>
             </button>
           </>
         ) : (
           <>
             <Link
-              className="btn ghost"
+              className="hd-btn hd-btn-ghost"
               href="/login"
-              style={{ fontSize: "0.82rem", padding: "7px 14px" }}
             >
-              {t("login")}
+              <span>{t("login")}</span>
             </Link>
             <Link
-              className="btn"
+              className="hd-btn hd-btn-primary"
               href="/login?mode=reg"
-              style={{ fontSize: "0.82rem", padding: "7px 16px" }}
             >
-              {t("reg")}
+              <span>{t("reg")}</span>
             </Link>
           </>
         )}
