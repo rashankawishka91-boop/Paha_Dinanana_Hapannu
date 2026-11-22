@@ -1,4 +1,4 @@
-﻿# Auto-Sync script for Paha Dinana Hapannu
+# Auto-Sync script for Paha Dinana Hapannu
 # Watches for local file changes, commits, and pushes to GitHub automatically.
 # Vercel will then auto-deploy the changes!
 
@@ -55,3 +55,4 @@ while ($true) {
         }
     }
 }
+

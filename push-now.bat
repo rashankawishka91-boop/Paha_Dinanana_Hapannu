@@ -12,3 +12,4 @@ echo ========================================================
 echo [OK] Done! Vercel is now building and deploying your changes.
 echo ========================================================
 pause
+

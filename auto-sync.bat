@@ -5,3 +5,4 @@ echo Press Ctrl+C in this window if you want to stop.
 echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\auto-sync.ps1"
 pause
+
