@@ -177,18 +177,13 @@ export default function Dash() {
             <span className="sp" style={{ fontWeight: 700 }}>
               {isSi ? "📖 පාඩම් සහ ප්‍රශ්න පත්‍ර විවරණය" : "📖 Lessons & Paper Discussion"}
             </span>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <button type="button" className="hd-btn hd-btn-ghost" onClick={toggleLang}>
-                🌐 <span>{isSi ? "English" : "සිංහල"}</span>
-              </button>
-              <button
-                type="button"
-                className="hd-btn hd-btn-ghost"
-                onClick={() => setOpen(null)}
-              >
-                <span>⬅️ {isSi ? "ආපසු" : "Back"}</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              className="hd-btn hd-btn-ghost"
+              onClick={() => setOpen(null)}
+            >
+              <span>⬅️ {isSi ? "ආපසු" : "Back"}</span>
+            </button>
           </div>
 
           <div className="head" style={{ marginTop: "14px" }}>
@@ -303,7 +298,7 @@ export default function Dash() {
 
       {/* Main Student Workspace */}
       <main>
-        {/* Streamlined Top Header Bar (No redundant duplicates) */}
+        {/* Streamlined Top Header Bar */}
         <div className="top" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <span className="sp" style={{ fontWeight: 800 }}>
@@ -312,34 +307,6 @@ export default function Dash() {
             <span className="badge-tag gold" style={{ fontSize: "11.5px", padding: "2px 8px" }}>
               {selectedGrade} {isSi ? "ශ්‍රේණිය (190+ පන්තිය)" : "Grade (190+)"}
             </span>
-          </div>
-
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <button
-              type="button"
-              className="hd-btn hd-btn-ghost"
-              onClick={toggleLang}
-              title={isSi ? "Switch to English" : "සිංහල භාෂාවට මාරු වන්න"}
-            >
-              🌐 <span>{isSi ? "English" : "සිංහල"}</span>
-            </button>
-            <a
-              className="hd-btn hd-btn-whatsapp"
-              href={`https://wa.me/${(S.set?.hotline || "0771234567").replace(/\D/g, "")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="WhatsApp"
-            >
-              💬 <span>{isSi ? "වට්ස්ඇප්" : "WhatsApp"}</span>
-            </a>
-            <button
-              type="button"
-              className="hd-btn hd-btn-ghost"
-              onClick={() => { login(null); router.push("/login"); }}
-              title={isSi ? "ඉවත් වන්න" : "Log out"}
-            >
-              <span>{isSi ? "ඉවත් වන්න" : "Log out"}</span>
-            </button>
           </div>
         </div>
 

@@ -259,33 +259,12 @@ export default function Admin() {
       {/* Main Workspace */}
       <main>
         {/* Top Header Bar */}
-        <div className="top">
-          <span className="sp">{isSi ? "පාලක මැදිරිය" : "Admin portal"}</span>
-          <button type="button" className="btn" onClick={toggleLang}>
-            <svg><use href="#globe" /></svg>
-            <span>{isSi ? "English" : "සිංහල"}</span>
-          </button>
-          <a
-            className="btn wa"
-            href={`https://wa.me/${(S.set?.hotline || "0771234567").replace(/\D/g, "")}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <svg><use href="#chat" /></svg>
-            <span>WhatsApp</span>
-          </a>
-          <span className="btn gold">
-            <svg><use href="#user" /></svg>
-            <span>{me?.name || (isSi ? "ප්‍රධාන ගුරුතුමා" : "Lead Teacher")}</span>
-          </span>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => { login(null); router.push("/login"); }}
-          >
-            <svg><use href="#logout" /></svg>
-            <span>{isSi ? "ඉවත් වන්න" : "Log out"}</span>
-          </button>
+        <div className="top" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span className="sp" style={{ fontWeight: 800 }}>
+              {isSi ? "👑 ගුරු පාලක මැදිරිය" : "👑 Admin Portal"}
+            </span>
+          </div>
         </div>
 
         {/* Page Head */}
