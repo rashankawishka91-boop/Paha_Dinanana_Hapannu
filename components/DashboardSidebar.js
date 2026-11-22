@@ -39,12 +39,14 @@ export default function DashboardSidebar({
 
   const studentNav = isSi
     ? [
+        { id: "overview", label: "ප්‍රගති විශ්ලේෂණය", icon: "#grid" },
         { id: "all_packages", label: "සියලු පැකේජ", icon: "#folder", badge: foldersCount },
         { id: "my_packages", label: "මගේ පාඩම්", icon: "#doc" },
         { id: "timer", label: "වේග පාලන කාල ගණකය", icon: "#clock" },
         { id: "my_slips", label: "ගෙවීම් රිසිට්පත්", icon: "#card" },
       ]
     : [
+        { id: "overview", label: "Progress & Analysis", icon: "#grid" },
         { id: "all_packages", label: "All bundles", icon: "#folder", badge: foldersCount },
         { id: "my_packages", label: "My lessons", icon: "#doc" },
         { id: "timer", label: "Speed timer", icon: "#clock" },
