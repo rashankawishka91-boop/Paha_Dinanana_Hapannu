@@ -24,12 +24,11 @@ export default function Admin() {
   const [viewSlip, setViewSlip] = useState(null);
   const [previewVideoItem, setPreviewVideoItem] = useState(null);
 
-  // Students Roster, Monthly Class Filter, Attendance & WhatsApp Broadcast state
+  // Students Roster, Monthly Class Filter & Attendance state
   const [selectedRosterFolderId, setSelectedRosterFolderId] = useState("all");
   const [rosterGradeFilter, setRosterGradeFilter] = useState("all");
   const [rosterPayFilter, setRosterPayFilter] = useState("paid"); // "paid", "pending", "all"
   const [attendanceWeek, setAttendanceWeek] = useState("1 වන සතිය");
-  const [waMessage, setWaMessage] = useState("");
   const [copiedPhones, setCopiedPhones] = useState(false);
 
   // Content Input Mode: "link" | "upload"
@@ -131,20 +130,6 @@ export default function Admin() {
     }
   }, [S.folders, selectedFolderForContent, selectedRosterFolderId]);
 
-  // Update default WhatsApp template when roster month changes
-  useEffect(() => {
-    const folder = S.folders.find(f => f.id === selectedRosterFolderId);
-    if (folder) {
-      setWaMessage(
-        `ආදරණීය දරුවා, ${folder.grade} ශ්‍රේණිය ${folder.month} මාසික පන්තියේ (${folder.name}) අද සජීවී Zoom පන්තියට මෙම සබැඳියෙන් සම්බන්ධ වන්න: ${folder.zoomUrl || "https://zoom.us/j/94771234567"} (${folder.zoomSchedule || "ප.ව. 7.00 ට"})`
-      );
-    } else {
-      setWaMessage(
-        "ආදරණීය දරුවා, පහ දිනන හපන්නු 190+ පේපර් පන්තියේ අද දින සජීවී Zoom පන්තිය සහ නව ප්‍රශ්න පත්‍ර සඳහා ඔබගේ ශිෂ්‍ය පුවරුවට පිවිසෙන්න."
-      );
-    }
-  }, [selectedRosterFolderId, S.folders]);
-
   if (!ready) {
     return (
       <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#1b0b08", color: "#fff1dc", fontFamily: "Nunito, sans-serif" }}>
@@ -220,11 +205,10 @@ export default function Admin() {
     return { sessions, attendedCount, pct, lastJoined: rec.lastJoined };
   };
 
-  const formatWhatsAppHref = (phone, studentName, customMsg) => {
+  const formatWhatsAppHref = (phone) => {
     const cleanPhone = String(phone || "").replace(/\D/g, "").replace(/^0/, "94");
     const finalPhone = cleanPhone.startsWith("94") ? cleanPhone : `94${cleanPhone}`;
-    const personalized = (customMsg || "").replace(/ආදරණීය දරුවා/g, `ආදරණීය ${studentName || "දරුවා"}`);
-    return `https://wa.me/${finalPhone}?text=${encodeURIComponent(personalized)}`;
+    return `https://wa.me/${finalPhone}`;
   };
 
   const handleSetCurrentMonth = (folder) => {
@@ -991,8 +975,115 @@ export default function Admin() {
           border: 2px solid var(--gold);
         }
 
+        /* Clean Structured Roster Table for Students & Attendance */
+        .adm-roster-stats {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 14px;
+          margin-bottom: 18px;
+        }
+
+        .adm-roster-stat {
+          background: var(--card);
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          padding: 14px 18px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .adm-roster-stat small {
+          display: block;
+          font-size: 12.5px;
+          color: var(--muted);
+          font-weight: 700;
+        }
+
+        .adm-roster-stat b {
+          font-size: 26px;
+          font-weight: 800;
+          color: var(--gold);
+          line-height: 1.2;
+        }
+
+        .adm-roster-stat.ok b {
+          color: var(--green);
+        }
+
+        .adm-table-wrap {
+          width: 100%;
+          overflow-x: auto;
+          border-radius: 18px;
+          border: 1px solid var(--line);
+          background: var(--card);
+        }
+
+        .adm-table {
+          width: 100%;
+          border-collapse: collapse;
+          min-width: 920px;
+          text-align: left;
+        }
+
+        .adm-table th {
+          background: var(--card2);
+          color: var(--gold);
+          font-size: 12.5px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          padding: 13px 16px;
+          border-bottom: 1px solid var(--line);
+          white-space: nowrap;
+        }
+
+        .adm-table td {
+          padding: 13px 16px;
+          border-bottom: 1px solid var(--soft);
+          vertical-align: middle;
+          font-size: 14.5px;
+        }
+
+        .adm-table tbody tr:last-child td {
+          border-bottom: none;
+        }
+
+        .adm-table tbody tr:hover {
+          background: rgba(255, 200, 74, 0.05);
+        }
+
+        .adm-wk-btn {
+          width: 36px;
+          height: 34px;
+          border-radius: 10px;
+          border: 1px solid var(--soft);
+          background: var(--bg);
+          color: var(--muted);
+          font-weight: 800;
+          font-size: 12.5px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.15s ease;
+        }
+
+        .adm-wk-btn:hover {
+          border-color: var(--gold);
+          transform: translateY(-1px);
+        }
+
+        .adm-wk-btn.on {
+          background: rgba(16, 185, 129, 0.22);
+          border-color: #10b981;
+          color: var(--green);
+        }
+
         @media (max-width: 1020px) {
-          .adm-stats {
+          .adm-stats,
+          .adm-roster-stats {
             grid-template-columns: 1fr 1fr;
           }
           .adm-cols,
@@ -1933,11 +2024,7 @@ export default function Admin() {
 
                           {u.phone && (
                             <a
-                              href={formatWhatsAppHref(
-                                u.phone,
-                                u.name,
-                                `ආදරණීය දරුවා, ඔබගේ ${f.month || ""} මාසික පන්ති ගාස්තුව (රු. ${f.price || 2000}) අනුමත කර ඇත. දැන් ඔබට ශිෂ්‍ය පුවරුවෙන් සියලුම Zoom, Video සහ PDF ලබාගත හැක!`
-                              )}
+                              href={formatWhatsAppHref(u.phone)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="adm-chip wa"
@@ -1979,17 +2066,87 @@ export default function Admin() {
           )}
 
           {/* ================================================================ */}
-          {/* TAB 5: MONTH-WISE PAID STUDENTS ROSTER, ATTENDANCE & WHATSAPP    */}
+          {/* TAB 5: CLEAN STUDENTS ROSTER & ATTENDANCE TABLE                  */}
           {/* ================================================================ */}
           {tab === "students" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              {/* TOP FILTER & MONTH ROSTER SELECTOR PANEL */}
-              <section className="adm-panel">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "14px", marginBottom: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+              {/* KPI SUMMARY STRIP FOR SELECTED CLASS */}
+              <div className="adm-roster-stats">
+                <div className="adm-roster-stat">
                   <div>
-                    <h2>📋 මාසික පන්තිය අනුව මුදල් ගෙවූ සිසුන්ගේ නාමලේඛනය සහ පැමිණීම</h2>
-                    <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: "14px" }}>
-                      ඕනෑම මාසයක් (උදා: දෙසැම්බර් / නොවැම්බර්) තෝරා එම මාසයට රු. 2,000 ගෙවා සම්බන්ධ වූ සිසුන් වෙනම හඳුනාගන්න, පැමිණීම ලකුණු කරන්න, සහ WhatsApp පණිවිඩ යවන්න.
+                    <small>තෝරාගත් පන්තියේ සිසුන්</small>
+                    <b>{rosterStudents.length}</b>
+                  </div>
+                  <span style={{ fontSize: "24px" }}>👥</span>
+                </div>
+
+                <div className="adm-roster-stat ok">
+                  <div>
+                    <small>මෙම මාසයට මුදල් ගෙවූ සිසුන්</small>
+                    <b>
+                      {selectedRosterFolderId === "all"
+                        ? approvedCount
+                        : S.pays.filter(p => p.fid === selectedRosterFolderId && p.status === "approved").length}
+                    </b>
+                  </div>
+                  <span style={{ fontSize: "24px" }}>✅</span>
+                </div>
+
+                <div className="adm-roster-stat">
+                  <div>
+                    <small>රිසිට්පත් පරීක්ෂාවට (Pending)</small>
+                    <b>
+                      {selectedRosterFolderId === "all"
+                        ? pendingCount
+                        : S.pays.filter(p => p.fid === selectedRosterFolderId && p.status === "pending").length}
+                    </b>
+                  </div>
+                  <span style={{ fontSize: "24px" }}>⏳</span>
+                </div>
+
+                <div className="adm-roster-stat ok">
+                  <div>
+                    <small>{attendanceWeek} පැමිණි සිසුන්</small>
+                    <b>
+                      {
+                        rosterStudents.filter(stu => {
+                          const stuGrade = Number(stu.grade) || 5;
+                          const targetFid =
+                            selectedRosterFolderId === "all"
+                              ? S.folders.find(f => Number(f.grade) === stuGrade)?.id || "f1"
+                              : selectedRosterFolderId;
+                          return getStudentAttendanceInfo(targetFid, stu.id).sessions[attendanceWeek];
+                        }).length
+                      }
+                    </b>
+                  </div>
+                  <span style={{ fontSize: "24px" }}>📊</span>
+                </div>
+              </div>
+
+              {/* MAIN UNIFIED ROSTER & ATTENDANCE PANEL */}
+              <section className="adm-panel">
+                {/* Header + Quick Action Buttons */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "12px",
+                    paddingBottom: "16px",
+                    marginBottom: "16px",
+                    borderBottom: "1px solid var(--soft)"
+                  }}
+                >
+                  <div>
+                    <h2 className="si">
+                      {selectedRosterFolder
+                        ? `📋 ${selectedRosterFolder.month} (${selectedRosterFolder.grade} ශ්‍රේණිය) — සිසුන්ගේ නාමලේඛනය සහ පැමිණීම`
+                        : "📋 සියලුම සිසුන්ගේ නාමලේඛනය සහ පැමිණීම"}
+                    </h2>
+                    <p style={{ margin: "3px 0 0", color: "var(--muted)", fontSize: "13.5px" }}>
+                      මාසික පන්තිය තෝරා එම මාසයට මුදල් ගෙවා සම්බන්ධ වූ සිසුන් වෙනම බලාගන්න, සති 4 පැමිණීම සලකුණු කරන්න.
                     </p>
                   </div>
 
@@ -1999,22 +2156,29 @@ export default function Admin() {
                       className="adm-chip gold"
                       onClick={() => markAllPresentForWeek(rosterStudents, selectedRosterFolderId, attendanceWeek)}
                     >
-                      ✅ Mark All Present ({attendanceWeek})
+                      ✓ සියලු දෙනා පැමිණි බව ලකුණු කරන්න ({attendanceWeek})
                     </button>
                     <button
                       type="button"
                       className="adm-chip wa"
                       onClick={copyAllRosterPhones}
                     >
-                      {copiedPhones ? "✔ Numbers Copied!" : "📋 Copy Student Numbers"}
+                      {copiedPhones ? "✔ අංක Copy විය!" : "📋 දුරකථන අංක Copy කරන්න"}
                     </button>
                   </div>
                 </div>
 
-                {/* 3 Filter Controls: 1. Monthly Class, 2. Grade Filter, 3. Paid/All Status + Search */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "12px", marginBottom: "16px" }}>
+                {/* Clean 4-Column Filter Bar */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+                    gap: "12px",
+                    marginBottom: "16px"
+                  }}
+                >
                   <label className="adm-label" style={{ margin: 0 }}>
-                    <span>1. Select Monthly Class (මාසික පන්තිය තෝරන්න)</span>
+                    <span>1. මාසික පන්තිය (Monthly Class)</span>
                     <select
                       className="adm-select si"
                       value={selectedRosterFolderId}
@@ -2025,12 +2189,12 @@ export default function Admin() {
                         if (fObj) setRosterGradeFilter(fObj.grade);
                       }}
                     >
-                      <option value="all">🌟 සියලුම මාසික පන්ති (All Monthly Classes)</option>
+                      <option value="all">🌟 සියලුම මාසික පන්ති (All Months)</option>
                       {S.folders.map(f => {
                         const paidCnt = S.pays.filter(p => p.fid === f.id && p.status === "approved").length;
                         return (
                           <option key={f.id} value={f.id}>
-                            Grade {f.grade} | {f.month} ({paidCnt} Paid) — {f.name}
+                            Grade {f.grade} | {f.month} ({paidCnt} Paid)
                           </option>
                         );
                       })}
@@ -2038,136 +2202,83 @@ export default function Admin() {
                   </label>
 
                   <label className="adm-label" style={{ margin: 0 }}>
-                    <span>2. Filter by Grade (ශ්‍රේණිය අනුව වෙන් කරන්න)</span>
+                    <span>2. ශ්‍රේණිය (Grade)</span>
                     <select
                       className="adm-select si"
                       value={rosterGradeFilter}
                       onChange={e => setRosterGradeFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
                     >
                       <option value="all">සියලුම ශ්‍රේණි (Grades 3, 4, 5)</option>
-                      <option value={5}>5 ශ්‍රේණිය (Grade 5 - 190+)</option>
+                      <option value={5}>5 ශ්‍රේණිය (Grade 5)</option>
                       <option value={4}>4 ශ්‍රේණිය (Grade 4)</option>
                       <option value={3}>3 ශ්‍රේණිය (Grade 3)</option>
                     </select>
                   </label>
 
                   <label className="adm-label" style={{ margin: 0 }}>
-                    <span>3. Enrollment Filter (ගෙවීම් තත්ත්වය)</span>
+                    <span>3. ගෙවීම් තත්ත්වය (Payment Status)</span>
                     <select
                       className="adm-select si"
                       value={rosterPayFilter}
                       onChange={e => setRosterPayFilter(e.target.value)}
                     >
-                      <option value="paid">✅ මෙම මාසයට මුදල් ගෙවා සම්බන්ධ වූ සිසුන් (Paid Only)</option>
-                      <option value="pending">⏳ රිසිට්පත් එවා අනුමැතිය බලාපොරොත්තු සිසුන් (Pending)</option>
-                      <option value="all">👥 මෙම ශ්‍රේණියේ සියලුම ලියාපදිංචි සිසුන් (All Students)</option>
+                      <option value="paid">✅ මුදල් ගෙවා සම්බන්ධ වූ සිසුන් (Paid Only)</option>
+                      <option value="pending">⏳ රිසිට්පත් පරීක්ෂාවට (Pending)</option>
+                      <option value="all">👥 ශ්‍රේණියේ සියලුම සිසුන් (All Students)</option>
                     </select>
                   </label>
 
                   <label className="adm-label" style={{ margin: 0 }}>
-                    <span>4. Search Student (නම / දුරකථන අංකය)</span>
+                    <span>4. සිසුවා සොයන්න (Search Name / Phone)</span>
                     <input
                       type="text"
                       className="adm-input si"
-                      placeholder="නම හෝ අංකය ගසා සොයන්න..."
+                      placeholder="නම හෝ දුරකථන අංකය..."
                       value={studentSearch}
                       onChange={e => setStudentSearch(e.target.value)}
                     />
                   </label>
                 </div>
 
-                {/* WHATSAPP BROADCAST MESSAGECOMPOSER FOR THIS MONTH'S STUDENTS */}
+                {/* Quick Filter Pills + Active Attendance Week Selector */}
                 <div
                   style={{
-                    padding: "16px 18px",
-                    borderRadius: "16px",
-                    background: "rgba(18, 64, 43, 0.35)",
-                    border: "1px solid #1f7a52"
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "10px",
+                    marginBottom: "16px"
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "8px" }}>
-                    <strong style={{ color: "var(--green)", fontSize: "14.5px" }}>
-                      💬 මෙම මාසයේ සිසුන්ට යැවිය යුතු WhatsApp පණිවිඩය (Quick Templates):
-                    </strong>
-
-                    <div className="adm-grp">
-                      <button
-                        type="button"
-                        className="adm-chip"
-                        style={{ padding: "4px 10px", fontSize: "12px" }}
-                        onClick={() => {
-                          const f = selectedRosterFolder || S.folders[0];
-                          setWaMessage(
-                            `ආදරණීය දරුවා, ${f?.grade || 5} ශ්‍රේණිය ${f?.month || ""} පන්තියේ අද සජීවී Zoom පන්තියට මෙම සබැඳියෙන් සම්බන්ධ වන්න: ${f?.zoomUrl || "https://zoom.us/j/94771234567"} (${f?.zoomSchedule || "ප.ව. 7.00 ට"})`
-                          );
-                        }}
-                      >
-                        🔴 Zoom Link පණිවිඩය
-                      </button>
-                      <button
-                        type="button"
-                        className="adm-chip"
-                        style={{ padding: "4px 10px", fontSize: "12px" }}
-                        onClick={() => {
-                          const f = selectedRosterFolder || S.folders[0];
-                          setWaMessage(
-                            `ආදරණීය දරුවා, ${f?.month || ""} මාසික පන්තියට අදාළ නව ප්‍රශ්න පත්‍ර PDF සහ වීඩියෝ විවරණය දැන් එක් කර ඇත. ඔබගේ ශිෂ්‍ය පුවරුවට පිවිස අධ්‍යයනය කරන්න.`
-                          );
-                        }}
-                      >
-                        📄 නව Paper / Video දැනුම්දීම
-                      </button>
-                      <button
-                        type="button"
-                        className="adm-chip"
-                        style={{ padding: "4px 10px", fontSize: "12px" }}
-                        onClick={() => {
-                          const f = selectedRosterFolder || S.folders[0];
-                          setWaMessage(
-                            `ආදරණීය දෙමාපියනි, ${f?.month || ""} මාසයේ අද පැවති සජීවී පන්තියට ඔබගේ දරුවා සහභාගී නොවූ බැවින් පුවරුවේ ඇති පටිගත කළ වීඩියෝව සහ PDF පේපරය කරවීමට කාරුණික වන්න.`
-                          );
-                        }}
-                      >
-                        ⚠️ නොපැමිණීම දැනුම්දීම
-                      </button>
-                    </div>
-                  </div>
-
-                  <textarea
-                    rows={2}
-                    className="adm-textarea si"
-                    value={waMessage}
-                    onChange={e => setWaMessage(e.target.value)}
-                    placeholder="සිසුන්ට යැවිය යුතු WhatsApp පණිවිඩය මෙහි ලියන්න..."
-                  />
-                </div>
-              </section>
-
-              {/* STUDENT ROSTER & ATTENDANCE LIST */}
-              <section className="adm-panel">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
-                  <div>
-                    <h2 className="si">
-                      {selectedRosterFolder
-                        ? `${selectedRosterFolder.month} (Grade ${selectedRosterFolder.grade}) — සිසුන්ගේ නාමලේඛනය (${rosterStudents.length})`
-                        : `සියලුම සිසුන්ගේ නාමලේඛනය (${rosterStudents.length})`}
-                    </h2>
-                    <p style={{ margin: "2px 0 0", color: "var(--muted)", fontSize: "13.5px" }}>
-                      සති 4ක පැමිණීම (S1, S2, S3, S4) බොත්තම් මත ක්ලික් කිරීමෙන් පැමිණීම (✅ / ❌) සලකුණු කළ හැක.
-                    </p>
-                  </div>
-
-                  {/* Week Selector for Quick Bulk Attendance */}
                   <div className="adm-grp">
-                    <span style={{ fontSize: "13px", color: "var(--muted)", fontWeight: 700 }}>
-                      ක්ෂණික පැමිණීමේ සතිය:
+                    {[
+                      { id: "paid", label: "✅ මුදල් ගෙවූ සිසුන් (Paid)" },
+                      { id: "pending", label: "⏳ Pending Slips" },
+                      { id: "all", label: "👥 සියලුම සිසුන් (All)" }
+                    ].map(pTab => (
+                      <button
+                        key={pTab.id}
+                        type="button"
+                        className={`adm-chip ${rosterPayFilter === pTab.id ? "gold" : ""}`}
+                        style={{ padding: "5px 13px", fontSize: "13px" }}
+                        onClick={() => setRosterPayFilter(pTab.id)}
+                      >
+                        {pTab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="adm-grp">
+                    <span style={{ fontSize: "12.5px", color: "var(--muted)", fontWeight: 700 }}>
+                      සතිය තෝරන්න:
                     </span>
                     {WEEKS_LIST.map(w => (
                       <button
                         key={w}
                         type="button"
                         className={`adm-chip ${attendanceWeek === w ? "gold" : ""}`}
-                        style={{ padding: "4px 11px", fontSize: "12.5px" }}
+                        style={{ padding: "4px 11px", fontSize: "12px" }}
                         onClick={() => setAttendanceWeek(w)}
                       >
                         {w}
@@ -2176,153 +2287,173 @@ export default function Admin() {
                   </div>
                 </div>
 
+                {/* STRUCTURED CLEAN DATA TABLE FOR STUDENTS & ATTENDANCE */}
                 {rosterStudents.length ? (
-                  <div>
-                    {rosterStudents.map((stu, sIdx) => {
-                      const stuGrade = Number(stu.grade) || 5;
-                      const studentCode = `G${stuGrade}-${String(sIdx + 1).padStart(3, "0")}`;
-                      const targetFid = selectedRosterFolderId === "all" ? (S.folders.find(f => Number(f.grade) === stuGrade)?.id || "f1") : selectedRosterFolderId;
-                      const payRecord = S.pays.filter(p => p.uid === stu.id && p.fid === targetFid).pop();
-                      const isPaidForSelectedMonth = payRecord?.status === "approved";
-                      const isPendingForSelectedMonth = payRecord?.status === "pending";
-                      const allUnlockedMonths = S.pays
-                        .filter(p => p.uid === stu.id && p.status === "approved")
-                        .map(p => S.folders.find(f => f.id === p.fid)?.month)
-                        .filter(Boolean);
+                  <div className="adm-table-wrap">
+                    <table className="adm-table">
+                      <thead>
+                        <tr>
+                          <th style={{ width: "90px" }}>ශිෂ්‍ය අංකය</th>
+                          <th>සිසුවාගේ නම</th>
+                          <th>ශ්‍රේණිය</th>
+                          <th>දුරකථන අංකය</th>
+                          <th>මාසික ගෙවීම</th>
+                          <th style={{ textAlign: "center" }}>පැමිණීම (සති 1 - 4)</th>
+                          <th style={{ textAlign: "center" }}>ප්‍රතිශතය</th>
+                          <th style={{ textAlign: "right" }}>ක්‍රියාමාර්ග (Actions)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rosterStudents.map((stu, sIdx) => {
+                          const stuGrade = Number(stu.grade) || 5;
+                          const studentCode = `G${stuGrade}-${String(sIdx + 1).padStart(3, "0")}`;
+                          const targetFid =
+                            selectedRosterFolderId === "all"
+                              ? S.folders.find(f => Number(f.grade) === stuGrade)?.id || "f1"
+                              : selectedRosterFolderId;
+                          const payRecord = S.pays.filter(p => p.uid === stu.id && p.fid === targetFid).pop();
+                          const isPaidForSelectedMonth = payRecord?.status === "approved";
+                          const isPendingForSelectedMonth = payRecord?.status === "pending";
+                          const att = getStudentAttendanceInfo(targetFid, stu.id);
 
-                      const att = getStudentAttendanceInfo(targetFid, stu.id);
+                          return (
+                            <tr key={stu.id || sIdx}>
+                              {/* 1. Student ID Badge */}
+                              <td>
+                                <span
+                                  style={{
+                                    display: "inline-block",
+                                    padding: "4px 10px",
+                                    borderRadius: "8px",
+                                    fontWeight: 800,
+                                    fontSize: "12.5px",
+                                    background:
+                                      stuGrade === 5
+                                        ? "linear-gradient(135deg, #ffd45e, var(--gold2))"
+                                        : stuGrade === 4
+                                        ? "#1e3a8a"
+                                        : "#065f46",
+                                    color: stuGrade === 5 ? "#2a1208" : "#fff"
+                                  }}
+                                >
+                                  {studentCode}
+                                </span>
+                              </td>
 
-                      return (
-                        <div
-                          key={stu.id || sIdx}
-                          className={`adm-row-item ${isPaidForSelectedMonth ? "cur" : ""}`}
-                        >
-                          {/* Student Identification & Grade Badge */}
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", flex: 1, minWidth: "270px" }}>
-                            <div
-                              style={{
-                                width: "46px",
-                                height: "46px",
-                                borderRadius: "14px",
-                                background:
-                                  stuGrade === 5
-                                    ? "linear-gradient(135deg, #ffd45e, var(--gold2))"
-                                    : stuGrade === 4
-                                    ? "#1e3a8a"
-                                    : "#065f46",
-                                color: stuGrade === 5 ? "#2a1208" : "#fff",
-                                display: "grid",
-                                placeItems: "center",
-                                fontWeight: 800,
-                                fontSize: "13px",
-                                flexShrink: 0
-                              }}
-                            >
-                              {studentCode}
-                            </div>
+                              {/* 2. Student Name */}
+                              <td>
+                                <strong className="si" style={{ fontSize: "15.5px", color: "var(--ink)", display: "block" }}>
+                                  {stu.name}
+                                </strong>
+                                {att.lastJoined && (
+                                  <small style={{ fontSize: "11.5px", color: "var(--muted)" }}>
+                                    අවසන් පැමිණීම: {att.lastJoined}
+                                  </small>
+                                )}
+                              </td>
 
-                            <div style={{ flex: 1 }}>
-                              <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
-                                <span className="adm-chip gold" style={{ padding: "2px 9px", fontSize: "11.5px" }}>
+                              {/* 3. Grade */}
+                              <td>
+                                <span className="adm-chip" style={{ padding: "3px 10px", fontSize: "12px" }}>
                                   🎓 {stuGrade} ශ්‍රේණිය
                                 </span>
+                              </td>
 
+                              {/* 4. Phone Number */}
+                              <td style={{ fontWeight: 700, fontFamily: "monospace", fontSize: "14px" }}>
+                                {stu.phone}
+                              </td>
+
+                              {/* 5. Payment Status for Selected Month */}
+                              <td>
                                 {isPaidForSelectedMonth ? (
-                                  <span className="adm-chip wa" style={{ padding: "2px 9px", fontSize: "11.5px" }}>
-                                    ✅ ගෙවා ඇත ({selectedRosterFolder?.month || "Active"})
+                                  <span className="adm-chip wa" style={{ padding: "3px 10px", fontSize: "12px" }}>
+                                    ✅ ගෙවා ඇත
                                   </span>
                                 ) : isPendingForSelectedMonth ? (
-                                  <span className="adm-chip gold" style={{ padding: "2px 9px", fontSize: "11.5px" }}>
-                                    ⏳ රිසිට්පත පරීක්ෂාවට
+                                  <span className="adm-chip gold" style={{ padding: "3px 10px", fontSize: "12px" }}>
+                                    ⏳ Pending
                                   </span>
                                 ) : (
-                                  <span className="adm-chip" style={{ padding: "2px 9px", fontSize: "11.5px", opacity: 0.75 }}>
+                                  <span className="adm-chip" style={{ padding: "3px 10px", fontSize: "12px", opacity: 0.75 }}>
                                     🔒 ගෙවා නැත
                                   </span>
                                 )}
+                              </td>
 
+                              {/* 6. 4-Week Attendance Toggle Buttons (W1, W2, W3, W4) */}
+                              <td style={{ textAlign: "center" }}>
+                                <div style={{ display: "inline-flex", gap: "6px" }}>
+                                  {WEEKS_LIST.map((w, wIdx) => {
+                                    const isPresent = Boolean(att.sessions[w]);
+                                    return (
+                                      <button
+                                        key={w}
+                                        type="button"
+                                        onClick={() => toggleStudentAttendance(targetFid, stu.id, w)}
+                                        className={`adm-wk-btn ${isPresent ? "on" : ""}`}
+                                        title={`${w} - ${isPresent ? "පැමිණ ඇත (Present)" : "පැමිණ නැත (Absent)"}`}
+                                      >
+                                        {isPresent ? "✓" : `W${wIdx + 1}`}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </td>
+
+                              {/* 7. Attendance Percentage */}
+                              <td style={{ textAlign: "center" }}>
                                 <span
-                                  className={`adm-chip ${att.pct >= 75 ? "wa" : "gold"}`}
-                                  style={{ padding: "2px 9px", fontSize: "11.5px" }}
+                                  className={`adm-chip ${att.pct >= 75 ? "wa" : att.pct > 0 ? "gold" : ""}`}
+                                  style={{ padding: "3px 10px", fontSize: "12px", minWidth: "74px", justifyContent: "center" }}
                                 >
-                                  📊 පැමිණීම: {att.attendedCount}/4 ({att.pct}%)
+                                  {att.attendedCount}/4 ({att.pct}%)
                                 </span>
-                              </div>
+                              </td>
 
-                              <h4 className="si" style={{ margin: "0 0 2px", fontSize: "17px", color: "var(--ink)" }}>
-                                {stu.name}
-                              </h4>
-
-                              <div style={{ fontSize: "13px", color: "var(--muted)" }}>
-                                📱 <b>{stu.phone}</b>
-                                {allUnlockedMonths.length > 0 && (
-                                  <span> · සක්‍රිය මාස: {allUnlockedMonths.join(", ")}</span>
-                                )}
-                                {att.lastJoined && (
-                                  <span> · අවසන් පැමිණීම: {att.lastJoined}</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* 4-Week Attendance Checkboxes (S1, S2, S3, S4) */}
-                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                            <small style={{ fontSize: "11.5px", color: "var(--muted)", fontWeight: 700 }}>
-                              පැමිණීම ලකුණු කරන්න (Click to mark):
-                            </small>
-                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                              {WEEKS_LIST.map((w, wIdx) => {
-                                const isPresent = Boolean(att.sessions[w]);
-                                return (
-                                  <button
-                                    key={w}
-                                    type="button"
-                                    onClick={() => toggleStudentAttendance(targetFid, stu.id, w)}
-                                    className={`adm-chip ${isPresent ? "wa" : ""}`}
-                                    style={{
-                                      padding: "5px 10px",
-                                      fontSize: "12px",
-                                      borderColor: isPresent ? "#10b981" : "var(--soft)"
-                                    }}
-                                    title={`${w} පැමිණීම වෙනස් කරන්න`}
+                              {/* 8. Direct WhatsApp Chat (No pre-filled message) + Unlock/Lock */}
+                              <td style={{ textAlign: "right" }}>
+                                <div className="adm-grp" style={{ justifyContent: "flex-end", flexWrap: "nowrap" }}>
+                                  <a
+                                    href={formatWhatsAppHref(stu.phone)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="adm-chip wa"
+                                    style={{ padding: "5px 11px", fontSize: "12.5px" }}
+                                    title="Open WhatsApp Chat"
                                   >
-                                    {isPresent ? "✅" : "❌"} සතිය {wIdx + 1}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
+                                    💬 WhatsApp
+                                  </a>
 
-                          {/* Actions: Send Personalized WhatsApp & Manual Unlock Toggle */}
-                          <div className="adm-grp" style={{ marginLeft: "auto" }}>
-                            <a
-                              href={formatWhatsAppHref(stu.phone, stu.name, waMessage)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="adm-chip wa"
-                              title="Send WhatsApp Message to this student"
-                            >
-                              💬 WhatsApp පණිවිඩය යවන්න ↗
-                            </a>
-
-                            {selectedRosterFolderId !== "all" && (
-                              <button
-                                type="button"
-                                className={`adm-chip ${isPaidForSelectedMonth ? "" : "gold"}`}
-                                style={{ fontSize: "12.5px" }}
-                                onClick={() => handleManualEnrollStudent(stu.id, selectedRosterFolderId)}
-                              >
-                                {isPaidForSelectedMonth ? "🔒 Lock Month" : "🔓 Unlock Month"}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                                  {selectedRosterFolderId !== "all" && (
+                                    <button
+                                      type="button"
+                                      className={`adm-chip ${isPaidForSelectedMonth ? "" : "gold"}`}
+                                      style={{ padding: "5px 11px", fontSize: "12.5px" }}
+                                      onClick={() => handleManualEnrollStudent(stu.id, selectedRosterFolderId)}
+                                    >
+                                      {isPaidForSelectedMonth ? "🔒 Lock" : "🔓 Unlock"}
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 ) : (
-                  <div style={{ padding: "36px", textAlign: "center", color: "var(--muted)", border: "1px dashed var(--line)", borderRadius: "16px" }}>
-                    <p style={{ margin: "0 0 12px" }}>
+                  <div
+                    style={{
+                      padding: "40px 20px",
+                      textAlign: "center",
+                      color: "var(--muted)",
+                      border: "1px dashed var(--line)",
+                      borderRadius: "16px"
+                    }}
+                  >
+                    <p style={{ margin: "0 0 12px", fontSize: "15px" }}>
                       තෝරාගත් මාසයට හෝ පෙරහනට (Filter) අදාළ සිසුන් තවම නොමැත.
                     </p>
                     {rosterPayFilter !== "all" && (
@@ -2331,7 +2462,7 @@ export default function Admin() {
                         className="adm-chip gold"
                         onClick={() => setRosterPayFilter("all")}
                       >
-                        👥 මෙම ශ්‍රේණියේ සියලුම සිසුන් පෙන්වන්න (Show All Students in Grade)
+                        👥 මෙම ශ්‍රේණියේ සියලුම සිසුන් පෙන්වන්න (Show All Students)
                       </button>
                     )}
                   </div>
