@@ -553,26 +553,67 @@ export default function AiChatbot() {
         >
           {/* Header */}
           <header>
-            <div className="row">
-              <div className="av">
-                <img src="/teacher-face.jpg" alt="Teacher Avatar" />
-                <i />
+            <div className="row" style={{ justifyContent: "space-between", width: "100%" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                <div className="av">
+                  <img src="/teacher-face.jpg" alt="Teacher Avatar" />
+                  <i />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <h1>AI ගුරුතුමා ({selectedGrade} ශ්‍රේණිය)</h1>
+                  <small>
+                    {language === "ta"
+                      ? "தரம் 3, 4, 5 ஆசிரியர் வழிகாட்டி"
+                      : language === "en"
+                      ? "Grades 3, 4, 5 NIE Teacher's Guide"
+                      : "3, 4, 5 ශ්‍රේණි ශ්‍රී ලංකා ගුරු අත්පොත"}
+                  </small>
+                </div>
               </div>
-              <div>
-                <h1>AI ගුරුතුමා (Grade {selectedGrade})</h1>
-                <small>
-                  {language === "ta"
-                    ? "தரம் 3, 4, 5 ஆசிரியர் வழிகாட்டி"
-                    : language === "en"
-                    ? "Grades 3, 4, 5 NIE Teacher's Guide"
-                    : "3, 4, 5 ශ්‍රේණි ශ්‍රී ලංකා ගුරු අත්පොත"}
-                </small>
+
+              {/* Top-Right Always-Visible Controls: Tips, Reset, Resize, Close */}
+              <div className="ib" style={{ marginLeft: "auto", flexShrink: 0 }}>
+                <button
+                  type="button"
+                  aria-label="Tips"
+                  onClick={() => setShowChips(!showChips)}
+                  title={showChips ? "Hide quick tips" : "Show quick tips"}
+                >
+                  <svg><use href="#bulb" /></svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="New chat"
+                  id="reset"
+                  onClick={resetChat}
+                  title="New chat"
+                >
+                  <svg><use href="#redo" /></svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Resize"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  title={isExpanded ? "පොඩි කරන්න (Restore)" : "විශාල කරන්න (Resize)"}
+                >
+                  <svg><use href="#max" /></svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="close-btn"
+                  onClick={() => setIsOpen(false)}
+                  title="වසන්න (Close)"
+                >
+                  <svg><use href="#x" /></svg>
+                </button>
               </div>
             </div>
 
-            <div className="tools">
+            {/* Dedicated Second Row: Proper-sized Grade Selector + Language Switch */}
+            <div className="tools" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
               {/* Grade selector (3, 4, 5) */}
-              <div className="seg" role="group" aria-label="Grade">
+              <div className="seg seg-grade" role="group" aria-label="Grade">
                 {[3, 4, 5].map((g) => (
                   <button
                     key={g}
@@ -581,10 +622,11 @@ export default function AiChatbot() {
                     onClick={() => setSelectedGrade(g)}
                     title={`${g} ශ්‍රේණිය`}
                   >
-                    {g} ශ්‍රේ
+                    {language === "en" ? `Grade ${g}` : `${g} ශ්‍රේණිය`}
                   </button>
                 ))}
               </div>
+
               {/* Segmented language switch */}
               <div className="seg" role="group" aria-label="Language">
                 <button
@@ -607,43 +649,6 @@ export default function AiChatbot() {
                   onClick={() => handleLanguageChange("ta")}
                 >
                   த
-                </button>
-              </div>
-
-              {/* Icon tools */}
-              <div className="ib">
-                <button
-                  type="button"
-                  aria-label="Tips"
-                  onClick={() => setShowChips(!showChips)}
-                  title={showChips ? "Hide quick tips" : "Show quick tips"}
-                >
-                  <svg><use href="#bulb" /></svg>
-                </button>
-                <button
-                  type="button"
-                  aria-label="New chat"
-                  id="reset"
-                  onClick={resetChat}
-                  title="New chat"
-                >
-                  <svg><use href="#redo" /></svg>
-                </button>
-                <button
-                  type="button"
-                  aria-label="Expand"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  title={isExpanded ? "Restore size" : "Expand window"}
-                >
-                  <svg><use href="#max" /></svg>
-                </button>
-                <button
-                  type="button"
-                  aria-label="Close"
-                  onClick={() => setIsOpen(false)}
-                  title="Close chat"
-                >
-                  <svg><use href="#x" /></svg>
                 </button>
               </div>
             </div>
