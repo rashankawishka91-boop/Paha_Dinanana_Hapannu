@@ -7,12 +7,15 @@
 CREATE TABLE IF NOT EXISTS public.users (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  phone TEXT UNIQUE NOT NULL,
+  phone TEXT NOT NULL,
   pass TEXT NOT NULL,
   grade INTEGER DEFAULT 5 CHECK (grade IN (3, 4, 5)),
   admin BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Drop strict unique constraint on phone if it exists so batch upserts by id never fail
+ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_phone_key;
 
 -- 2. FOLDERS / MONTHLY CLASSES TABLE (3, 4, 5 ශ්‍රේණිවල මාසික පන්ති)
 CREATE TABLE IF NOT EXISTS public.folders (
@@ -77,8 +80,14 @@ CREATE TABLE IF NOT EXISTS public.paha_dinana_state (
 );
 
 -- ============================================================================
--- ROW LEVEL SECURITY (RLS) POLICIES (Anon Key මඟින් කියවීමට සහ ලිවීමට අවසර දීම)
+-- GRANT TABLE PERMISSIONS & ROW LEVEL SECURITY (RLS) POLICIES
+-- (මෙම කොටස මඟින් anon key එකට දත්ත කියවීමට සහ ඇතුළත් කිරීමට පූර්ණ අවසර ලබා දේ)
 -- ============================================================================
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.folders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.items ENABLE ROW LEVEL SECURITY;
