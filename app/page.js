@@ -1,15 +1,157 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp, getYoutubeEmbedUrl } from "../lib/Provider";
 import VideoPlayer from "../components/VideoPlayer";
 
 export default function Home() {
   const { S, t, me, lang } = useApp();
-  const [selectedGrade, setSelectedGrade] = useState(5);
   const isSi = lang === "si";
 
-  const sampleVideo = S.items.find(i => (i.type === "video" || getYoutubeEmbedUrl(i.url)) && i.url);
+  const isStudent = Boolean(me && !me.admin);
+  const studentGrade = isStudent
+    ? ([5, 4, 3].includes(Number(me.grade)) ? Number(me.grade) : 5)
+    : null;
+
+  // Before login: default to "all" so all grades (3, 4, 5) are visible.
+  // After login: automatically lock to the student's registered grade!
+  const [selectedGrade, setSelectedGrade] = useState("all");
+
+  useEffect(() => {
+    if (isStudent && studentGrade) {
+      setSelectedGrade(studentGrade);
+    } else {
+      setSelectedGrade("all");
+    }
+  }, [isStudent, studentGrade]);
+
+  const sampleVideo = S.items.find(
+    i => (i.type === "video" || getYoutubeEmbedUrl(i.url)) && i.url
+  );
+
+  // Helper to check payment status for logged-in student
+  const getFolderStatus = (fid) => {
+    if (!isStudent) return "none";
+    return (
+      (S.pays.filter(p => p.uid === me.id && p.fid === fid).pop() || {}).status ||
+      "none"
+    );
+  };
+
+  // Detailed specifications for Grades 3, 4, and 5
+  const GRADE_DETAILS = [
+    {
+      grade: 5,
+      badge: isSi ? "🔥 190+ විශේෂ ශිෂ්‍යත්ව පන්තිය" : "🔥 190+ Scholarship Target Class",
+      title: isSi ? "5 ශ්‍රේණිය - 190+ පළාත් පේපර් සහ සජීවී පන්තිය" : "Grade 5 - 190+ Provincial Papers & Live Class",
+      subtitle: isSi
+        ? "දිනකට පළාත් පේපර් 2 බැගින් සාකච්ඡා කරමින් ලකුණු 190+ ඉලක්කය කරා දරුවා මෙහෙයවන විශේෂ පන්තිය"
+        : "Discussing 2 provincial papers daily to guide students past the 190+ marks milestone",
+      subjects: isSi
+        ? "පරිසරය (තේමා 16), මව්බස (සිංහල), ගණිතය, දෙමළ, ඉංග්‍රීසි"
+        : "Environment (16 Themes), Sinhala, Mathematics, Tamil, English",
+      schedule: isSi
+        ? "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)"
+        : "Every Saturday & Sunday 7:00 PM - 9:00 PM (Zoom Live)",
+      fee: 2000,
+      color: "#f5a623",
+      features: isSi
+        ? [
+            "දිනකට පළාත් ප්‍රශ්න පත්‍ර 2ක් සම්පූර්ණ විවරණය",
+            "ප්‍රශ්නයකට තත්පර 45කට අඩු වේග පාලන පුහුණුව",
+            "සජීවී Zoom පන්ති, පටිගත කළ වීඩියෝ සහ PDF පේපර්ස්"
+          ]
+        : [
+            "2 Provincial papers fully discussed daily",
+            "Under 45-second per question speed training",
+            "Live Zoom classes, recorded videos & printable PDFs"
+          ]
+    },
+    {
+      grade: 4,
+      badge: isSi ? "🌟 ශිෂ්‍යත්ව පූර්ව අඩිතාලම" : "🌟 Pre-Scholarship Foundation",
+      title: isSi ? "4 ශ්‍රේණිය - ශිෂ්‍යත්ව පූර්ව සූදානම සහ පේපර් පන්තිය" : "Grade 4 - Pre-Scholarship Foundation & Paper Class",
+      subtitle: isSi
+        ? "5 ශ්‍රේණියේ ශිෂ්‍යත්ව විභාගයට කල්තියාම දරුවාගේ වේගය සහ විෂය දැනුම ගොඩනඟන පන්තිය"
+        : "Building early exam speed and 5-subject mastery ahead of Grade 5 scholarship",
+      subjects: isSi
+        ? "මව්බස (සිංහල), ගණිතය, පරිසරය, දෙමළ, ඉංග්‍රීසි"
+        : "Sinhala, Mathematics, Environment, Tamil, English",
+      schedule: isSi
+        ? "සෑම සෙනසුරාදාම ප.ව. 4.00 - 6.00 (Zoom Live)"
+        : "Every Saturday 4:00 PM - 6:00 PM (Zoom Live)",
+      fee: 2000,
+      color: "#38bdf8",
+      features: isSi
+        ? [
+            "ගණිත කෙටි ක්‍රම සහ තර්කන ගැටළු පුහුණුව",
+            "වියරණ, රචනා සහ පරිසරය මූලික පදනම",
+            "මාසික ආදර්ශ ප්‍රශ්න පත්‍ර PDF සහ වීඩියෝ සාකච්ඡා"
+          ]
+        : [
+            "Math shortcuts and logical problem solving",
+            "Grammar, essay writing & environmental studies foundation",
+            "Monthly model paper PDFs and video discussions"
+          ]
+    },
+    {
+      grade: 3,
+      badge: isSi ? "🌱 මූලික පදනම සහ පේපර් පුහුණුව" : "🌱 Primary Foundation & Practice",
+      title: isSi ? "3 ශ්‍රේණිය - මූලික විෂය පදනම සහ පේපර් හුරුව" : "Grade 3 - Core Curriculum Foundation & Paper Practice",
+      subtitle: isSi
+        ? "කුඩා කල සිටම ප්‍රශ්න පත්‍රවලට බිය නැතිව නිවැරදිව පිළිතුරු ලිවීමට හුරු කරවන පන්තිය"
+        : "Training young learners to read, understand, and answer exam papers confidently",
+      subjects: isSi
+        ? "මව්බස (සිංහල), ගණිතය, පරිසරය, ඉංග්‍රීසි"
+        : "Sinhala, Mathematics, Environment, English",
+      schedule: isSi
+        ? "සෑම ඉරිදාම ප.ව. 3.00 - 5.00 (Zoom Live)"
+        : "Every Sunday 3:00 PM - 5:00 PM (Zoom Live)",
+      fee: 2000,
+      color: "#34d399",
+      features: isSi
+        ? [
+            "මනෝමය ගණිතය සහ මූලික ගණිත ක්‍රමවේද",
+            "නිවැරදි අක්ෂර වින්‍යාසය සහ වාක්‍ය ගොඩනැගීම",
+            "සතිපතා වර්ණවත් PDF වැඩ පත්‍රිකා සහ සජීවී පන්ති"
+          ]
+        : [
+            "Mental math and core arithmetic concepts",
+            "Accurate spelling and sentence construction",
+            "Weekly printable PDF worksheets and live classes"
+          ]
+    }
+  ];
+
+  // Activegrade detail object if student is logged in
+  const myGradeDetail = isStudent
+    ? GRADE_DETAILS.find(g => g.grade === studentGrade) || GRADE_DETAILS[0]
+    : null;
+
+  // All folders for valid grades (3, 4, 5)
+  const validFolders = S.folders.filter(f => [5, 4, 3].includes(Number(f.grade)));
+
+  // Active (Approved) and Pending classes for the logged-in student
+  const myActiveClasses = isStudent
+    ? validFolders.filter(f => getFolderStatus(f.id) === "approved")
+    : [];
+  const myPendingClasses = isStudent
+    ? validFolders.filter(f => getFolderStatus(f.id) === "pending")
+    : [];
+
+  // Filtered monthly classes for the Explorer section:
+  // - If student is logged in: strictly their grade's monthly classes (current month first)
+  // - If guest (not logged in): either "all" (all grades 5, 4, 3) or whichever grade chip they clicked
+  const filteredFolders = validFolders
+    .filter(f => {
+      if (isStudent) return Number(f.grade) === Number(studentGrade);
+      if (selectedGrade === "all") return true;
+      return Number(f.grade) === Number(selectedGrade);
+    })
+    .sort((a, b) => {
+      if (b.grade !== a.grade) return b.grade - a.grade;
+      return (b.isCurrentMonth ? 1 : 0) - (a.isCurrentMonth ? 1 : 0);
+    });
 
   const subjectsList = [
     {
@@ -50,35 +192,25 @@ export default function Home() {
   ];
 
   const highlights = [
-    {
-      icon: "⚡",
-      titleKey: "h1Title",
-      descKey: "h1Desc"
-    },
-    {
-      icon: "📑",
-      titleKey: "h2Title",
-      descKey: "h2Desc"
-    },
-    {
-      icon: "🔍",
-      titleKey: "h3Title",
-      descKey: "h3Desc"
-    },
-    {
-      icon: "🏆",
-      titleKey: "h4Title",
-      descKey: "h4Desc"
-    }
+    { icon: "⚡", titleKey: "h1Title", descKey: "h1Desc" },
+    { icon: "📑", titleKey: "h2Title", descKey: "h2Desc" },
+    { icon: "🔍", titleKey: "h3Title", descKey: "h3Desc" },
+    { icon: "🏆", titleKey: "h4Title", descKey: "h4Desc" }
   ];
-
-  const filteredFolders = S.folders.filter(f => f.grade === selectedGrade);
 
   return (
     <main className="wrap">
-      {/* Hero Section */}
+      {/* ==================================================================== */}
+      {/* HERO SECTION (DYNAMICALLY ADAPTS WHEN STUDENT LOGS IN)               */}
+      {/* ==================================================================== */}
       <section className="hero">
-        <div className="hero-pill-badge">{t("badgeTarget")}</div>
+        <div className="hero-pill-badge">
+          {isStudent
+            ? isSi
+              ? `🎓 ${studentGrade} ශ්‍රේණියේ නිල ශිෂ්‍ය ද්වාරය · ${myGradeDetail?.badge}`
+              : `🎓 Grade ${studentGrade} Student Portal · ${myGradeDetail?.badge}`
+            : t("badgeTarget")}
+        </div>
 
         {/* Centered Logo with Glowing Ring */}
         <div className="logo-wrap" style={{ display: "block", margin: "0 auto 24px" }}>
@@ -89,24 +221,59 @@ export default function Home() {
           />
         </div>
 
-        <h1>
-          {t("brand")} <br />
-          <span style={{ color: "var(--gold)" }}>{t("brandSub")}</span>
-        </h1>
+        {isStudent ? (
+          <>
+            <h1>
+              {isSi ? `ආයුබෝවන්, ${me.name}! 👋` : `Welcome back, ${me.name}! 👋`}
+              <br />
+              <span style={{ color: "var(--gold)", fontSize: "0.78em" }}>
+                {myGradeDetail?.title}
+              </span>
+            </h1>
 
-        <div className="slogan-banner">
-          ✨ {t("slogan")}
-        </div>
+            <div className="slogan-banner">
+              ✨ {myGradeDetail?.subtitle}
+            </div>
 
-        <p className="lead">
-          {t("heroDesc")}
-        </p>
+            <p className="lead">
+              {isSi
+                ? `ඔබ ලියාපදිංචි වී සිටින්නේ ${studentGrade} ශ්‍රේණිය සඳහාය. ඔබගේ ශ්‍රේණියට අදාළ සක්‍රිය කළ මාසික පන්ති, සජීවී Zoom සබැඳි, වීඩියෝ සාකච්ඡා සහ PDF ප්‍රශ්න පත්‍ර පහතින් කෙලින්ම විවෘත කරගත හැක.`
+                : `You are enrolled in Grade ${studentGrade}. Access your activated monthly classes, live Zoom links, video discussions, and PDF papers directly below.`}
+            </p>
+          </>
+        ) : (
+          <>
+            <h1>
+              {t("brand")} <br />
+              <span style={{ color: "var(--gold)" }}>{t("brandSub")}</span>
+            </h1>
+
+            <div className="slogan-banner">
+              ✨ {t("slogan")}
+            </div>
+
+            <p className="lead">
+              {t("heroDesc")}
+            </p>
+          </>
+        )}
 
         <div className="cta-row">
           {me ? (
-            <Link className="btn" href={me.admin ? "/admin" : "/dashboard"}>
-              🚀 {t(me.admin ? "adminPanel" : "dashboard")} වෙත පිවිසෙන්න
-            </Link>
+            <>
+              <Link className="btn" href={me.admin ? "/admin" : "/dashboard"}>
+                🚀 {isSi
+                  ? me.admin
+                    ? "ගුරු පාලක පුවරුවට පිවිසෙන්න"
+                    : `${studentGrade} ශ්‍රේණියේ ශිෂ්‍ය පුවරුවට පිවිසෙන්න`
+                  : me.admin
+                  ? "Open Admin Portal"
+                  : `Open Grade ${studentGrade} Dashboard`}
+              </Link>
+              <a className="btn ghost" href="#papers">
+                📅 {isSi ? `${studentGrade} ශ්‍රේණියේ මාසික පන්ති බලන්න ↓` : `View Grade ${studentGrade} Classes ↓`}
+              </a>
+            </>
           ) : (
             <>
               <Link className="btn" href="/login?mode=reg">
@@ -119,11 +286,11 @@ export default function Home() {
           )}
           <a
             className="btn whatsapp-btn"
-            href="https://wa.me/94771234567"
+            href={`https://wa.me/${(S.set?.hotline || "94771234567").replace(/\D/g, "")}`}
             target="_blank"
             rel="noopener noreferrer"
           >
-            💬 WhatsApp විමසීම්
+            💬 {isSi ? "WhatsApp විමසීම්" : "WhatsApp Support"}
           </a>
         </div>
 
@@ -131,19 +298,559 @@ export default function Home() {
         <div className="hero-visual-showcase">
           <div className="visual-image-card">
             <img src="/trophy-190.svg" alt="190+ Trophy" />
-            <h4 style={{ color: "var(--gold)", margin: "6px 0 2px" }}>190+ ඉලක්කගත විශේෂ පුහුණුව</h4>
+            <h4 style={{ color: "var(--gold)", margin: "6px 0 2px" }}>
+              {isSi ? "3, 4 සහ 5 ශ්‍රේණි සඳහා විශේෂ පුහුණුව" : "Specialized Training for Grades 3, 4 & 5"}
+            </h4>
             <p className="mut" style={{ fontSize: "0.85rem", margin: 0 }}>
-              දිස්ත්‍රික් ප්‍රථමයින් හා විශිෂ්ට සාමාර්ථ දහස් ගණනක් බිහි කළ ක්‍රමවේදය
+              {isSi
+                ? "දිස්ත්‍රික් ප්‍රථමයින් හා 190+ විශිෂ්ට සාමාර්ථ බිහි කළ අසමසම පන්ති ආකෘතිය"
+                : "Proven methodology producing top district ranks and 190+ distinction scores"}
             </p>
           </div>
           <div className="visual-image-card">
             <img src="/exam-paper.svg" alt="Provincial Exam Paper" />
-            <h4 style={{ color: "var(--gold)", margin: "6px 0 2px" }}>දිනකට පළාත් පේපර් 2ක්</h4>
+            <h4 style={{ color: "var(--gold)", margin: "6px 0 2px" }}>
+              {isSi ? "සජීවී Zoom පන්ති + වීඩියෝ + PDF" : "Live Zoom Classes + Videos + PDFs"}
+            </h4>
             <p className="mut" style={{ fontSize: "0.85rem", margin: 0 }}>
-              සෑම ප්‍රශ්නයකටම සවිස්තරාත්මක විවරණ සහිත පූර්ණ සාකච්ඡාව
+              {isSi
+                ? "මාසයෙන් මාසයට සියලුම පළාත් පේපර්ස් සහ සවිස්තරාත්මක විවරණ එකම තැනකින්"
+                : "Month-by-month provincial paper bundles and full video discussions in one place"}
             </p>
           </div>
         </div>
+      </section>
+
+      {/* ==================================================================== */}
+      {/* LOGGED-IN STUDENT SECTION: MY ACTIVE / UNLOCKED CLASSES & GRADE INFO */}
+      {/* ==================================================================== */}
+      {isStudent && myGradeDetail && (
+        <section style={{ margin: "44px 0" }}>
+          <div
+            className="card"
+            style={{
+              background: "linear-gradient(135deg, rgba(45, 16, 24, 0.96), rgba(22, 8, 13, 0.98))",
+              border: "2px solid var(--gold)",
+              borderRadius: "24px",
+              padding: "32px 28px",
+              boxShadow: "0 18px 45px rgba(0, 0, 0, 0.45)"
+            }}
+          >
+            {/* Student's Grade Summary Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "18px", paddingBottom: "22px", borderBottom: "1px solid rgba(245, 166, 35, 0.25)" }}>
+              <div style={{ flex: 1, minWidth: "280px" }}>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "8px" }}>
+                  <span className="badge-tag gold" style={{ fontWeight: 800, fontSize: "12.5px", padding: "4px 12px" }}>
+                    🎓 {isSi ? `ඔබගේ ශ්‍රේණිය: ${studentGrade} ශ්‍රේණිය` : `Your Grade: Grade ${studentGrade}`}
+                  </span>
+                  <span className="tag" style={{ background: "rgba(34, 197, 94, 0.2)", color: "#4ade80", fontWeight: 700, fontSize: "12px" }}>
+                    ✓ {isSi ? `සක්‍රිය මාස ${myActiveClasses.length}ක් විවෘතයි` : `${myActiveClasses.length} Active Months Unlocked`}
+                  </span>
+                  {myPendingClasses.length > 0 && (
+                    <span className="tag" style={{ background: "rgba(245, 166, 35, 0.2)", color: "#fbbf24", fontWeight: 700, fontSize: "12px" }}>
+                      ⏳ {isSi ? `රිසිට්පත් ${myPendingClasses.length}ක් පරීක්ෂා වෙමින්` : `${myPendingClasses.length} Pending Approval`}
+                    </span>
+                  )}
+                </div>
+
+                <h2 style={{ fontSize: "1.65rem", color: "#fff", margin: "0 0 6px" }}>
+                  {myGradeDetail.title}
+                </h2>
+                <p style={{ margin: "0 0 10px", color: "#cbd5e1", fontSize: "0.95rem" }}>
+                  🎯 <b>{isSi ? "ආවරණය වන විෂයයන්:" : "Subjects Covered:"}</b> {myGradeDetail.subjects}
+                </p>
+                <p style={{ margin: 0, color: "var(--gold)", fontSize: "0.9rem", fontWeight: 600 }}>
+                  ⏰ <b>{isSi ? "සජීවී පන්ති කාලසටහන:" : "Live Class Schedule:"}</b> {myGradeDetail.schedule}
+                </p>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", minWidth: "210px" }}>
+                <Link
+                  href="/dashboard"
+                  className="btn"
+                  style={{ justifyContent: "center", padding: "12px 20px", fontSize: "0.92rem" }}
+                >
+                  🚪 {isSi ? "ශිෂ්‍ය පුවරුවට යන්න →" : "Go to Dashboard →"}
+                </Link>
+              </div>
+            </div>
+
+            {/* Student's Active (Unlocked) Monthly Classes List */}
+            <div style={{ marginTop: "24px" }}>
+              <h3 style={{ fontSize: "1.25rem", color: "#fff", margin: "0 0 6px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <span>🟢</span>
+                <span>
+                  {isSi
+                    ? `ඔබ සක්‍රිය (Active) කරගත් මාසික පන්ති (${myActiveClasses.length})`
+                    : `Your Activated Monthly Classes (${myActiveClasses.length})`}
+                </span>
+              </h3>
+              <p className="mut" style={{ fontSize: "0.88rem", margin: "0 0 16px" }}>
+                {isSi
+                  ? "ඔබ රු. 2,000 ගාස්තුව ගෙවා සක්‍රිය කරගත් මාසික පන්තිවලට මෙතැනින් කෙලින්ම ඇතුල් විය හැක."
+                  : "Directly enter the monthly classes you have paid for and activated."}
+              </p>
+
+              {myActiveClasses.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {myActiveClasses.map(f => {
+                    const mItems = S.items.filter(i => i.fid === f.id);
+                    const zCount = mItems.filter(i => i.type === "zoom").length + (f.zoomUrl ? 1 : 0);
+                    const vCount = mItems.filter(i => i.type === "video" || getYoutubeEmbedUrl(i.url)).length;
+                    const pCount = mItems.filter(i => i.type === "pdf").length;
+
+                    return (
+                      <div
+                        key={f.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "16px",
+                          padding: "18px 22px",
+                          borderRadius: "16px",
+                          background: "rgba(255, 255, 255, 0.05)",
+                          border: f.isCurrentMonth
+                            ? "2px solid var(--gold)"
+                            : "1px solid rgba(74, 222, 128, 0.35)"
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: "260px" }}>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "6px" }}>
+                            <span className="badge-tag gold" style={{ fontWeight: 800 }}>
+                              📅 {f.month}
+                            </span>
+                            <span className="tag" style={{ background: "rgba(34, 197, 94, 0.22)", color: "#4ade80", fontWeight: 700, fontSize: "12px" }}>
+                              ✅ {isSi ? "සක්‍රිය කර ඇත (Active)" : "Active & Unlocked"}
+                            </span>
+                            {f.isCurrentMonth && (
+                              <span className="tag" style={{ background: "rgba(245, 166, 35, 0.22)", color: "var(--gold)", fontWeight: 700, fontSize: "12px" }}>
+                                🔥 {isSi ? "මේ මාසයේ පන්තිය" : "Current Month"}
+                              </span>
+                            )}
+                          </div>
+
+                          <h4 style={{ fontSize: "1.12rem", color: "#fff", margin: "0 0 6px" }}>
+                            {f.name}
+                          </h4>
+
+                          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", fontSize: "0.84rem", color: "#cbd5e1" }}>
+                            <span style={{ color: "#60a5fa", fontWeight: 700 }}>
+                              🔴 {zCount || 2} Zoom Live
+                            </span>
+                            <span>•</span>
+                            <span>🎥 {vCount || 2} {isSi ? "වීඩියෝ" : "Videos"}</span>
+                            <span>•</span>
+                            <span>📄 {pCount || 2} {isSi ? "PDF පේපර්" : "PDFs"}</span>
+                            <span>•</span>
+                            <span>🎯 {f.subjects}</span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                          {f.zoomUrl && (
+                            <a
+                              href={f.zoomUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn ghost"
+                              style={{
+                                borderColor: "#3b82f6",
+                                color: "#93c5fd",
+                                fontSize: "0.84rem",
+                                padding: "9px 15px"
+                              }}
+                            >
+                              🔴 {isSi ? "Zoom Live සම්බන්ධ වන්න ↗" : "Join Zoom Live ↗"}
+                            </a>
+                          )}
+                          <Link
+                            href={`/dashboard?open=${f.id}`}
+                            className="btn"
+                            style={{ fontSize: "0.86rem", padding: "9px 18px" }}
+                          >
+                            🚪 {isSi ? "පන්තිය ඇතුළට යන්න →" : "Enter Class →"}
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    padding: "22px",
+                    borderRadius: "16px",
+                    background: "rgba(255, 255, 255, 0.04)",
+                    border: "1px dashed rgba(245, 166, 35, 0.4)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: "16px"
+                  }}
+                >
+                  <div>
+                    <h4 style={{ color: "#fff", margin: "0 0 4px", fontSize: "1.05rem" }}>
+                      {isSi
+                        ? `ඔබ තවම ${studentGrade} ශ්‍රේණියේ මාසික පන්තියක් සක්‍රිය කරගෙන නොමැත`
+                        : `You haven't activated a Grade ${studentGrade} monthly class yet`}
+                    </h4>
+                    <p className="mut" style={{ margin: 0, fontSize: "0.86rem" }}>
+                      {isSi
+                        ? "රු. 2,000 මාසික පන්ති ගාස්තුව ගෙවා මේ මාසයේ සජීවී Zoom පන්ති, වීඩියෝ සහ PDF පේපර්ස් දැන්ම විවෘත කරගන්න."
+                        : "Pay the Rs. 2,000 monthly fee to unlock this month's live Zoom classes, videos, and PDF papers."}
+                    </p>
+                  </div>
+                  <Link href="/dashboard" className="btn" style={{ fontSize: "0.86rem", padding: "10px 18px" }}>
+                    💳 {isSi ? "දැන්ම පන්තිය සක්‍රිය කරගන්න →" : "Activate Class Now →"}
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ==================================================================== */}
+      {/* GUEST VIEW (BEFORE LOGIN): COMPLETE GRADE 3, 4 & 5 DETAILS SHOWCASE  */}
+      {/* ==================================================================== */}
+      {!isStudent && (
+        <section style={{ margin: "50px 0" }}>
+          <div style={{ textAlign: "center", marginBottom: "28px" }}>
+            <span className="badge-tag gold" style={{ marginBottom: "8px", display: "inline-block" }}>
+              🎓 {isSi ? "3, 4 සහ 5 ශ්‍රේණි සඳහා විශේෂිත මාසික පන්ති" : "Dedicated Monthly Classes for Grades 3, 4 & 5"}
+            </span>
+            <h2 style={{ fontSize: "2rem", margin: "6px 0 8px" }}>
+              {isSi ? "ශ්‍රේණි අනුව පන්ති විස්තර සහ කාලසටහන්" : "Complete Grade Details & Class Schedules"}
+            </h2>
+            <p className="mut" style={{ maxWidth: "700px", margin: "0 auto" }}>
+              {isSi
+                ? "ලියාපදිංචි වීමට පෙර 3, 4 සහ 5 ශ්‍රේණිවල පැවැත්වෙන පන්ති, ආවරණය වන විෂයයන් සහ Zoom සජීවී කාලසටහන් පරීක්ෂා කරන්න."
+                : "Explore the curriculum, subjects, and live Zoom schedules for Grades 3, 4, and 5 before registering."}
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(310px, 1fr))",
+              gap: "22px"
+            }}
+          >
+            {GRADE_DETAILS.map(g => {
+              const gFolders = validFolders.filter(f => Number(f.grade) === g.grade);
+              const curFolder = gFolders.find(f => f.isCurrentMonth) || gFolders[0];
+
+              return (
+                <div
+                  key={g.grade}
+                  className="card"
+                  style={{
+                    border: g.grade === 5 ? "2px solid var(--gold)" : "1px solid var(--line)",
+                    borderRadius: "20px",
+                    padding: "26px 24px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    background:
+                      g.grade === 5
+                        ? "linear-gradient(180deg, rgba(245, 166, 35, 0.12), rgba(24, 10, 15, 0.95))"
+                        : "var(--glass)"
+                  }}
+                >
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
+                      <span
+                        className="badge-tag gold"
+                        style={{
+                          fontSize: "0.82rem",
+                          fontWeight: 800,
+                          padding: "4px 12px"
+                        }}
+                      >
+                        🎓 {isSi ? `${g.grade} ශ්‍රේණිය` : `Grade ${g.grade}`}
+                      </span>
+                      <span
+                        className="tag"
+                        style={{
+                          fontSize: "0.75rem",
+                          background: "rgba(255, 255, 255, 0.08)",
+                          color: g.color,
+                          fontWeight: 700
+                        }}
+                      >
+                        {g.badge}
+                      </span>
+                    </div>
+
+                    <h3 style={{ fontSize: "1.28rem", color: "#fff", margin: "0 0 8px", lineHeight: 1.35 }}>
+                      {g.title}
+                    </h3>
+                    <p className="mut" style={{ fontSize: "0.86rem", margin: "0 0 14px", lineHeight: 1.5 }}>
+                      {g.subtitle}
+                    </p>
+
+                    <div
+                      style={{
+                        background: "rgba(0, 0, 0, 0.25)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "12px",
+                        padding: "12px 14px",
+                        marginBottom: "14px",
+                        fontSize: "0.83rem"
+                      }}
+                    >
+                      <div style={{ marginBottom: "6px", color: "#e2e8f0" }}>
+                        🎯 <b>{isSi ? "විෂයයන්:" : "Subjects:"}</b> {g.subjects}
+                      </div>
+                      <div style={{ marginBottom: "6px", color: "var(--gold)" }}>
+                        ⏰ <b>{isSi ? "Zoom කාලසටහන:" : "Zoom Schedule:"}</b> {g.schedule}
+                      </div>
+                      {curFolder && (
+                        <div style={{ color: "#4ade80", fontWeight: 600 }}>
+                          🔥 <b>{isSi ? "මේ මාසයේ පන්තිය:" : "Current Month:"}</b> {curFolder.month}
+                        </div>
+                      )}
+                    </div>
+
+                    <ul style={{ margin: "0 0 18px", paddingLeft: "18px", fontSize: "0.84rem", color: "#cbd5e1", lineHeight: 1.7 }}>
+                      {g.features.map((feat, idx) => (
+                        <li key={idx}>{feat}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div style={{ paddingTop: "14px", borderTop: "1px solid rgba(255, 255, 255, 0.1)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
+                    <div>
+                      <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "var(--gold)" }}>
+                        {isSi ? `රු. ${g.fee}` : `Rs. ${g.fee}`}
+                      </div>
+                      <small className="mut" style={{ fontSize: "0.75rem" }}>
+                        {isSi ? "මාසික පන්ති ගාස්තුව" : "Monthly Class Fee"}
+                      </small>
+                    </div>
+
+                    <Link
+                      href="/login?mode=reg"
+                      className="btn"
+                      style={{ fontSize: "0.84rem", padding: "9px 16px" }}
+                    >
+                      {isSi ? `${g.grade} ශ්‍රේණියට එක්වන්න →` : `Join Grade ${g.grade} →`}
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ==================================================================== */}
+      {/* AVAILABLE MONTHLY CLASSES LIST (ADAPTS TO LOGGED-IN STUDENT'S GRADE) */}
+      {/* ==================================================================== */}
+      <section id="papers" style={{ margin: "50px 0" }}>
+        <div style={{ textAlign: "center", marginBottom: "22px" }}>
+          <h2 style={{ fontSize: "2rem", margin: "0 0 6px" }}>
+            {isStudent
+              ? isSi
+                ? `📅 ${studentGrade} ශ්‍රේණියේ මාසික පන්ති ලැයිස්තුව`
+                : `📅 Grade ${studentGrade} Monthly Classes List`
+              : isSi
+              ? "📅 3, 4 සහ 5 ශ්‍රේණිවල මාසික පන්ති ලැයිස්තුව"
+              : "📅 Monthly Classes for Grades 3, 4 & 5"}
+          </h2>
+          <p className="mut">
+            {isStudent
+              ? isSi
+                ? `ඔබගේ ${studentGrade} ශ්‍රේණියට අදාළව මේ මාසයේ සහ පසුගිය මාසවල පැවැත්වෙන සියලුම පන්ති පහතින් දැක්වේ.`
+                : `Showing current and previous monthly classes tailored for Grade ${studentGrade}.`
+              : isSi
+              ? "සියලුම ශ්‍රේණිවල මාසික පන්ති හෝ දරුවාගේ ශ්‍රේණිය තෝරා පරීක්ෂා කරන්න"
+              : "View all grades or filter by Grade 5, Grade 4, or Grade 3"}
+          </p>
+        </div>
+
+        {/* Grade Filter Chips: ONLY shown before login (or for Admin). Hidden for logged-in student! */}
+        {!isStudent && (
+          <div className="chips" style={{ marginBottom: "22px" }}>
+            <button
+              type="button"
+              className={`chip ${selectedGrade === "all" ? "active" : ""}`}
+              onClick={() => setSelectedGrade("all")}
+            >
+              🌟 {isSi ? "සියලුම ශ්‍රේණි (3, 4, 5)" : "All Grades (3, 4, 5)"}
+            </button>
+            {[5, 4, 3].map(g => (
+              <button
+                key={g}
+                type="button"
+                className={`chip ${selectedGrade === g ? "active" : ""}`}
+                onClick={() => setSelectedGrade(g)}
+              >
+                {isSi
+                  ? `${g} ශ්‍රේණිය ${g === 5 ? "🔥 (190+ විශේෂ)" : ""}`
+                  : `Grade ${g} ${g === 5 ? "🔥 (190+ Target)" : ""}`}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {filteredFolders.length ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {filteredFolders.map(f => {
+              const status = getFolderStatus(f.id);
+              const isUnlocked = status === "approved";
+              const isPending = status === "pending";
+              const mItems = S.items.filter(i => i.fid === f.id);
+              const zCount = mItems.filter(i => i.type === "zoom").length + (f.zoomUrl ? 1 : 0);
+              const vCount = mItems.filter(i => i.type === "video" || getYoutubeEmbedUrl(i.url)).length;
+              const pCount = mItems.filter(i => i.type === "pdf").length;
+
+              return (
+                <div
+                  key={f.id}
+                  className="card"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: "18px",
+                    padding: "20px 24px",
+                    borderRadius: "18px",
+                    border: f.isCurrentMonth
+                      ? "2px solid var(--gold)"
+                      : isUnlocked
+                      ? "1px solid rgba(74, 222, 128, 0.45)"
+                      : "1px solid var(--line)",
+                    background: f.isCurrentMonth
+                      ? "linear-gradient(135deg, rgba(245, 166, 35, 0.14), rgba(26, 11, 16, 0.95))"
+                      : "var(--glass)"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", flex: 1, minWidth: "280px" }}>
+                    <div
+                      style={{
+                        width: "52px",
+                        height: "52px",
+                        borderRadius: "14px",
+                        background: f.isCurrentMonth
+                          ? "linear-gradient(135deg, #f5a623, #d97706)"
+                          : isUnlocked
+                          ? "rgba(34, 197, 94, 0.2)"
+                          : "rgba(255, 255, 255, 0.06)",
+                        color: f.isCurrentMonth ? "#1a0800" : "#fff",
+                        display: "grid",
+                        placeItems: "center",
+                        fontSize: "1.45rem",
+                        fontWeight: 800,
+                        flexShrink: 0
+                      }}
+                    >
+                      {f.isCurrentMonth ? "🔥" : isUnlocked ? "✅" : "📅"}
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "6px" }}>
+                        <span className="badge-tag gold" style={{ fontWeight: 800 }}>
+                          🎓 {isSi ? `${f.grade} ශ්‍රේණිය` : `Grade ${f.grade}`}
+                        </span>
+                        <span className="tag" style={{ background: "rgba(255, 255, 255, 0.1)", color: "#fff", fontWeight: 700, fontSize: "0.78rem" }}>
+                          📅 {f.month || (isSi ? "මාසික පන්තිය" : "Monthly Class")}
+                        </span>
+                        {f.isCurrentMonth ? (
+                          <span className="tag" style={{ background: "rgba(245, 166, 35, 0.25)", color: "var(--gold)", fontWeight: 800, fontSize: "0.78rem" }}>
+                            🔥 {isSi ? "මේ මාසයේ ක්‍රියාත්මක පන්තිය" : "Current Active Month"}
+                          </span>
+                        ) : (
+                          <span className="tag" style={{ background: "rgba(255, 255, 255, 0.06)", color: "#cbd5e1", fontSize: "0.76rem" }}>
+                            ⏪ {isSi ? "පසුගිය මාසය" : "Previous Month"}
+                          </span>
+                        )}
+
+                        {isStudent && (
+                          isUnlocked ? (
+                            <span className="tag" style={{ background: "rgba(34, 197, 94, 0.22)", color: "#4ade80", fontWeight: 800, fontSize: "0.78rem" }}>
+                              ✓ {isSi ? "ඔබ සක්‍රිය කර ඇත (Active)" : "Activated & Unlocked"}
+                            </span>
+                          ) : isPending ? (
+                            <span className="tag" style={{ background: "rgba(245, 166, 35, 0.22)", color: "#fbbf24", fontWeight: 700, fontSize: "0.78rem" }}>
+                              ⏳ {isSi ? "රිසිට්පත පරීක්ෂා වෙමින්" : "Pending Approval"}
+                            </span>
+                          ) : (
+                            <span className="tag" style={{ background: "rgba(255, 255, 255, 0.06)", color: "#94a3b8", fontSize: "0.76rem" }}>
+                              🔒 {isSi ? "සක්‍රිය කර නොමැත" : "Locked"}
+                            </span>
+                          )
+                        )}
+                      </div>
+
+                      <h3 style={{ fontSize: "1.18rem", color: "#fff", margin: "0 0 6px" }}>
+                        {f.name}
+                      </h3>
+
+                      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", fontSize: "0.85rem", color: "#cbd5e1" }}>
+                        <span>🎯 <b>{isSi ? "විෂයයන්:" : "Subjects:"}</b> {f.subjects}</span>
+                        <span>•</span>
+                        <span style={{ color: "#60a5fa", fontWeight: 700 }}>🔴 {zCount || 2} Zoom Live</span>
+                        <span>•</span>
+                        <span>🎥 {vCount || 2} {isSi ? "වීඩියෝ" : "Videos"}</span>
+                        <span>•</span>
+                        <span>📄 {pCount || 2} {isSi ? "PDF පේපර්" : "PDFs"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap", marginLeft: "auto" }}>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "var(--gold)" }}>
+                        {isSi ? `රු. ${f.price || 2000}` : `Rs. ${f.price || 2000}`}
+                      </div>
+                      <small className="mut" style={{ fontSize: "0.75rem" }}>
+                        {isUnlocked
+                          ? (isSi ? "ගාස්තු ගෙවා ඇත ✓" : "Already Paid ✓")
+                          : (isSi ? "මාසික පන්ති ගාස්තුව" : "Monthly Fee")}
+                      </small>
+                    </div>
+
+                    <Link
+                      href={
+                        me
+                          ? me.admin
+                            ? "/admin"
+                            : isUnlocked
+                            ? `/dashboard?open=${f.id}`
+                            : "/dashboard"
+                          : "/login?mode=reg"
+                      }
+                      className="btn"
+                      style={{
+                        fontSize: "0.86rem",
+                        padding: "10px 18px",
+                        background: isUnlocked
+                          ? "linear-gradient(135deg, #10b981, #059669)"
+                          : undefined,
+                        color: isUnlocked ? "#fff" : undefined
+                      }}
+                    >
+                      {isUnlocked
+                        ? (isSi ? "🚪 පන්තිය ඇතුළට යන්න →" : "🚪 Enter Class →")
+                        : me
+                        ? (isSi ? "💳 රු. 2,000 ගෙවා සක්‍රිය කරන්න →" : "💳 Pay Rs. 2,000 & Activate →")
+                        : (isSi ? "🎯 ලියාපදිංචි වී එක්වන්න →" : "🎯 Register to Join →")}
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="card" style={{ textAlign: "center", padding: "40px" }}>
+            <p className="mut">{t("nofold")}</p>
+          </div>
+        )}
       </section>
 
       {/* Quick Stats Bar */}
@@ -297,7 +1004,7 @@ export default function Home() {
                 className="btn ghost"
                 style={{ padding: "12px 20px", fontSize: "0.95rem" }}
               >
-                {isSi ? "ප්‍රශ්න පත්‍ර බලන්න ↓" : "Explore Papers ↓"}
+                {isSi ? "මාසික පන්ති බලන්න ↓" : "Explore Monthly Classes ↓"}
               </a>
             </div>
           </div>
@@ -322,76 +1029,6 @@ export default function Home() {
             </ul>
           </div>
         </div>
-      </section>
-
-      {/* Available Paper Bundles Explorer */}
-      <section id="papers" style={{ margin: "50px 0" }}>
-        <div style={{ textAlign: "center", marginBottom: "20px" }}>
-          <h2 style={{ fontSize: "2rem" }}>{t("papers")}</h2>
-          <p className="mut">{isSi ? "දරුවාගේ ශ්‍රේණිය තෝරා පේපර් කට්ටල පරීක්ෂා කරන්න" : "Choose your grade to explore paper bundles"}</p>
-        </div>
-
-        <div className="chips">
-          {[5, 4, 3].map(g => (
-            <button
-              key={g}
-              type="button"
-              className={`chip ${selectedGrade === g ? "active" : ""}`}
-              onClick={() => setSelectedGrade(g)}
-            >
-              {isSi ? `${g} ශ්‍රේණිය ${g === 5 ? "🔥 (190+ විශේෂ)" : ""}` : `Grade ${g} ${g === 5 ? "🔥 (190+ Target)" : ""}`}
-            </button>
-          ))}
-        </div>
-
-        {filteredFolders.length ? (
-          <div className="folder-grid">
-            {filteredFolders.map(f => (
-              <div className="folder-card" key={f.id}>
-                <div>
-                  <div className="folder-card-top">
-                    <span className="icon-box">📚</span>
-                    <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
-                      {f.category && (
-                        <span className="tag" style={{ background: "rgba(245, 166, 35, 0.2)", color: "var(--gold)", fontSize: "0.72rem", padding: "3px 8px" }}>
-                          {f.category}
-                        </span>
-                      )}
-                      <span className="paper-count-pill">
-                        {f.papersCount || (isSi ? "දිනකට පේපර් 2ක්" : "2 Papers Daily")}
-                      </span>
-                    </div>
-                  </div>
-                  <h3>{f.name}</h3>
-                  <p className="sub-tags">
-                    🎯 {isSi ? "ආවරණය:" : "Subjects:"} {f.subjects || (isSi ? "විෂයයන් 5ම සම්පූර්ණයෙන්ම" : "All 5 Subjects")}
-                  </p>
-                  {f.desc && (
-                    <p style={{ fontSize: "0.82rem", color: "#cbd5e1", margin: "4px 0 10px 0", lineHeight: 1.5 }}>
-                      {f.desc}
-                    </p>
-                  )}
-                </div>
-                <div className="folder-card-bottom">
-                  <div className="folder-price">
-                    {isSi ? `රු. ${f.price}` : `Rs. ${f.price}`}
-                  </div>
-                  <Link
-                    href={me ? (me.admin ? "/admin" : "/dashboard") : "/login?mode=reg"}
-                    className="btn"
-                    style={{ fontSize: "0.85rem", padding: "8px 16px" }}
-                  >
-                    {me ? t("open") : t("pay")}
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="card" style={{ textAlign: "center", padding: "40px" }}>
-            <p className="mut">{t("nofold")}</p>
-          </div>
-        )}
       </section>
 
       {/* Parent Reviews & Feedback */}
@@ -429,18 +1066,28 @@ export default function Home() {
         }}
       >
         <h2 style={{ fontSize: "1.8rem", color: "#fff", marginBottom: "10px" }}>
-          ඔබේ දරුවාත් ශිෂ්‍යත්වයෙන් 190+ ලකුණු මට්ටමට ගෙන යන්න සූදානම්ද?
+          {isStudent
+            ? isSi
+              ? `${me.name}, අදම ඔබේ ${studentGrade} ශ්‍රේණියේ පේපර් පුහුණුව ආරම්භ කරමු!`
+              : `Ready to continue your Grade ${studentGrade} practice, ${me.name}?`
+            : "ඔබේ දරුවාත් ශිෂ්‍යත්වයෙන් 190+ ලකුණු මට්ටමට ගෙන යන්න සූදානම්ද?"}
         </h2>
         <p className="mut" style={{ maxWidth: "600px", margin: "0 auto 20px", fontSize: "1rem" }}>
           පහ දිනන හපන්නු 190+ පේපර් පන්තිය හා එක්වී දිනකට පළාත් පේපර් 2ක් විසඳීමේ වේගය හා සියලුම විෂයයන්ගේ සවිස්තර දැනුම අදම ලබා දෙන්න!
         </p>
         <div className="cta-row" style={{ marginBottom: 0 }}>
-          <Link className="btn" href="/login?mode=reg">
-            ✍️ දැන්ම ලියාපදිංචි වන්න
-          </Link>
+          {me ? (
+            <Link className="btn" href={me.admin ? "/admin" : "/dashboard"}>
+              🚀 {isSi ? "ශිෂ්‍ය පුවරුවට පිවිසෙන්න" : "Go to Student Dashboard"}
+            </Link>
+          ) : (
+            <Link className="btn" href="/login?mode=reg">
+              ✍️ දැන්ම ලියාපදිංචි වන්න
+            </Link>
+          )}
           <a
             className="btn whatsapp-btn"
-            href="https://wa.me/94771234567"
+            href={`https://wa.me/${(S.set?.hotline || "94771234567").replace(/\D/g, "")}`}
             target="_blank"
             rel="noopener noreferrer"
           >

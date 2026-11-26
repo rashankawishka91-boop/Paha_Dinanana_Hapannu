@@ -45,6 +45,12 @@ export default function Dash() {
       const g = Number(activeUser.grade);
       setSelectedGrade([5, 4, 3].includes(g) ? g : 5);
     }
+    if (typeof window !== "undefined") {
+      const openParam = new URLSearchParams(window.location.search).get("open");
+      if (openParam) {
+        setOpen(openParam);
+      }
+    }
   }, [ready, me, S.users, router, login]);
 
   useEffect(() => {
