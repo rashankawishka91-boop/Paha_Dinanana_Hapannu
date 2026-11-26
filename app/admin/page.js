@@ -550,8 +550,8 @@ export default function Admin() {
               </div>
             </div>
 
-            <div className="pkg-grid">
-              {filteredAdminFolders.map(f => {
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {filteredAdminFolders.map((f, idx) => {
                 const folderItems = S.items.filter(i => i.fid === f.id);
                 const vCount = folderItems.filter(i => i.type === "video" || getYoutubeEmbedUrl(i.url)).length;
                 const pCount = folderItems.filter(i => i.type === "pdf").length;
@@ -560,71 +560,94 @@ export default function Admin() {
                 return (
                   <div
                     key={f.id}
-                    className="pkg-card"
                     style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "16px",
+                      padding: "16px 20px",
+                      borderRadius: "14px",
                       border: f.isCurrentMonth ? "2px solid var(--gold)" : "1px solid var(--line)",
                       background: f.isCurrentMonth
-                        ? "linear-gradient(180deg, rgba(245, 166, 35, 0.1), var(--surface))"
+                        ? "linear-gradient(135deg, rgba(245, 166, 35, 0.12), var(--surface))"
                         : "var(--surface)"
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                      <span className="badge-tag gold">
-                        🎓 {isSi ? `${f.grade} ශ්‍රේණිය` : `Grade ${f.grade}`}
-                      </span>
-                      <span className="badge-tag" style={{ background: "var(--bg)", fontWeight: 700 }}>
-                        📅 {f.month || (isSi ? "මාසික පන්තිය" : "Monthly")}
-                      </span>
-                      {f.isCurrentMonth ? (
-                        <span className="badge-tag ok" style={{ fontWeight: 800 }}>
-                          🔥 {isSi ? "මේ මාසය (Highlighted)" : "Current Month"}
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn"
-                          style={{ padding: "2px 8px", fontSize: "11px" }}
-                          onClick={() => handleSetCurrentMonth(f)}
-                          title={isSi ? "මෙම ශ්‍රේණියේ වත්මන් මාසය ලෙස Highlight කරන්න" : "Set as Current Highlighted Month for this grade"}
-                        >
-                          ⭐ {isSi ? "මේ මාසය ලෙස දාන්න" : "Set as Current"}
-                        </button>
-                      )}
-                    </div>
-
-                    <h3>{f.name}</h3>
-
-                    <div style={{ fontSize: "12.5px", color: "var(--ink)" }}>
-                      🎯 <b>{isSi ? "විෂයයන්:" : "Subjects:"}</b> {f.subjects}
-                    </div>
-
-                    {f.zoomUrl && (
-                      <div style={{ fontSize: "12px", color: "#2563eb", background: "rgba(37, 99, 235, 0.08)", padding: "6px 10px", borderRadius: "8px" }}>
-                        🔴 <b>Zoom Live:</b> {f.zoomSchedule || f.zoomUrl}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", flex: 1, minWidth: "280px" }}>
+                      <div
+                        style={{
+                          width: "44px",
+                          height: "44px",
+                          borderRadius: "12px",
+                          background: f.isCurrentMonth ? "linear-gradient(135deg, #f5a623, #d97706)" : "var(--bg)",
+                          color: f.isCurrentMonth ? "#1a0800" : "var(--ink)",
+                          display: "grid",
+                          placeItems: "center",
+                          fontWeight: 800,
+                          flexShrink: 0
+                        }}
+                      >
+                        {f.isCurrentMonth ? "🔥" : String(idx + 1).padStart(2, "0")}
                       </div>
-                    )}
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: "12px", borderTop: "1px solid var(--line)" }}>
-                      <span className="price">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "6px" }}>
+                          <span className="badge-tag gold">
+                            🎓 {isSi ? `${f.grade} ශ්‍රේණිය` : `Grade ${f.grade}`}
+                          </span>
+                          <span className="badge-tag" style={{ background: "var(--bg)", fontWeight: 700 }}>
+                            📅 {f.month || (isSi ? "මාසික පන්තිය" : "Monthly")}
+                          </span>
+                          {f.isCurrentMonth ? (
+                            <span className="badge-tag ok" style={{ fontWeight: 800 }}>
+                              🔥 {isSi ? "මේ මාසය (Highlighted)" : "Current Month"}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn"
+                              style={{ padding: "2px 8px", fontSize: "11px" }}
+                              onClick={() => handleSetCurrentMonth(f)}
+                              title={isSi ? "මෙම ශ්‍රේණියේ වත්මන් මාසය ලෙස Highlight කරන්න" : "Set as Current Highlighted Month for this grade"}
+                            >
+                              ⭐ {isSi ? "මේ මාසය ලෙස දාන්න" : "Set as Current"}
+                            </button>
+                          )}
+                        </div>
+
+                        <h3 style={{ fontSize: "1.08rem", margin: "0 0 4px" }}>{f.name}</h3>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontSize: "12.5px", color: "var(--muted)" }}>
+                          <span>🎯 {f.subjects}</span>
+                          <span>•</span>
+                          <span style={{ color: "#2563eb", fontWeight: 700 }}>
+                            🔴 {zCount + (f.zoomUrl ? 1 : 0)} Zoom
+                          </span>
+                          <span>•</span>
+                          <span>🎥 {vCount} Video</span>
+                          <span>•</span>
+                          <span>📄 {pCount} PDF</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginLeft: "auto" }}>
+                      <span className="price" style={{ fontSize: "1.1rem", padding: "3px 10px" }}>
                         {isSi ? `රු. ${f.price || 2000}` : `Rs. ${f.price || 2000}`}
                       </span>
-                      <span style={{ fontSize: "12px", color: "var(--muted)", fontWeight: 600 }}>
-                        🔴 {zCount + (f.zoomUrl ? 1 : 0)} Zoom · 🎥 {vCount} Video · 📄 {pCount} PDF
-                      </span>
-                    </div>
 
-                    <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
                       <button
                         type="button"
                         className="btn gold"
-                        style={{ flex: 1, justifyContent: "center", padding: "8px" }}
+                        style={{ padding: "8px 14px", fontSize: "12.5px" }}
                         onClick={() => {
                           setSelectedFolderForContent(f.id);
                           setNi(prev => ({ ...prev, fid: f.id }));
                           setTab("content");
                         }}
                       >
-                        <svg style={{ width: 15, height: 15 }}><use href="#plus" /></svg>
+                        <svg style={{ width: 14, height: 14 }}><use href="#plus" /></svg>
                         <span>{isSi ? "Zoom / Video / PDF දාන්න" : "Add Zoom / Video / PDF"}</span>
                       </button>
 

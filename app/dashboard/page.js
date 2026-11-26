@@ -818,146 +818,179 @@ export default function Dash() {
                 </div>
               </div>
 
-              {/* Monthly Classes Cards Grid */}
+              {/* Monthly Classes Vertical List View */}
               {displayedMonths.length ? (
-                <div className="pkg-grid">
-                  {displayedMonths.map(f => {
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {displayedMonths.map((f, idx) => {
                     const s = st(f.id);
                     const isUnlocked = s === "approved";
                     const isPending = s === "pending";
                     const monthItems = S.items.filter(i => i.fid === f.id);
                     const vCount = monthItems.filter(i => i.type === "video" || getYoutubeEmbedUrl(i.url)).length;
                     const pCount = monthItems.filter(i => i.type === "pdf").length;
+                    const zCount = monthItems.filter(i => i.type === "zoom").length + (f.zoomUrl ? 1 : 0);
 
                     return (
                       <div
                         key={f.id}
-                        className="pkg-card"
                         style={{
-                          minHeight: "300px",
                           display: "flex",
-                          flexDirection: "column",
+                          alignItems: "center",
                           justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "16px",
+                          padding: "18px 20px",
+                          borderRadius: "14px",
                           border: f.isCurrentMonth ? "2px solid var(--gold)" : "1px solid var(--line)",
                           background: f.isCurrentMonth
-                            ? "linear-gradient(180deg, rgba(245, 166, 35, 0.08), var(--surface))"
+                            ? "linear-gradient(135deg, rgba(245, 166, 35, 0.14), var(--surface))"
                             : "var(--surface)",
-                          boxShadow: f.isCurrentMonth ? "0 8px 24px rgba(245, 166, 35, 0.14)" : undefined
+                          boxShadow: f.isCurrentMonth
+                            ? "0 8px 24px rgba(245, 166, 35, 0.16)"
+                            : "0 2px 8px rgba(0, 0, 0, 0.03)",
+                          transition: "transform 0.15s ease, box-shadow 0.15s ease"
                         }}
                       >
-                        <div>
-                          {/* Month & Current/Past Badge */}
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
-                            <span
-                              className="badge-tag gold"
-                              style={{
-                                fontWeight: 800,
-                                background: f.isCurrentMonth ? "linear-gradient(135deg, #f5a623, #d97706)" : undefined,
-                                color: f.isCurrentMonth ? "#1a0800" : undefined
-                              }}
-                            >
-                              📅 {f.month || (isSi ? "මාසික පන්තිය" : "Monthly Class")}
-                            </span>
-
-                            {f.isCurrentMonth ? (
-                              <span className="badge-tag" style={{ background: "#fef3c7", color: "#b45309", fontWeight: 700 }}>
-                                🔥 {isSi ? "මේ මාසය" : "Current Month"}
-                              </span>
-                            ) : (
-                              <span className="badge-tag" style={{ background: "var(--bg)", color: "var(--muted)" }}>
-                                ⏪ {isSi ? "පසුගිය මාසය" : "Past Month"}
-                              </span>
-                            )}
-                          </div>
-
-                          <h3
-                            style={{
-                              fontSize: "1.08rem",
-                              lineHeight: 1.35,
-                              marginBottom: "8px",
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden",
-                              minHeight: "44px"
-                            }}
-                          >
-                            {f.name}
-                          </h3>
-
-                          <div style={{ fontSize: "12.5px", color: "var(--ink)", marginBottom: "10px" }}>
-                            🎯 <b>{isSi ? "විෂයයන්:" : "Subjects:"}</b>{" "}
-                            {f.subjects || (isSi ? "විෂයයන් 5ම සම්පූර්ණයෙන්ම" : "All 5 Subjects")}
-                          </div>
-
-                          {/* Included Resources Summary inside the Month */}
+                        {/* Left Section: Number/Icon + Month Details */}
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", flex: 1, minWidth: "280px" }}>
+                          {/* Row Number / Status Icon Box */}
                           <div
                             style={{
-                              display: "flex",
-                              gap: "6px",
-                              flexWrap: "wrap",
-                              padding: "8px 10px",
-                              background: "var(--bg)",
-                              borderRadius: "10px",
-                              fontSize: "11.5px",
-                              fontWeight: 600
+                              width: "46px",
+                              height: "46px",
+                              borderRadius: "12px",
+                              background: f.isCurrentMonth
+                                ? "linear-gradient(135deg, #f5a623, #d97706)"
+                                : "var(--bg)",
+                              color: f.isCurrentMonth ? "#1a0800" : "var(--ink)",
+                              display: "grid",
+                              placeItems: "center",
+                              fontWeight: 800,
+                              fontSize: "1.05rem",
+                              flexShrink: 0,
+                              border: f.isCurrentMonth ? "none" : "1px solid var(--line)"
                             }}
                           >
-                            <span style={{ color: "#2563eb" }}>🔴 Zoom Live</span>
-                            <span>•</span>
-                            <span>🎥 {vCount} {isSi ? "වීඩියෝ" : "Videos"}</span>
-                            <span>•</span>
-                            <span>📄 {pCount} {isSi ? "PDF පේපර්" : "PDFs"}</span>
+                            {f.isCurrentMonth ? "🔥" : String(idx + 1).padStart(2, "0")}
+                          </div>
+
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            {/* Badges Row */}
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "6px" }}>
+                              <span
+                                className="badge-tag gold"
+                                style={{
+                                  fontWeight: 800,
+                                  background: f.isCurrentMonth ? "linear-gradient(135deg, #f5a623, #d97706)" : undefined,
+                                  color: f.isCurrentMonth ? "#1a0800" : undefined
+                                }}
+                              >
+                                📅 {f.month || (isSi ? "මාසික පන්තිය" : "Monthly Class")}
+                              </span>
+
+                              {f.isCurrentMonth ? (
+                                <span className="badge-tag" style={{ background: "#fef3c7", color: "#b45309", fontWeight: 800 }}>
+                                  🔥 {isSi ? "මේ මාසයේ ක්‍රියාත්මක පන්තිය" : "Current Active Month"}
+                                </span>
+                              ) : (
+                                <span className="badge-tag" style={{ background: "var(--bg)", color: "var(--muted)" }}>
+                                  ⏪ {isSi ? "පසුගිය මාසය" : "Previous Month"}
+                                </span>
+                              )}
+
+                              {isUnlocked ? (
+                                <span className="badge-tag ok">✅ {isSi ? "ගාස්තු ගෙවා විවෘතයි" : "Unlocked"}</span>
+                              ) : isPending ? (
+                                <span className="badge-tag gold">⏳ {isSi ? "රිසිට්පත පරීක්ෂා වෙමින්" : "Pending Approval"}</span>
+                              ) : (
+                                <span className="badge-tag" style={{ background: "var(--bg)", color: "var(--muted)" }}>
+                                  🔒 {isSi ? "ගෙවීමෙන් පසු විවෘත වේ" : "Locked"}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Class Title */}
+                            <h3 style={{ fontSize: "1.1rem", margin: "0 0 6px", color: "var(--ink)", lineHeight: 1.35 }}>
+                              {f.name}
+                            </h3>
+
+                            {/* Subjects & Materials Summary in a Single Clean Line */}
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", fontSize: "12.5px", color: "var(--muted)" }}>
+                              <span>
+                                🎯 <b style={{ color: "var(--ink)" }}>{isSi ? "විෂයයන්:" : "Subjects:"}</b>{" "}
+                                {f.subjects || (isSi ? "විෂයයන් 5ම" : "All 5 Subjects")}
+                              </span>
+                              <span>•</span>
+                              <span style={{ color: "#2563eb", fontWeight: 700 }}>
+                                🔴 {zCount} Zoom Live
+                              </span>
+                              <span>•</span>
+                              <span style={{ fontWeight: 600, color: "var(--ink)" }}>
+                                🎥 {vCount} {isSi ? "වීඩියෝ" : "Videos"}
+                              </span>
+                              <span>•</span>
+                              <span style={{ fontWeight: 600, color: "var(--ink)" }}>
+                                📄 {pCount} {isSi ? "PDF පේපර්" : "PDFs"}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Card Bottom: Rs. 2000 Fee Status & Enter/Pay Button */}
-                        <div style={{ marginTop: "auto", paddingTop: "12px", borderTop: "1px solid var(--line)" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                            <div>
-                              <span className="price" style={{ fontSize: "1.15rem", padding: "2px 10px" }}>
-                                {isSi ? `රු. ${f.price || 2000}` : `Rs. ${f.price || 2000}`}
-                              </span>
-                              <small style={{ display: "block", fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>
-                                {isSi ? "මාසික පන්ති ගාස්තුව" : "Monthly Fee"}
-                              </small>
+                        {/* Right Section: Rs. 2000 Monthly Fee & Enter / Pay Action Button */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "14px",
+                            flexWrap: "wrap",
+                            marginLeft: "auto"
+                          }}
+                        >
+                          <div style={{ textAlign: "right", minWidth: "95px" }}>
+                            <div className="price" style={{ fontSize: "1.15rem", padding: "3px 10px" }}>
+                              {isSi ? `රු. ${f.price || 2000}` : `Rs. ${f.price || 2000}`}
                             </div>
-                            {isUnlocked ? (
-                              <span className="badge-tag ok">✅ {isSi ? "විවෘතයි" : "Unlocked"}</span>
-                            ) : isPending ? (
-                              <span className="badge-tag gold">⏳ {isSi ? "පරීක්ෂා වෙමින්" : "Pending"}</span>
-                            ) : (
-                              <span className="badge-tag" style={{ background: "var(--bg)", color: "var(--muted)" }}>
-                                🔒 {isSi ? "ගෙවීමෙන් පසු විවෘත වේ" : "Locked"}
-                              </span>
-                            )}
+                            <small style={{ display: "block", fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>
+                              {isSi ? "මාසික ගාස්තුව" : "Monthly Fee"}
+                            </small>
                           </div>
 
                           {isUnlocked ? (
                             <button
                               type="button"
                               className="btn wa"
-                              style={{ width: "100%", justifyContent: "center", padding: "9px 12px", fontSize: "13px", fontWeight: 700 }}
+                              style={{ padding: "10px 18px", fontSize: "13px", fontWeight: 700, whiteSpace: "nowrap" }}
                               onClick={() => handleEnterMonth(f)}
                             >
-                              <span>🚪 {isSi ? "පන්තිය ඇතුළට යන්න (Zoom / Video / PDF)" : "Enter Class (Zoom / Video / PDF)"}</span>
+                              <span>🚪 {isSi ? "පන්තිය ඇතුළට යන්න →" : "Enter Class →"}</span>
                             </button>
                           ) : isPending ? (
-                            <div style={{ textAlign: "center", padding: "8px", background: "var(--bg)", borderRadius: "8px", fontSize: "12.5px", color: "var(--muted)" }}>
-                              ⏳ {isSi ? "රිසිට්පත පරීක්ෂාවෙන් පසුව මෙම මාසය විවෘත වේ" : "Unlocks after receipt approval"}
+                            <div
+                              style={{
+                                padding: "9px 14px",
+                                background: "var(--bg)",
+                                border: "1px solid var(--line)",
+                                borderRadius: "10px",
+                                fontSize: "12.5px",
+                                color: "var(--muted)",
+                                fontWeight: 600,
+                                whiteSpace: "nowrap"
+                              }}
+                            >
+                              ⏳ {isSi ? "අනුමත වූ වහාම විවෘත වේ" : "Awaiting Approval"}
                             </div>
                           ) : (
                             <button
                               type="button"
                               className="btn gold"
-                              style={{ width: "100%", justifyContent: "center", padding: "9px 12px", fontSize: "13px", fontWeight: 700 }}
+                              style={{ padding: "10px 18px", fontSize: "13px", fontWeight: 700, whiteSpace: "nowrap" }}
                               onClick={() => setPay(f)}
                             >
                               <svg style={{ width: 14, height: 14 }}><use href="#card" /></svg>
                               <span>
                                 {isSi
-                                  ? `රු. ${f.price || 2000} ගෙවා ${f.month || "මාසයේ"} පන්තියට යන්න`
-                                  : `Pay Rs. ${f.price || 2000} to Unlock Month`}
+                                  ? `රු. ${f.price || 2000} ගෙවා ඇතුල් වන්න →`
+                                  : `Pay Rs. ${f.price || 2000} & Enter →`}
                               </span>
                             </button>
                           )}
@@ -995,39 +1028,54 @@ export default function Dash() {
             </p>
 
             {myUnlockedFolders.length ? (
-              <div className="pkg-grid">
-                {myUnlockedFolders.map(f => (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {myUnlockedFolders.map((f, idx) => (
                   <div
                     key={f.id}
-                    className="pkg-card"
                     style={{
-                      minHeight: "230px",
                       display: "flex",
-                      flexDirection: "column",
+                      alignItems: "center",
                       justifyContent: "space-between",
-                      border: f.isCurrentMonth ? "2px solid var(--gold)" : "1px solid var(--line)"
+                      flexWrap: "wrap",
+                      gap: "16px",
+                      padding: "16px 20px",
+                      borderRadius: "14px",
+                      border: f.isCurrentMonth ? "2px solid var(--gold)" : "1px solid var(--line)",
+                      background: "var(--surface)"
                     }}
                   >
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                        <span className="badge-tag gold">📅 {f.month || `${f.grade} ශ්‍රේණිය`}</span>
-                        <span className="badge-tag ok">✅ {isSi ? "විවෘතයි" : "Active"}</span>
-                      </div>
-
-                      <h3 style={{ fontSize: "1.05rem", lineHeight: 1.35, marginBottom: "8px" }}>{f.name}</h3>
-                      <div style={{ fontSize: "13px", color: "var(--ink)" }}>🎯 {f.subjects}</div>
-                    </div>
-
-                    <div style={{ marginTop: "auto", paddingTop: "14px" }}>
-                      <button
-                        type="button"
-                        className="btn wa"
-                        style={{ width: "100%", justifyContent: "center", padding: "9px 12px", fontSize: "13px", fontWeight: 700 }}
-                        onClick={() => handleEnterMonth(f)}
+                    <div style={{ display: "flex", alignItems: "center", gap: "14px", flex: 1, minWidth: "260px" }}>
+                      <div
+                        style={{
+                          width: "42px",
+                          height: "42px",
+                          borderRadius: "10px",
+                          background: "var(--bg)",
+                          display: "grid",
+                          placeItems: "center",
+                          fontWeight: 800
+                        }}
                       >
-                        <span>🚪 {isSi ? "පන්තිය ඇතුළට යන්න (Zoom / Video / PDF)" : "Enter Class (Zoom / Video / PDF)"}</span>
-                      </button>
+                        {String(idx + 1).padStart(2, "0")}
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "4px", flexWrap: "wrap" }}>
+                          <span className="badge-tag gold">📅 {f.month || `${f.grade} ශ්‍රේණිය`}</span>
+                          <span className="badge-tag ok">✅ {isSi ? "විවෘතයි" : "Active"}</span>
+                        </div>
+                        <h3 style={{ fontSize: "1.05rem", margin: "0 0 4px" }}>{f.name}</h3>
+                        <div style={{ fontSize: "12.5px", color: "var(--muted)" }}>🎯 {f.subjects}</div>
+                      </div>
                     </div>
+
+                    <button
+                      type="button"
+                      className="btn wa"
+                      style={{ padding: "10px 18px", fontSize: "13px", fontWeight: 700 }}
+                      onClick={() => handleEnterMonth(f)}
+                    >
+                      <span>🚪 {isSi ? "පන්තිය ඇතුළට යන්න (Zoom / Video / PDF) →" : "Enter Class (Zoom / Video / PDF) →"}</span>
+                    </button>
                   </div>
                 ))}
               </div>
