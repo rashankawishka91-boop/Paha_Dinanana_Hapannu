@@ -16,6 +16,27 @@ export default function Home() {
   // Before login: default to "all" so all grades (3, 4, 5) are visible.
   // After login: automatically lock to the student's registered grade!
   const [selectedGrade, setSelectedGrade] = useState("all");
+  const [heroSlide, setHeroSlide] = useState(0);
+
+  const HERO_SLIDES = [
+    {
+      src: "/hero-bg-1.jpg",
+      captionSi: "🎥 Smart Board තාක්ෂණයෙන් සජීවීව කාලයට පේපර් විසඳීමේ වේග පුහුණුව",
+      captionEn: "🎥 Live Smart Board Speed Training & Timed Paper Solving"
+    },
+    {
+      src: "/hero-bg-2.jpg",
+      captionSi: "🏆 දහස් ගණනක් දරුවන්ගේ ආදරය දිනූ ලංකාවේ අංක 1 ශිෂ්‍යත්ව පන්තිය",
+      captionEn: "🏆 Sri Lanka's #1 Beloved Grade 5 Scholarship Classroom"
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeroSlide(prev => (prev + 1) % 2);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (isStudent && studentGrade) {
@@ -201,122 +222,250 @@ export default function Home() {
   return (
     <main className="wrap">
       {/* ==================================================================== */}
-      {/* HERO SECTION (DYNAMICALLY ADAPTS WHEN STUDENT LOGS IN)               */}
+      {/* HERO SECTION WITH AUTOMATIC CROSSFADING BACKGROUND SLIDESHOW         */}
       {/* ==================================================================== */}
-      <section className="hero">
-        <div className="hero-pill-badge">
-          {isStudent
-            ? isSi
-              ? `🎓 ${studentGrade} ශ්‍රේණියේ නිල ශිෂ්‍ය ද්වාරය · ${myGradeDetail?.badge}`
-              : `🎓 Grade ${studentGrade} Student Portal · ${myGradeDetail?.badge}`
-            : t("badgeTarget")}
-        </div>
+      <section
+        className="hero"
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: "28px",
+          border: "2px solid rgba(245, 166, 35, 0.45)",
+          padding: "52px 24px 40px",
+          marginTop: "10px",
+          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.65), 0 0 40px rgba(245, 166, 35, 0.14)"
+        }}
+      >
+        {/* Crossfading Background Images Layer */}
+        {HERO_SLIDES.map((slide, idx) => {
+          const isActive = heroSlide === idx;
+          return (
+            <div
+              key={slide.src}
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                backgroundImage: `url('${slide.src}')`,
+                backgroundSize: "cover",
+                backgroundPosition: idx === 0 ? "center 22%" : "center 30%",
+                opacity: isActive ? 1 : 0,
+                transform: isActive ? "scale(1.05)" : "scale(1)",
+                transition: "opacity 1.4s ease-in-out, transform 5.5s ease-out",
+                zIndex: 0
+              }}
+            />
+          );
+        })}
 
-        {/* Centered Logo with Glowing Ring */}
-        <div className="logo-wrap" style={{ display: "block", margin: "0 auto 24px" }}>
-          <img
-            className="logo"
-            src={S.set.logo || "/logo.jpg"}
-            alt={S.set.name}
-          />
-        </div>
+        {/* Rich Cinema Gradient Overlay so Background Photos Shine While Keeping Text Crisp */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(180deg, rgba(16, 4, 9, 0.52) 0%, rgba(22, 6, 12, 0.72) 52%, rgba(16, 4, 9, 0.94) 100%)",
+            backdropFilter: "blur(1px)",
+            zIndex: 1
+          }}
+        />
 
-        {isStudent ? (
-          <>
-            <h1>
-              {isSi ? `ආයුබෝවන්, ${me.name}! 👋` : `Welcome back, ${me.name}! 👋`}
-              <br />
-              <span style={{ color: "var(--gold)", fontSize: "0.78em" }}>
-                {myGradeDetail?.title}
-              </span>
-            </h1>
+        {/* Foreground Content Wrapper */}
+        <div style={{ position: "relative", zIndex: 2 }}>
+          <div className="hero-pill-badge" style={{ background: "rgba(20, 6, 12, 0.75)", backdropFilter: "blur(8px)" }}>
+            {isStudent
+              ? isSi
+                ? `🎓 ${studentGrade} ශ්‍රේණියේ නිල ශිෂ්‍ය ද්වාරය · ${myGradeDetail?.badge}`
+                : `🎓 Grade ${studentGrade} Student Portal · ${myGradeDetail?.badge}`
+              : t("badgeTarget")}
+          </div>
 
-            <div className="slogan-banner">
-              ✨ {myGradeDetail?.subtitle}
-            </div>
+          {/* Centered Logo with Glowing Ring */}
+          <div className="logo-wrap" style={{ display: "block", margin: "0 auto 20px" }}>
+            <img
+              className="logo"
+              src={S.set.logo || "/logo.jpg"}
+              alt={S.set.name}
+              style={{ width: "136px", height: "136px" }}
+            />
+          </div>
 
-            <p className="lead">
-              {isSi
-                ? `ඔබ ලියාපදිංචි වී සිටින්නේ ${studentGrade} ශ්‍රේණිය සඳහාය. ඔබගේ ශ්‍රේණියට අදාළ සක්‍රිය කළ මාසික පන්ති, සජීවී Zoom සබැඳි, වීඩියෝ සාකච්ඡා සහ PDF ප්‍රශ්න පත්‍ර පහතින් කෙලින්ම විවෘත කරගත හැක.`
-                : `You are enrolled in Grade ${studentGrade}. Access your activated monthly classes, live Zoom links, video discussions, and PDF papers directly below.`}
-            </p>
-          </>
-        ) : (
-          <>
-            <h1>
-              {t("brand")} <br />
-              <span style={{ color: "var(--gold)" }}>{t("brandSub")}</span>
-            </h1>
-
-            <div className="slogan-banner">
-              ✨ {t("slogan")}
-            </div>
-
-            <p className="lead">
-              {t("heroDesc")}
-            </p>
-          </>
-        )}
-
-        <div className="cta-row">
-          {me ? (
+          {isStudent ? (
             <>
-              <Link className="btn" href={me.admin ? "/admin" : "/dashboard"}>
-                🚀 {isSi
-                  ? me.admin
-                    ? "ගුරු පාලක පුවරුවට පිවිසෙන්න"
-                    : `${studentGrade} ශ්‍රේණියේ ශිෂ්‍ය පුවරුවට පිවිසෙන්න`
-                  : me.admin
-                  ? "Open Admin Portal"
-                  : `Open Grade ${studentGrade} Dashboard`}
-              </Link>
-              <a className="btn ghost" href="#papers">
-                📅 {isSi ? `${studentGrade} ශ්‍රේණියේ මාසික පන්ති බලන්න ↓` : `View Grade ${studentGrade} Classes ↓`}
-              </a>
+              <h1 style={{ textShadow: "0 4px 20px rgba(0,0,0,0.8)" }}>
+                {isSi ? `ආයුබෝවන්, ${me.name}! 👋` : `Welcome back, ${me.name}! 👋`}
+                <br />
+                <span style={{ color: "var(--gold)", fontSize: "0.78em" }}>
+                  {myGradeDetail?.title}
+                </span>
+              </h1>
+
+              <div className="slogan-banner" style={{ background: "rgba(24, 6, 12, 0.78)", backdropFilter: "blur(8px)" }}>
+                ✨ {myGradeDetail?.subtitle}
+              </div>
+
+              <p className="lead" style={{ color: "#f8fafc", textShadow: "0 2px 10px rgba(0,0,0,0.85)", fontWeight: 500 }}>
+                {isSi
+                  ? `ඔබ ලියාපදිංචි වී සිටින්නේ ${studentGrade} ශ්‍රේණිය සඳහාය. ඔබගේ ශ්‍රේණියට අදාළ සක්‍රිය කළ මාසික පන්ති, සජීවී Zoom සබැඳි, වීඩියෝ සාකච්ඡා සහ PDF ප්‍රශ්න පත්‍ර පහතින් කෙලින්ම විවෘත කරගත හැක.`
+                  : `You are enrolled in Grade ${studentGrade}. Access your activated monthly classes, live Zoom links, video discussions, and PDF papers directly below.`}
+              </p>
             </>
           ) : (
             <>
-              <Link className="btn" href="/login?mode=reg">
-                🎯 {t("startNow")}
-              </Link>
-              <Link className="btn ghost" href="/login">
-                🔑 {t("login")}
-              </Link>
+              <h1 style={{ textShadow: "0 4px 20px rgba(0,0,0,0.8)" }}>
+                {t("brand")} <br />
+                <span style={{ color: "var(--gold)" }}>{t("brandSub")}</span>
+              </h1>
+
+              <div className="slogan-banner" style={{ background: "rgba(24, 6, 12, 0.78)", backdropFilter: "blur(8px)" }}>
+                ✨ {t("slogan")}
+              </div>
+
+              <p className="lead" style={{ color: "#f8fafc", textShadow: "0 2px 10px rgba(0,0,0,0.85)", fontWeight: 500 }}>
+                {t("heroDesc")}
+              </p>
             </>
           )}
-          <a
-            className="btn whatsapp-btn"
-            href={`https://wa.me/${(S.set?.hotline || "94771234567").replace(/\D/g, "")}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            💬 {isSi ? "WhatsApp විමසීම්" : "WhatsApp Support"}
-          </a>
-        </div>
 
-        {/* Hero Visual Imagery Showcase */}
-        <div className="hero-visual-showcase">
-          <div className="visual-image-card">
-            <img src="/trophy-190.svg" alt="190+ Trophy" />
-            <h4 style={{ color: "var(--gold)", margin: "6px 0 2px" }}>
-              {isSi ? "3, 4 සහ 5 ශ්‍රේණි සඳහා විශේෂ පුහුණුව" : "Specialized Training for Grades 3, 4 & 5"}
-            </h4>
-            <p className="mut" style={{ fontSize: "0.85rem", margin: 0 }}>
-              {isSi
-                ? "දිස්ත්‍රික් ප්‍රථමයින් හා 190+ විශිෂ්ට සාමාර්ථ බිහි කළ අසමසම පන්ති ආකෘතිය"
-                : "Proven methodology producing top district ranks and 190+ distinction scores"}
-            </p>
+          <div className="cta-row">
+            {me ? (
+              <>
+                <Link className="btn" href={me.admin ? "/admin" : "/dashboard"}>
+                  🚀 {isSi
+                    ? me.admin
+                      ? "ගුරු පාලක පුවරුවට පිවිසෙන්න"
+                      : `${studentGrade} ශ්‍රේණියේ ශිෂ්‍ය පුවරුවට පිවිසෙන්න`
+                    : me.admin
+                    ? "Open Admin Portal"
+                    : `Open Grade ${studentGrade} Dashboard`}
+                </Link>
+                <a className="btn ghost" href="#papers" style={{ background: "rgba(20, 6, 12, 0.72)" }}>
+                  📅 {isSi ? `${studentGrade} ශ්‍රේණියේ මාසික පන්ති බලන්න ↓` : `View Grade ${studentGrade} Classes ↓`}
+                </a>
+              </>
+            ) : (
+              <>
+                <Link className="btn" href="/login?mode=reg">
+                  🎯 {t("startNow")}
+                </Link>
+                <Link className="btn ghost" href="/login" style={{ background: "rgba(20, 6, 12, 0.72)" }}>
+                  🔑 {t("login")}
+                </Link>
+              </>
+            )}
+            <a
+              className="btn whatsapp-btn"
+              href={`https://wa.me/${(S.set?.hotline || "94771234567").replace(/\D/g, "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              💬 {isSi ? "WhatsApp විමසීම්" : "WhatsApp Support"}
+            </a>
           </div>
-          <div className="visual-image-card">
-            <img src="/exam-paper.svg" alt="Provincial Exam Paper" />
-            <h4 style={{ color: "var(--gold)", margin: "6px 0 2px" }}>
-              {isSi ? "සජීවී Zoom පන්ති + වීඩියෝ + PDF" : "Live Zoom Classes + Videos + PDFs"}
-            </h4>
-            <p className="mut" style={{ fontSize: "0.85rem", margin: 0 }}>
-              {isSi
-                ? "මාසයෙන් මාසයට සියලුම පළාත් පේපර්ස් සහ සවිස්තරාත්මක විවරණ එකම තැනකින්"
-                : "Month-by-month provincial paper bundles and full video discussions in one place"}
-            </p>
+
+          {/* Slide Caption Pill & Interactive Dots */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", marginBottom: "22px" }}>
+            <div
+              style={{
+                background: "rgba(18, 6, 10, 0.78)",
+                border: "1px solid rgba(245, 166, 35, 0.4)",
+                borderRadius: "999px",
+                padding: "6px 18px",
+                fontSize: "0.84rem",
+                color: "#fde68a",
+                fontWeight: 600,
+                backdropFilter: "blur(6px)"
+              }}
+            >
+              {isSi ? HERO_SLIDES[heroSlide].captionSi : HERO_SLIDES[heroSlide].captionEn}
+            </div>
+
+            <div style={{ display: "flex", gap: "8px" }}>
+              {HERO_SLIDES.map((s, idx) => (
+                <button
+                  key={s.src}
+                  type="button"
+                  onClick={() => setHeroSlide(idx)}
+                  aria-label={`Slide ${idx + 1}`}
+                  style={{
+                    width: heroSlide === idx ? "28px" : "10px",
+                    height: "10px",
+                    borderRadius: "999px",
+                    padding: 0,
+                    border: "1px solid var(--gold)",
+                    background: heroSlide === idx ? "var(--gold)" : "rgba(255, 255, 255, 0.25)",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer"
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Hero Visual Imagery Showcase Cards featuring the real classroom photos */}
+          <div className="hero-visual-showcase">
+            <div
+              className="visual-image-card"
+              onClick={() => setHeroSlide(0)}
+              style={{
+                cursor: "pointer",
+                background: "rgba(22, 6, 12, 0.85)",
+                backdropFilter: "blur(10px)",
+                border: heroSlide === 0 ? "2px solid var(--gold)" : "1px solid var(--line)"
+              }}
+            >
+              <img
+                src="/hero-bg-1.jpg"
+                alt="Smart Board Speed Training"
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  objectFit: "cover",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(245, 166, 35, 0.35)"
+                }}
+              />
+              <h4 style={{ color: "var(--gold)", margin: "10px 0 4px" }}>
+                {isSi ? "Smart Board වේග පාලන පන්ති කාමරය" : "Smart Board Speed Control Classroom"}
+              </h4>
+              <p className="mut" style={{ fontSize: "0.85rem", margin: 0 }}>
+                {isSi
+                  ? "අඩු කාලයකදී නිවැරදි පිළිතුරු ලිවීමට දරුවන් සජීවීව පුහුණු කරවන නවීනතම ඉගැන්වීම් රටාව"
+                  : "Modern live smart-board teaching training children to solve questions with speed and accuracy"}
+              </p>
+            </div>
+
+            <div
+              className="visual-image-card"
+              onClick={() => setHeroSlide(1)}
+              style={{
+                cursor: "pointer",
+                background: "rgba(22, 6, 12, 0.85)",
+                backdropFilter: "blur(10px)",
+                border: heroSlide === 1 ? "2px solid var(--gold)" : "1px solid var(--line)"
+              }}
+            >
+              <img
+                src="/hero-bg-2.jpg"
+                alt="190+ Scholarship Students"
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  objectFit: "cover",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(245, 166, 35, 0.35)"
+                }}
+              />
+              <h4 style={{ color: "var(--gold)", margin: "10px 0 4px" }}>
+                {isSi ? "දරුවන් ආදරයෙන් වැළඳගත් 190+ පන්තිය" : "Beloved 190+ Scholarship Community"}
+              </h4>
+              <p className="mut" style={{ fontSize: "0.85rem", margin: 0 }}>
+                {isSi
+                  ? "3, 4 සහ 5 ශ්‍රේණිවල දරුවන් සතුටින් සහ උද්යෝගයෙන් අධ්‍යාපනය ලබන විශිෂ්ටතම පන්තිය"
+                  : "Where Grade 3, 4 & 5 children learn happily with confidence towards 190+ excellence"}
+              </p>
+            </div>
           </div>
         </div>
       </section>
