@@ -3,12 +3,13 @@ import Link from "next/link";
 import { useApp } from "../lib/Provider";
 
 export default function Header() {
-  const { S, me, login, lang, toggleLang, t } = useApp();
+  const { S, me, login, lang, toggleLang, theme, toggleTheme, t } = useApp();
   const isSi = lang === "si";
+  const isLight = theme === "light";
 
   return (
     <header className="hd centered-hd">
-      {/* Left side: Language switcher & AI Tutor link */}
+      {/* Left side: Language switcher, Light/Dark mode toggle & AI Tutor link */}
       <div className="hd-side hd-left">
         <button
           className="hd-btn hd-btn-ghost"
@@ -16,6 +17,13 @@ export default function Header() {
           title={isSi ? "Switch to English" : "භාෂාව සිංහලට මාරු කරන්න"}
         >
           🌐 <span>{isSi ? "English" : "සිංහල"}</span>
+        </button>
+        <button
+          className="hd-btn hd-btn-ghost"
+          onClick={toggleTheme}
+          title={isLight ? (isSi ? "අඳුරු තේමාව (Dark Mode)" : "Switch to Dark Mode") : (isSi ? "ආලෝක තේමාව (Light Mode)" : "Switch to Light Mode")}
+        >
+          {isLight ? "🌙" : "☀️"} <span>{isLight ? (isSi ? "Dark" : "Dark") : (isSi ? "Light" : "Light")}</span>
         </button>
         <Link
           href="/ai-tutor"

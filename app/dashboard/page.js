@@ -6,10 +6,11 @@ import { useApp, uid, readFile, getYoutubeEmbedUrl } from "../../lib/Provider";
 import VideoPlayer from "../../components/VideoPlayer";
 
 export default function Dash() {
-  const { S, update, me, login, lang, ready } = useApp();
+  const { S, update, me, login, lang, theme, ready } = useApp();
   const router = useRouter();
 
   const isSi = lang === "si";
+  const isDark = theme === "dark";
 
   // Default landing tab: "all_packages" (Monthly classes)
   const [activeTab, setActiveTab] = useState("all_packages");
@@ -201,7 +202,7 @@ export default function Dash() {
   const heroPending = heroStatus === "pending";
 
   return (
-    <div className="sd-root">
+    <div className={`sd-root ${isDark ? "sd-dark" : "sd-light"}`}>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Nunito:wght@400;600;800&display=swap');
 
@@ -224,6 +225,32 @@ export default function Dash() {
           line-height: 1.6;
           font-size: 16px;
           min-height: 100vh;
+          transition: background 0.25s ease, color 0.25s ease;
+        }
+
+        .sd-root.sd-dark {
+          --bg: #1a0c10;
+          --panel: #2a1519;
+          --panel2: #351b20;
+          --ink: #fff4e6;
+          --muted: #d2b9b4;
+          --line: #4a2a30;
+          --gold: #ffc65a;
+          --goldbg: #4a3411;
+          --green: #1fa86a;
+          --greenbg: #12402b;
+          --maroon: #4a1220;
+          --lockbg: #3a2428;
+        }
+
+        .sd-root.sd-dark .sd-brand,
+        .sd-root.sd-dark .sd-h1 {
+          color: #fff4e6;
+        }
+
+        .sd-root.sd-dark .sd-btn.alt {
+          color: var(--gold) !important;
+          border-color: var(--gold);
         }
 
         .sd-root .si {
