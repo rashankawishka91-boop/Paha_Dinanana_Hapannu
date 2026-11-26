@@ -210,61 +210,65 @@ export default function Home() {
   return (
     <main className="wrap">
       {/* ==================================================================== */}
-      {/* HERO SECTION WITH SEPARATE LEFT & RIGHT BORDERED CHARACTER FRAMES    */}
+      {/* HERO SECTION WITH LARGE LEFT & RIGHT BORDERED CHARACTER FRAMES       */}
       {/* ==================================================================== */}
       <style jsx>{`
         .hero-split-stage {
           display: grid;
-          grid-template-columns: 265px minmax(0, 1fr) 265px;
+          grid-template-columns: 420px minmax(340px, 1fr) 420px;
           align-items: center;
-          gap: 24px;
-          margin: 12px -60px 24px;
+          gap: 30px;
+          width: min(96vw, 1540px);
+          position: relative;
+          left: 50%;
+          transform: translateX(-50%);
+          margin: 14px 0 32px;
         }
 
         .hero-char-card {
           position: relative;
-          border-radius: 26px;
-          padding: 8px;
-          background: linear-gradient(145deg, rgba(245, 166, 35, 0.25), rgba(35, 10, 18, 0.92));
-          border: 2.5px solid rgba(245, 166, 35, 0.5);
-          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 22px rgba(245, 166, 35, 0.16);
+          border-radius: 30px;
+          padding: 10px;
+          background: linear-gradient(145deg, rgba(245, 166, 35, 0.35), rgba(35, 10, 18, 0.94));
+          border: 3px solid rgba(245, 166, 35, 0.65);
+          box-shadow: 0 22px 48px rgba(0, 0, 0, 0.65), 0 0 28px rgba(245, 166, 35, 0.22);
           cursor: pointer;
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           overflow: hidden;
         }
 
         .hero-char-card.left-card {
-          transform: perspective(900px) rotateY(8deg) rotateZ(-1.5deg);
+          transform: perspective(1000px) rotateY(7deg) rotateZ(-1.5deg);
         }
 
         .hero-char-card.right-card {
-          transform: perspective(900px) rotateY(-8deg) rotateZ(1.5deg);
+          transform: perspective(1000px) rotateY(-7deg) rotateZ(1.5deg);
         }
 
         /* Auto-pulse highlight when not hovered */
         .hero-char-card.auto-active {
           border-color: #ffc65a;
-          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65), 0 0 32px rgba(245, 166, 35, 0.45);
+          box-shadow: 0 24px 52px rgba(0, 0, 0, 0.72), 0 0 40px rgba(245, 166, 35, 0.5);
         }
 
         /* Intense Highlight when mouse hovers over the character frame */
         .hero-char-card:hover,
         .hero-char-card.hovered {
-          transform: perspective(900px) rotateY(0deg) rotateZ(0deg) translateY(-10px) scale(1.06) !important;
-          border-color: #ffd97d !important;
-          background: linear-gradient(145deg, rgba(255, 200, 75, 0.55), rgba(65, 16, 30, 0.96)) !important;
+          transform: perspective(1000px) rotateY(0deg) rotateZ(0deg) translateY(-12px) scale(1.07) !important;
+          border-color: #ffe08a !important;
+          background: linear-gradient(145deg, rgba(255, 205, 85, 0.65), rgba(65, 16, 30, 0.98)) !important;
           box-shadow:
-            0 24px 50px rgba(0, 0, 0, 0.75),
-            0 0 0 4px rgba(245, 166, 35, 0.32),
-            0 0 48px 10px rgba(245, 166, 35, 0.75) !important;
+            0 28px 60px rgba(0, 0, 0, 0.85),
+            0 0 0 5px rgba(245, 166, 35, 0.38),
+            0 0 60px 14px rgba(245, 166, 35, 0.85) !important;
           z-index: 10;
         }
 
         .hero-char-img-wrap {
           position: relative;
-          border-radius: 19px;
+          border-radius: 22px;
           overflow: hidden;
-          aspect-ratio: 3 / 3.7;
+          height: 500px;
           background: #18070c;
         }
 
@@ -273,19 +277,19 @@ export default function Home() {
           height: 100%;
           object-fit: cover;
           display: block;
-          transition: transform 0.5s ease, filter 0.4s ease;
-          filter: brightness(0.95) contrast(1.04);
+          transition: transform 0.55s ease, filter 0.4s ease;
+          filter: brightness(0.97) contrast(1.05);
         }
 
         .hero-char-card:hover .hero-char-img-wrap img {
-          transform: scale(1.08);
-          filter: brightness(1.12) contrast(1.08);
+          transform: scale(1.09);
+          filter: brightness(1.14) contrast(1.08);
         }
 
         .hero-char-overlay {
           position: absolute;
           inset: auto 0 0 0;
-          padding: 36px 14px 14px;
+          padding: 48px 18px 18px;
           background: linear-gradient(180deg, transparent 0%, rgba(16, 4, 9, 0.88) 45%, rgba(16, 4, 9, 0.98) 100%);
           text-align: center;
           transition: all 0.35s ease;
@@ -293,50 +297,65 @@ export default function Home() {
 
         .hero-char-badge {
           display: inline-block;
-          background: rgba(245, 166, 35, 0.22);
-          border: 1px solid rgba(245, 166, 35, 0.65);
+          background: rgba(245, 166, 35, 0.25);
+          border: 1.5px solid rgba(245, 166, 35, 0.75);
           color: #ffd875;
-          font-size: 0.72rem;
+          font-size: 0.82rem;
           font-weight: 800;
-          padding: 3px 10px;
+          padding: 4px 14px;
           border-radius: 999px;
-          margin-bottom: 5px;
+          margin-bottom: 7px;
           transition: all 0.3s ease;
         }
 
         .hero-char-card:hover .hero-char-badge {
           background: var(--gold);
           color: #1c0800;
-          box-shadow: 0 0 16px rgba(245, 166, 35, 0.8);
+          box-shadow: 0 0 20px rgba(245, 166, 35, 0.9);
         }
 
         .hero-char-title {
           display: block;
           color: #fff;
-          font-size: 0.92rem;
+          font-size: 1.15rem;
           font-weight: 800;
           line-height: 1.3;
-          margin-bottom: 3px;
+          margin-bottom: 4px;
         }
 
         .hero-char-sub {
           display: block;
-          color: #cbd5e1;
-          font-size: 0.75rem;
-          line-height: 1.35;
+          color: #e2e8f0;
+          font-size: 0.84rem;
+          line-height: 1.4;
         }
 
-        @media (max-width: 1180px) {
+        @media (max-width: 1420px) {
           .hero-split-stage {
-            margin: 12px 0 24px;
-            grid-template-columns: 220px minmax(0, 1fr) 220px;
-            gap: 16px;
+            grid-template-columns: 360px minmax(310px, 1fr) 360px;
+            gap: 22px;
+          }
+          .hero-char-img-wrap {
+            height: 450px;
           }
         }
 
-        @media (max-width: 920px) {
+        @media (max-width: 1160px) {
+          .hero-split-stage {
+            grid-template-columns: 310px minmax(280px, 1fr) 310px;
+            gap: 18px;
+          }
+          .hero-char-img-wrap {
+            height: 410px;
+          }
+        }
+
+        @media (max-width: 960px) {
           .hero-split-stage {
             grid-template-columns: 1fr 1fr;
+            width: 100%;
+            left: 0;
+            transform: none;
           }
           .hero-center-col {
             grid-column: 1 / -1;
@@ -345,13 +364,16 @@ export default function Home() {
           .hero-char-card.left-card,
           .hero-char-card.right-card {
             transform: none;
-            max-width: 340px;
+            max-width: 440px;
             margin: 0 auto;
             width: 100%;
           }
+          .hero-char-img-wrap {
+            height: 420px;
+          }
         }
 
-        @media (max-width: 560px) {
+        @media (max-width: 620px) {
           .hero-split-stage {
             grid-template-columns: 1fr;
           }
