@@ -45,10 +45,20 @@ export default function Header() {
         </div>
       </Link>
 
-      {/* Right side: Contact & Login / Dashboard buttons */}
+      {/* Right side: YouTube Channel, Contact & Login / Dashboard buttons */}
       <div className="hd-side hd-right">
         <a
-          href="https://wa.me/94771234567"
+          href="https://www.youtube.com/channel/UC3jTXU81jF9PfmO_PBi99ug?sub_confirmation=1"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hd-btn hd-btn-ghost"
+          style={{ borderColor: "rgba(239, 68, 68, 0.45)", color: "#f87171" }}
+          title={isSi ? "පහ දිනන හපන්නු නිල YouTube නාලිකාව" : "Paha Dinana Hapannu Official YouTube Channel"}
+        >
+          ▶️ <span>YouTube</span>
+        </a>
+        <a
+          href={`https://wa.me/${(S.set?.hotline || "94705771778").replace(/\D/g, "")}`}
           target="_blank"
           rel="noopener noreferrer"
           className="hd-btn hd-btn-whatsapp"

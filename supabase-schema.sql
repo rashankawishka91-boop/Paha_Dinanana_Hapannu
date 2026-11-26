@@ -137,11 +137,14 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.items (id, fid, type, week, subject, title, url, schedule)
 VALUES
   ('i_zoom_1', 'f1', 'zoom', '1 වන සතිය', 'විෂයයන් 5ම', 'නොවැම්බර් සජීවී Zoom පන්තිය - පළාත් පේපර් සජීවී විවරණය (Live Class)', 'https://zoom.us/j/94771234567', 'සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 ට'),
-  ('i1', 'f1', 'video', '1 වන සතිය', 'ගණිතය & මව්බස', 'බස්නාහිර පළාත් පේපර් 01 - පළමු අර්ධය (ප්‍රශ්න 1-25) සවිස්තර සාකච්ඡාව & වේග උපක්‍රම', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', ''),
+  ('i1', 'f1', 'video', '1 වන සතිය', 'පරිසරය', 'ශිෂ්‍යත්ව විභාගයට වටිනා පරිසරය ප්‍රශ්න 100ක් - සවිස්තරාත්මක විවරණය', 'https://youtu.be/BbZdfLXfW9A', ''),
   ('i2', 'f1', 'pdf', '1 වන සතිය', 'සියලු විෂයයන්', 'බස්නාහිර පළාත් පේපර් 01 - සම්පූර්ණ ප්‍රශ්න පත්‍රය (මුද්‍රණය සඳහා PDF)', 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', ''),
-  ('i3', 'f1', 'video', '2 වන සතිය', 'පරිසරය, දෙමළ, ඉංග්‍රීසි', 'වයඹ පළාත් පේපර් 02 - පරිසරය, දෙමළ හා ඉංග්‍රීසි ප්‍රශ්න විවරණය (ලකුණු නොකැපෙන රහස්)', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', ''),
-  ('i4', 'f1', 'pdf', '2 වන සතිය', 'විෂයයන් 5ම', 'වයඹ පළාත් පේපර් 02 - ප්‍රශ්න පත්‍රය සහ ආදර්ශ පිළිතුරු පත්‍රිකාව (PDF)', 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', '')
-ON CONFLICT (id) DO NOTHING;
+  ('i3', 'f1', 'video', '2 වන සතිය', 'විෂයයන් 5ම', 'අදිති 30 - 1 කොටස සහ 30 - 2 කොටස - 190+ පේපර් පන්තිය සම්පූර්ණ සාකච්ඡාව', 'https://youtu.be/murCwFZRlJo', ''),
+  ('i4', 'f1', 'pdf', '2 වන සතිය', 'විෂයයන් 5ම', 'අදිති 30 - 1 සහ 30 - 2 ප්‍රශ්න පත්‍රය සහ ආදර්ශ පිළිතුරු පත්‍රිකාව (PDF)', 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', '')
+ON CONFLICT (id) DO UPDATE SET
+  title = EXCLUDED.title,
+  subject = EXCLUDED.subject,
+  url = EXCLUDED.url;
 
 INSERT INTO public.settings (id, name, slogan, logo, hotline)
 VALUES (1, 'පහ දිනන හපන්නු - 190+ පේපර් පන්තිය', 'කොපි කරන්නත් බෑ.. සම කරන්නත් බෑ... ඒ තමයි පහ දිනන හපන්නු!', '/logo.jpg', '077 123 4567')

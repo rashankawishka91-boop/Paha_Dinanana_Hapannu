@@ -17,6 +17,31 @@ export default function Home() {
   const [selectedGrade, setSelectedGrade] = useState("all");
   const [heroSlide, setHeroSlide] = useState(0);
   const [hoveredSide, setHoveredSide] = useState(null);
+  const [channelVideos, setChannelVideos] = useState([
+    {
+      videoId: "BbZdfLXfW9A",
+      title: "ශිෂ්‍යත්ව විභාගයට වටිනා පරිසරය ප්‍රශ්න 100ක්",
+      url: "https://youtu.be/BbZdfLXfW9A",
+      subject: "පරිසරය (ප්‍රශ්න 100 විශේෂ විවරණය)"
+    },
+    {
+      videoId: "murCwFZRlJo",
+      title: "අදිති 30 - 1 කොටස සහ 30 - 2 කොටස - 190+ පේපර් පන්තිය",
+      url: "https://youtu.be/murCwFZRlJo",
+      subject: "190+ පේපර් සාකච්ඡාව (I හා II කොටස්)"
+    }
+  ]);
+
+  useEffect(() => {
+    fetch("/api/youtube")
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (data && Array.isArray(data.videos) && data.videos.length > 0) {
+          setChannelVideos(data.videos);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1359,26 +1384,106 @@ export default function Home() {
           <div
             style={{
               marginTop: "28px",
-              padding: "22px",
+              padding: "24px",
               background: "var(--h-panel2)",
-              borderRadius: "16px",
+              borderRadius: "18px",
               border: "1px solid var(--h-line)"
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "10px" }}>
+            {/* Official YouTube Channel Header Bar */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "18px",
+                paddingBottom: "14px",
+                borderBottom: "1px solid var(--h-line)",
+                flexWrap: "wrap",
+                gap: "12px"
+              }}
+            >
               <div>
-                <span className="clean-pill gold" style={{ marginBottom: "6px" }}>
-                  🎥 {isSi ? "නොමිලේ ආදර්ශ වීඩියෝ විවරණය" : "Free Sample Video Lesson"}
-                </span>
-                <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--h-heading)" }}>
-                  {sampleVideo.title}
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "6px" }}>
+                  <span
+                    className="clean-pill"
+                    style={{ background: "rgba(239, 68, 68, 0.16)", color: "#ef4444", fontWeight: 800 }}
+                  >
+                    ▶️ නිල YouTube නාලිකාව · පහ දිනන හපන්නු
+                  </span>
+                  <span className="clean-pill ok">
+                    ✓ {isSi ? "වෙබ් අඩවිය තුළම නොමිලේ නරඹන්න" : "Watch Free Directly on Site"}
+                  </span>
+                </div>
+                <h3 style={{ margin: 0, fontSize: "1.3rem", color: "var(--h-heading)" }}>
+                  {isSi
+                    ? "190+ පේපර් පන්තියේ නිල YouTube වීඩියෝ සාකච්ඡා"
+                    : "Official 190+ Paper Class YouTube Video Discussions"}
                 </h3>
               </div>
-              <span className="clean-pill ok">
-                ▶ {isSi ? "වෙබ් අඩවිය තුළම නරඹන්න" : "Watch directly on site"}
-              </span>
+
+              <a
+                href="https://www.youtube.com/channel/UC3jTXU81jF9PfmO_PBi99ug?sub_confirmation=1"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn"
+                style={{
+                  background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                  color: "#fff",
+                  padding: "9px 18px",
+                  fontSize: "0.85rem",
+                  boxShadow: "0 4px 14px rgba(239, 68, 68, 0.35)"
+                }}
+              >
+                🔔 {isSi ? "YouTube නාලිකාව Subscribe කරන්න ↗" : "Subscribe on YouTube ↗"}
+              </a>
             </div>
-            <VideoPlayer url={sampleVideo.url} title={sampleVideo.title} />
+
+            {/* Grid of Official YouTube Channel Videos (BbZdfLXfW9A, murCwFZRlJo, and latest channel uploads) */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                gap: "20px"
+              }}
+            >
+              {channelVideos.map((vid) => (
+                <div
+                  key={vid.videoId || vid.url}
+                  style={{
+                    background: "var(--h-panel)",
+                    border: "1px solid var(--h-line)",
+                    borderRadius: "16px",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    gap: "12px"
+                  }}
+                >
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
+                      <span className="clean-pill gold">
+                        🎥 {vid.subject || (isSi ? "190+ පේපර් විවරණය" : "190+ Paper Discussion")}
+                      </span>
+                      <a
+                        href={vid.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: "0.78rem", color: "var(--h-gold)", fontWeight: 700 }}
+                      >
+                        YouTube ↗
+                      </a>
+                    </div>
+                    <h4 style={{ margin: "0 0 10px", fontSize: "1.05rem", color: "var(--h-heading)", lineHeight: 1.4 }}>
+                      {vid.title}
+                    </h4>
+                  </div>
+
+                  <VideoPlayer url={vid.url} title={vid.title} />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </section>
