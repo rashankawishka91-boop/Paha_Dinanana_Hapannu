@@ -1143,7 +1143,14 @@ export default function Home() {
         )}
 
         {filteredFolders.length ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "12px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))",
+              gap: "16px",
+              alignItems: "stretch"
+            }}
+          >
             {filteredFolders.map(f => {
               const status = getFolderStatus(f.id);
               const isUnlocked = status === "approved";
@@ -1156,57 +1163,115 @@ export default function Home() {
               return (
                 <article
                   key={f.id}
-                  className={`clean-row ${f.isCurrentMonth ? "cur" : ""}`}
+                  className="clean-card"
+                  style={{
+                    border: f.isCurrentMonth ? "2px solid var(--h-gold)" : "1px solid var(--h-line)",
+                    padding: "18px 20px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    gap: "14px",
+                    background: f.isCurrentMonth
+                      ? isLight
+                        ? "linear-gradient(145deg, #fffdf9, #fff7e6)"
+                        : "linear-gradient(145deg, rgba(245, 166, 35, 0.14), rgba(32, 11, 18, 0.95))"
+                      : "var(--h-panel)"
+                  }}
                 >
-                  <div className="clean-ic">
-                    {f.isCurrentMonth ? "🔥" : isUnlocked ? "✓" : "📅"}
-                  </div>
-
                   <div>
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
-                      <span className="clean-pill gold">
-                        🎓 {isSi ? `${f.grade} ශ්‍රේණිය` : `Grade ${f.grade}`}
-                      </span>
-                      <span className="clean-pill gold">
-                        📅 {f.month || (isSi ? "මාසික පන්තිය" : "Monthly Class")}
-                      </span>
-                      {f.isCurrentMonth ? (
-                        <span className="clean-pill ok">
-                          🔥 {isSi ? "මේ මාසයේ පන්තිය" : "Current Month"}
+                    {/* Top Row: Grade + Month + Status */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "8px",
+                        flexWrap: "wrap",
+                        marginBottom: "10px"
+                      }}
+                    >
+                      <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+                        <span className="clean-pill gold" style={{ fontSize: "0.74rem", padding: "3px 10px" }}>
+                          🎓 {isSi ? `${f.grade} ශ්‍රේණිය` : `Grade ${f.grade}`}
                         </span>
-                      ) : (
-                        <span className="clean-pill sub">
-                          ⏪ {isSi ? "පසුගිය මාසය" : "Previous Month"}
+                        <span className="clean-pill sub" style={{ fontSize: "0.74rem", padding: "3px 10px" }}>
+                          📅 {f.month || (isSi ? "මාසික පන්තිය" : "Monthly")}
                         </span>
-                      )}
+                      </div>
 
-                      {isStudent && (
-                        isUnlocked ? (
-                          <span className="clean-pill ok">
-                            ✓ {isSi ? "සක්‍රියයි (Active)" : "Unlocked"}
-                          </span>
-                        ) : isPending ? (
-                          <span className="clean-pill gold">
-                            ⏳ {isSi ? "පරීක්ෂා වෙමින්" : "Pending"}
-                          </span>
-                        ) : null
-                      )}
+                      {f.isCurrentMonth ? (
+                        <span className="clean-pill ok" style={{ fontSize: "0.72rem", padding: "3px 10px" }}>
+                          🔥 {isSi ? "මේ මාසය" : "Current"}
+                        </span>
+                      ) : isStudent && isUnlocked ? (
+                        <span className="clean-pill ok" style={{ fontSize: "0.72rem", padding: "3px 10px" }}>
+                          ✓ {isSi ? "සක්‍රියයි" : "Active"}
+                        </span>
+                      ) : isStudent && isPending ? (
+                        <span className="clean-pill gold" style={{ fontSize: "0.72rem", padding: "3px 10px" }}>
+                          ⏳ {isSi ? "පරීක්ෂාවට" : "Pending"}
+                        </span>
+                      ) : null}
                     </div>
 
-                    <h3 style={{ fontSize: "1.1rem", color: "var(--h-ink)", margin: "0 0 4px", fontWeight: 700 }}>
+                    {/* Class Name */}
+                    <h3
+                      style={{
+                        fontSize: "1.04rem",
+                        color: "var(--h-heading)",
+                        margin: "0 0 12px",
+                        fontWeight: 700,
+                        lineHeight: 1.4,
+                        minHeight: "44px"
+                      }}
+                    >
                       {f.name}
                     </h3>
 
-                    <div style={{ fontSize: "0.86rem", color: "var(--h-muted)" }}>
-                      🔴 {zCount || 2} Zoom Live · 🎥 {vCount || 2} {isSi ? "වීඩියෝ" : "Videos"} · 📄 {pCount || 2} PDFs · 🎯 {f.subjects}
+                    {/* Uniform 3-Item Resource Strip */}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, 1fr)",
+                        gap: "6px",
+                        background: "var(--h-panel2)",
+                        border: "1px solid var(--h-line)",
+                        borderRadius: "10px",
+                        padding: "8px 10px",
+                        textAlign: "center",
+                        fontSize: "0.78rem",
+                        fontWeight: 700,
+                        color: "var(--h-ink)"
+                      }}
+                    >
+                      <div>🔴 {zCount || 2} Zoom</div>
+                      <div style={{ borderLeft: "1px solid var(--h-line)", borderRight: "1px solid var(--h-line)" }}>
+                        🎥 {vCount || 2} {isSi ? "වීඩියෝ" : "Videos"}
+                      </div>
+                      <div>📄 {pCount || 2} PDFs</div>
                     </div>
                   </div>
 
-                  <div className="clean-row-act" style={{ textAlign: "right", minWidth: "160px" }}>
-                    <div style={{ fontSize: "0.82rem", color: "var(--h-muted)", marginBottom: "4px", fontWeight: 700 }}>
-                      {isSi ? `රු. ${(f.price || 2000).toLocaleString()}` : `Rs. ${(f.price || 2000).toLocaleString()}`}
-                      {isUnlocked ? (isSi ? " · ගෙවා ඇත" : " · paid") : ""}
+                  {/* Pinned Footer: Price + Action Button */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "10px",
+                      paddingTop: "12px",
+                      borderTop: "1px solid var(--h-line)"
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: "1.18rem", fontWeight: 800, color: "var(--h-gold)", lineHeight: 1.1 }}>
+                        {isSi ? `රු. ${(f.price || 2000).toLocaleString()}` : `Rs. ${(f.price || 2000).toLocaleString()}`}
+                      </div>
+                      <small style={{ fontSize: "0.72rem", color: "var(--h-muted)", fontWeight: 600 }}>
+                        {isUnlocked ? (isSi ? "✓ ගෙවා ඇත" : "✓ Paid") : (isSi ? "මාසික ගාස්තුව" : "Monthly fee")}
+                      </small>
                     </div>
+
                     <Link
                       href={
                         me
@@ -1219,8 +1284,9 @@ export default function Home() {
                       }
                       className="btn"
                       style={{
-                        fontSize: "0.84rem",
-                        padding: "9px 16px"
+                        fontSize: "0.82rem",
+                        padding: "8px 15px",
+                        whiteSpace: "nowrap"
                       }}
                     >
                       {isUnlocked
