@@ -332,7 +332,7 @@ export default function Home() {
         </div>
 
         <div className="chips">
-          {[5, 4, 3, 2, 1].map(g => (
+          {[5, 4, 3].map(g => (
             <button
               key={g}
               type="button"

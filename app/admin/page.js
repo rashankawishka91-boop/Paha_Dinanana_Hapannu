@@ -481,7 +481,7 @@ export default function Admin() {
                 <dl>
                   <div>
                     <dt>{isSi ? "ක්‍රියාත්මක ශ්‍රේණි" : "Active grades"}</dt>
-                    <dd>{isSi ? "1, 2, 3, 4 සහ 5 ශ්‍රේණිය (190+ විශේෂ)" : "Grades 1, 2, 3, 4 & Grade 5 (190+)"}</dd>
+                    <dd>{isSi ? "3, 4 සහ 5 ශ්‍රේණිය (190+ විශේෂ)" : "Grades 3, 4 & Grade 5 (190+)"}</dd>
                   </div>
                   <div>
                     <dt>{isSi ? "සම්මත මාසික පන්ති ගාස්තුව" : "Standard monthly fee"}</dt>
@@ -529,7 +529,7 @@ export default function Admin() {
 
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
                 {/* Grade Filter Pills */}
-                {["all", 5, 4, 3, 2, 1].map(g => (
+                {["all", 5, 4, 3].map(g => (
                   <button
                     key={g}
                     type="button"
@@ -1314,7 +1314,7 @@ export default function Admin() {
                     value={nf.grade}
                     onChange={e => setNf({ ...nf, grade: e.target.value })}
                   >
-                    {[5, 4, 3, 2, 1].map(g => (
+                    {[5, 4, 3].map(g => (
                       <option key={g} value={g}>
                         {isSi ? `${g} ශ්‍රේණිය ${g === 5 ? "🔥 (190+ විශේෂ)" : ""}` : `Grade ${g} ${g === 5 ? "🔥 (190+ Special)" : ""}`}
                       </option>

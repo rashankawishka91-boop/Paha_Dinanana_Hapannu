@@ -42,7 +42,8 @@ export default function Dash() {
       login(activeUser.id);
     }
     if (activeUser?.grade) {
-      setSelectedGrade(Number(activeUser.grade) || 5);
+      const g = Number(activeUser.grade);
+      setSelectedGrade([5, 4, 3].includes(g) ? g : 5);
     }
   }, [ready, me, S.users, router, login]);
 
@@ -225,8 +226,9 @@ export default function Dash() {
 
         .sd-app {
           display: grid;
-          grid-template-columns: 250px 1fr;
-          min-height: 100vh;
+          grid-template-columns: 250px minmax(0, 1fr);
+          min-height: calc(100vh - 58px);
+          width: 100%;
         }
 
         .sd-aside {
@@ -324,9 +326,10 @@ export default function Dash() {
         }
 
         .sd-main {
-          padding: 28px clamp(16px, 4vw, 48px) 100px;
-          max-width: 1100px;
+          padding: 28px clamp(20px, 3vw, 44px) 100px;
           width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
         }
 
         .sd-crumb-bar {
@@ -343,7 +346,7 @@ export default function Dash() {
         }
 
         .sd-h1 {
-          font-size: clamp(26px, 4vw, 36px);
+          font-size: clamp(26px, 3.2vw, 34px);
           margin: 4px 0 22px;
           color: var(--maroon);
           font-weight: 800;
@@ -352,16 +355,17 @@ export default function Dash() {
 
         .sd-hero {
           display: grid;
-          grid-template-columns: 1fr 280px;
+          grid-template-columns: 1fr 300px;
           gap: 0;
           background: var(--panel);
           border: 2px solid var(--gold);
           border-radius: 22px;
           overflow: hidden;
+          width: 100%;
         }
 
         .sd-hero .l {
-          padding: 26px;
+          padding: 26px 30px;
         }
 
         .sd-tag {
@@ -389,7 +393,7 @@ export default function Dash() {
         }
 
         .sd-hero h2 {
-          font-size: clamp(20px, 2.6vw, 26px);
+          font-size: clamp(20px, 2.2vw, 25px);
           line-height: 1.4;
           margin: 0 0 8px;
           color: var(--ink);
@@ -399,7 +403,7 @@ export default function Dash() {
         .sd-hero p {
           margin: 0 0 18px;
           color: var(--muted);
-          max-width: 60ch;
+          max-width: 100%;
         }
 
         .sd-perks {
@@ -965,43 +969,14 @@ export default function Dash() {
             })()
           ) : (
             <>
-              {/* Top Crumb & Grade Selector */}
-              <div className="sd-crumb-bar">
-                <div className="sd-crumb">
-                  Grade {selectedGrade} /{" "}
-                  {activeTab === "all_packages" && "Monthly classes"}
-                  {activeTab === "my_packages" && "My unlocked months"}
-                  {activeTab === "overview" && "Progress & analysis"}
-                  {activeTab === "timer" && "Speed timer"}
-                  {activeTab === "my_slips" && "Payment slips"}
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "13px", color: "var(--muted)", fontWeight: 700 }}>
-                    Grade:
-                  </span>
-                  <select
-                    value={selectedGrade}
-                    onChange={(e) => handleGradeChange(e.target.value)}
-                    style={{
-                      padding: "5px 12px",
-                      borderRadius: "99px",
-                      border: "1px solid var(--line)",
-                      background: "var(--panel)",
-                      color: "var(--ink)",
-                      fontFamily: "inherit",
-                      fontSize: "13.5px",
-                      fontWeight: 700,
-                      cursor: "pointer"
-                    }}
-                  >
-                    {[5, 4, 3, 2, 1].map(g => (
-                      <option key={g} value={g}>
-                        Grade {g} ({g} ශ්‍රේණිය)
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Top Crumb (Automatically Personalized to Student's Grade without Grade Dropdown) */}
+              <div className="sd-crumb">
+                Grade {selectedGrade} /{" "}
+                {activeTab === "all_packages" && "Monthly classes"}
+                {activeTab === "my_packages" && "My unlocked months"}
+                {activeTab === "overview" && "Progress & analysis"}
+                {activeTab === "timer" && "Speed timer"}
+                {activeTab === "my_slips" && "Payment slips"}
               </div>
 
               <h1 className="sd-h1">Welcome, {currentMe.name}! 👋</h1>
@@ -1426,15 +1401,6 @@ export default function Dash() {
           )}
         </main>
       </div>
-
-      {/* Floating 190+ AI Tutor Pill matching exact HTML template */}
-      <Link className="sd-tutor" href="/ai-tutor">
-        <i>🎓</i>
-        <div>
-          <b>190+ AI Tutor</b>
-          <span className="si">ශිෂ්‍යත්ව ගුරුවරයාගෙන් අහන්න</span>
-        </div>
-      </Link>
 
       {/* ==================================================================== */}
       {/* RS. 2,000 MONTHLY FEE PAYMENT MODAL                                  */}

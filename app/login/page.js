@@ -437,9 +437,11 @@ export default function LoginPage() {
                     ? "4 ශ්‍රේණිය (ශිෂ්‍යත්ව පූර්ව අඩිතාලම)"
                     : "Grade 4 (Pre-Scholarship Foundation)"}
                 </option>
-                <option value={3}>{isSi ? "3 ශ්‍රේණිය" : "Grade 3"}</option>
-                <option value={2}>{isSi ? "2 ශ්‍රේණිය" : "Grade 2"}</option>
-                <option value={1}>{isSi ? "1 ශ්‍රේණිය" : "Grade 1"}</option>
+                <option value={3}>
+                  {isSi
+                    ? "3 ශ්‍රේණිය (මූලික පදනම සහ පේපර් පුහුණුව)"
+                    : "Grade 3 (Foundation & Paper Practice)"}
+                </option>
               </select>
             </div>
           )}
