@@ -48,14 +48,15 @@ export default function Home() {
   const GRADE_DETAILS = [
     {
       grade: 5,
-      badge: isSi ? "🔥 190+ විශේෂ ශිෂ්‍යත්ව පන්තිය" : "🔥 190+ Scholarship Target Class",
-      title: isSi ? "5 ශ්‍රේණිය - 190+ පළාත් පේපර් සහ සජීවී පන්තිය" : "Grade 5 - 190+ Provincial Papers & Live Class",
+      shortTag: isSi ? "🔥 190+ ඉලක්කය" : "🔥 190+ Target",
+      title: isSi ? "5 ශ්‍රේණිය - 190+ පේපර් පන්තිය" : "Grade 5 - 190+ Paper Class",
       subtitle: isSi
-        ? "දිනකට පළාත් පේපර් 2 බැගින් සාකච්ඡා කරමින් ලකුණු 190+ ඉලක්කය කරා දරුවා මෙහෙයවන විශේෂ පන්තිය"
-        : "Discussing 2 provincial papers daily to guide students past the 190+ marks milestone",
+        ? "දිනකට පළාත් පේපර් 2 බැගින් සාකච්ඡා කරමින් ලකුණු 190+ සීමාව පසුකරවන විශේෂ පන්තිය."
+        : "Discussing 2 provincial papers daily to guide students past the 190+ marks milestone.",
       subjects: isSi
-        ? "පරිසරය (තේමා 16), මව්බස (සිංහල), ගණිතය, දෙමළ, ඉංග්‍රීසි"
-        : "Environment (16 Themes), Sinhala, Mathematics, Tamil, English",
+        ? "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි"
+        : "Environment, Sinhala, Math, Tamil, English",
+      scheduleShort: isSi ? "සෙන / ඉරිදා ප.ව. 7.00 - 9.00" : "Sat & Sun · 7:00 PM - 9:00 PM",
       schedule: isSi
         ? "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)"
         : "Every Saturday & Sunday 7:00 PM - 9:00 PM (Zoom Live)",
@@ -64,24 +65,25 @@ export default function Home() {
         ? [
             "දිනකට පළාත් ප්‍රශ්න පත්‍ර 2ක් සම්පූර්ණ විවරණය",
             "ප්‍රශ්නයකට තත්පර 45කට අඩු වේග පාලන පුහුණුව",
-            "සජීවී Zoom පන්ති, පටිගත කළ වීඩියෝ සහ PDF පේපර්ස්"
+            "සජීවී Zoom පන්ති, වීඩියෝ සහ PDF පේපර්ස්"
           ]
         : [
             "2 Provincial papers fully discussed daily",
             "Under 45-second per question speed training",
-            "Live Zoom classes, recorded videos & printable PDFs"
+            "Live Zoom classes, recorded videos & PDFs"
           ]
     },
     {
       grade: 4,
-      badge: isSi ? "🌟 ශිෂ්‍යත්ව පූර්ව අඩිතාලම" : "🌟 Pre-Scholarship Foundation",
-      title: isSi ? "4 ශ්‍රේණිය - ශිෂ්‍යත්ව පූර්ව සූදානම සහ පේපර් පන්තිය" : "Grade 4 - Pre-Scholarship Foundation & Paper Class",
+      shortTag: isSi ? "🌟 පූර්ව අඩිතාලම" : "🌟 Pre-Scholarship",
+      title: isSi ? "4 ශ්‍රේණිය - ශිෂ්‍යත්ව පූර්ව පන්තිය" : "Grade 4 - Pre-Scholarship Class",
       subtitle: isSi
-        ? "5 ශ්‍රේණියේ ශිෂ්‍යත්ව විභාගයට කල්තියාම දරුවාගේ වේගය සහ විෂය දැනුම ගොඩනඟන පන්තිය"
-        : "Building early exam speed and 5-subject mastery ahead of Grade 5 scholarship",
+        ? "5 ශ්‍රේණියේ විභාගයට කල්තියාම දරුවාගේ වේගය සහ විෂය දැනුම ගොඩනඟන පන්තිය."
+        : "Building early exam speed and 5-subject mastery ahead of Grade 5 scholarship.",
       subjects: isSi
-        ? "මව්බස (සිංහල), ගණිතය, පරිසරය, දෙමළ, ඉංග්‍රීසි"
-        : "Sinhala, Mathematics, Environment, Tamil, English",
+        ? "මව්බස, ගණිතය, පරිසරය, දෙමළ, ඉංග්‍රීසි"
+        : "Sinhala, Math, Environment, Tamil, English",
+      scheduleShort: isSi ? "සෙනසුරාදා ප.ව. 4.00 - 6.00" : "Every Saturday · 4:00 PM - 6:00 PM",
       schedule: isSi
         ? "සෑම සෙනසුරාදාම ප.ව. 4.00 - 6.00 (Zoom Live)"
         : "Every Saturday 4:00 PM - 6:00 PM (Zoom Live)",
@@ -90,24 +92,25 @@ export default function Home() {
         ? [
             "ගණිත කෙටි ක්‍රම සහ තර්කන ගැටළු පුහුණුව",
             "වියරණ, රචනා සහ පරිසරය මූලික පදනම",
-            "මාසික ආදර්ශ ප්‍රශ්න පත්‍ර PDF සහ වීඩියෝ සාකච්ඡා"
+            "මාසික ආදර්ශ ප්‍රශ්න පත්‍ර PDF සහ වීඩියෝ"
           ]
         : [
             "Math shortcuts and logical problem solving",
-            "Grammar, essay writing & environmental studies foundation",
-            "Monthly model paper PDFs and video discussions"
+            "Grammar, essay & environmental foundation",
+            "Monthly model paper PDFs & video lessons"
           ]
     },
     {
       grade: 3,
-      badge: isSi ? "🌱 මූලික පදනම සහ පේපර් පුහුණුව" : "🌱 Primary Foundation & Practice",
-      title: isSi ? "3 ශ්‍රේණිය - මූලික විෂය පදනම සහ පේපර් හුරුව" : "Grade 3 - Core Curriculum Foundation & Paper Practice",
+      shortTag: isSi ? "🌱 මූලික පදනම" : "🌱 Core Foundation",
+      title: isSi ? "3 ශ්‍රේණිය - මූලික පදනම පන්තිය" : "Grade 3 - Foundation Class",
       subtitle: isSi
-        ? "කුඩා කල සිටම ප්‍රශ්න පත්‍රවලට බිය නැතිව නිවැරදිව පිළිතුරු ලිවීමට හුරු කරවන පන්තිය"
-        : "Training young learners to read, understand, and answer exam papers confidently",
+        ? "කුඩා කල සිටම ප්‍රශ්න පත්‍රවලට බිය නැතිව නිවැරදිව පිළිතුරු ලිවීමට හුරු කරවන පන්තිය."
+        : "Training young learners to read, understand, and answer exam papers confidently.",
       subjects: isSi
-        ? "මව්බස (සිංහල), ගණිතය, පරිසරය, ඉංග්‍රීසි"
-        : "Sinhala, Mathematics, Environment, English",
+        ? "මව්බස, ගණිතය, පරිසරය, ඉංග්‍රීසි"
+        : "Sinhala, Math, Environment, English",
+      scheduleShort: isSi ? "ඉරිදා ප.ව. 3.00 - 5.00" : "Every Sunday · 3:00 PM - 5:00 PM",
       schedule: isSi
         ? "සෑම ඉරිදාම ප.ව. 3.00 - 5.00 (Zoom Live)"
         : "Every Sunday 3:00 PM - 5:00 PM (Zoom Live)",
@@ -116,12 +119,12 @@ export default function Home() {
         ? [
             "මනෝමය ගණිතය සහ මූලික ගණිත ක්‍රමවේද",
             "නිවැරදි අක්ෂර වින්‍යාසය සහ වාක්‍ය ගොඩනැගීම",
-            "සතිපතා වර්ණවත් PDF වැඩ පත්‍රිකා සහ සජීවී පන්ති"
+            "සතිපතා වර්ණවත් PDF වැඩ පත්‍රිකා සහ Zoom"
           ]
         : [
             "Mental math and core arithmetic concepts",
-            "Accurate spelling and sentence construction",
-            "Weekly printable PDF worksheets and live classes"
+            "Accurate spelling and sentence building",
+            "Weekly printable PDF worksheets & Zoom"
           ]
     }
   ];
@@ -887,91 +890,217 @@ export default function Home() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(310px, 1fr))",
-              gap: "20px"
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "22px",
+              alignItems: "stretch"
             }}
           >
             {GRADE_DETAILS.map(g => {
               const gFolders = validFolders.filter(f => Number(f.grade) === g.grade);
               const curFolder = gFolders.find(f => f.isCurrentMonth) || gFolders[0];
+              const isPrimaryGrade = g.grade === 5;
 
               return (
-                <div
+                <article
                   key={g.grade}
                   className="clean-card"
                   style={{
-                    border: g.grade === 5 ? "2px solid var(--h-gold)" : "1px solid var(--h-line)",
+                    border: isPrimaryGrade ? "2px solid var(--h-gold)" : "1px solid var(--h-line)",
+                    padding: "24px",
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "space-between"
+                    justifyContent: "space-between",
+                    position: "relative",
+                    overflow: "hidden"
                   }}
                 >
+                  {/* Top Section */}
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
-                      <span className="clean-pill gold">
-                        🎓 {isSi ? `${g.grade} ශ්‍රේණිය` : `Grade ${g.grade}`}
-                      </span>
-                      <span className="clean-pill sub">
-                        {g.badge}
+                    {/* 1. Card Header Row: Number Badge + Short Tag */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "10px",
+                        marginBottom: "16px"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div
+                          style={{
+                            width: "44px",
+                            height: "44px",
+                            borderRadius: "12px",
+                            background: isPrimaryGrade
+                              ? "linear-gradient(135deg, #f5a623, #d97706)"
+                              : "var(--h-gold-bg)",
+                            color: isPrimaryGrade ? "#1a0800" : "var(--h-gold)",
+                            display: "grid",
+                            placeItems: "center",
+                            fontWeight: 800,
+                            fontSize: "1.25rem",
+                            flexShrink: 0
+                          }}
+                        >
+                          0{g.grade}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "0.75rem", color: "var(--h-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                            {isSi ? "ශිෂ්‍යත්ව අංශය" : "Primary Level"}
+                          </div>
+                          <div style={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--h-heading)", lineHeight: 1.2 }}>
+                            {isSi ? `${g.grade} ශ්‍රේණිය` : `Grade ${g.grade}`}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span className={`clean-pill ${isPrimaryGrade ? "gold" : "sub"}`}>
+                        {g.shortTag}
                       </span>
                     </div>
 
-                    <h3 style={{ fontSize: "1.25rem", color: "var(--h-heading)", margin: "0 0 8px", lineHeight: 1.35 }}>
-                      {g.title}
-                    </h3>
-                    <p style={{ fontSize: "0.88rem", color: "var(--h-muted)", margin: "0 0 14px", lineHeight: 1.5 }}>
-                      {g.subtitle}
-                    </p>
+                    {/* 2. Fixed-Height Title & Subtitle */}
+                    <div style={{ minHeight: "86px", marginBottom: "14px" }}>
+                      <h3 style={{ fontSize: "1.18rem", color: "var(--h-heading)", margin: "0 0 6px", lineHeight: 1.3 }}>
+                        {g.title}
+                      </h3>
+                      <p style={{ fontSize: "0.86rem", color: "var(--h-muted)", margin: 0, lineHeight: 1.48 }}>
+                        {g.subtitle}
+                      </p>
+                    </div>
 
+                    {/* 3. Structured 3-Row Schedule & Info Table */}
                     <div
                       style={{
                         background: "var(--h-panel2)",
                         border: "1px solid var(--h-line)",
                         borderRadius: "14px",
-                        padding: "12px 14px",
-                        marginBottom: "14px",
-                        fontSize: "0.84rem"
+                        marginBottom: "16px",
+                        overflow: "hidden",
+                        fontSize: "0.83rem"
                       }}
                     >
-                      <div style={{ marginBottom: "6px", color: "var(--h-ink)" }}>
-                        🎯 <b>{isSi ? "විෂයයන්:" : "Subjects:"}</b> {g.subjects}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "10px 14px",
+                          borderBottom: "1px solid var(--h-line)",
+                          gap: "8px"
+                        }}
+                      >
+                        <span style={{ color: "var(--h-muted)", fontWeight: 600 }}>
+                          ⏰ {isSi ? "Zoom කාලසටහන" : "Zoom Time"}
+                        </span>
+                        <strong style={{ color: "var(--h-gold)", textAlign: "right" }}>
+                          {g.scheduleShort}
+                        </strong>
                       </div>
-                      <div style={{ marginBottom: "6px", color: "var(--h-gold)", fontWeight: 700 }}>
-                        ⏰ <b>{isSi ? "Zoom කාලසටහන:" : "Zoom Schedule:"}</b> {g.schedule}
+
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "10px 14px",
+                          borderBottom: "1px solid var(--h-line)",
+                          gap: "8px"
+                        }}
+                      >
+                        <span style={{ color: "var(--h-muted)", fontWeight: 600 }}>
+                          📅 {isSi ? "ක්‍රියාත්මක මාසය" : "Active Month"}
+                        </span>
+                        <strong style={{ color: "var(--h-green)", textAlign: "right" }}>
+                          {curFolder ? curFolder.month : "2026 නොවැම්බර්"}
+                        </strong>
                       </div>
-                      {curFolder && (
-                        <div style={{ color: "var(--h-green)", fontWeight: 700 }}>
-                          🔥 <b>{isSi ? "මේ මාසයේ පන්තිය:" : "Current Month:"}</b> {curFolder.month}
-                        </div>
-                      )}
+
+                      <div
+                        style={{
+                          padding: "10px 14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "3px"
+                        }}
+                      >
+                        <span style={{ color: "var(--h-muted)", fontWeight: 600, fontSize: "0.78rem" }}>
+                          🎯 {isSi ? "ආවරණය වන විෂයයන්:" : "Covered Subjects:"}
+                        </span>
+                        <strong style={{ color: "var(--h-ink)", fontSize: "0.83rem", lineHeight: 1.35 }}>
+                          {g.subjects}
+                        </strong>
+                      </div>
                     </div>
 
-                    <ul style={{ margin: "0 0 18px", paddingLeft: "18px", fontSize: "0.85rem", color: "var(--h-ink)", lineHeight: 1.7 }}>
+                    {/* 4. Uniform 3 Checkmark Feature Rows */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "9px", marginBottom: "20px" }}>
                       {g.features.map((feat, idx) => (
-                        <li key={idx}>{feat}</li>
+                        <div
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: "9px",
+                            fontSize: "0.85rem",
+                            color: "var(--h-ink)",
+                            lineHeight: 1.4
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: "20px",
+                              height: "20px",
+                              borderRadius: "50%",
+                              background: "var(--h-green-bg)",
+                              color: "var(--h-green)",
+                              display: "grid",
+                              placeItems: "center",
+                              fontSize: "0.72rem",
+                              fontWeight: 800,
+                              flexShrink: 0,
+                              marginTop: "1px"
+                            }}
+                          >
+                            ✓
+                          </span>
+                          <span>{feat}</span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
 
-                  <div style={{ paddingTop: "14px", borderTop: "1px solid var(--h-line)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
+                  {/* 5. Pinned Footer Bar: Monthly Fee + Register CTA */}
+                  <div
+                    style={{
+                      paddingTop: "16px",
+                      borderTop: "1px solid var(--h-line)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "12px",
+                      marginTop: "auto"
+                    }}
+                  >
                     <div>
-                      <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "var(--h-gold)" }}>
-                        {isSi ? `රු. ${g.fee.toLocaleString()}` : `Rs. ${g.fee.toLocaleString()}`}
-                      </div>
-                      <small style={{ fontSize: "0.76rem", color: "var(--h-muted)" }}>
+                      <small style={{ display: "block", fontSize: "0.74rem", color: "var(--h-muted)", fontWeight: 600 }}>
                         {isSi ? "මාසික පන්ති ගාස්තුව" : "Monthly Class Fee"}
                       </small>
+                      <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--h-gold)", lineHeight: 1.1 }}>
+                        {isSi ? `රු. ${g.fee.toLocaleString()}` : `Rs. ${g.fee.toLocaleString()}`}
+                      </div>
                     </div>
 
                     <Link
                       href="/login?mode=reg"
                       className="btn"
-                      style={{ fontSize: "0.85rem", padding: "9px 16px" }}
+                      style={{ fontSize: "0.85rem", padding: "10px 18px", whiteSpace: "nowrap" }}
                     >
                       {isSi ? `${g.grade} ශ්‍රේණියට එක්වන්න →` : `Join Grade ${g.grade} →`}
                     </Link>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
