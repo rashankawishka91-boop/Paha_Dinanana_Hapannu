@@ -279,6 +279,7 @@ export default function AiChatbot() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedGrade, setSelectedGrade] = useState(Number(app?.me?.grade) || 5);
   const [language, setLanguage] = useState(siteLang); // "si", "en", "ta"
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -298,10 +299,10 @@ export default function AiChatbot() {
 
   const welcomeMessage =
     language === "ta"
-      ? "நான் இலங்கை தேசிய கல்வி நிறுவகத்தின் (NIE) தரம் 5 ஆசிரியர் வழிகாட்டியை முழுமையாகக் கொண்டு சுற்றாடல் 16 கருப்பொருட்கள், ஆங்கிலம் மற்றும் கணித ரகசியங்களை கற்பிக்கும் உத்தியோகபூர்வ AI ஆசான் ஆவேன். ஏதேனும் கேள்வியைக் கேட்கவும்."
+      ? `வணக்கம்! நான் தரம் 3, 4, 5 இலங்கை ஆசிரியர் வழிகாட்டியின்படி கற்பிக்கும் உங்கள் AI ஆசிரியர். உங்கள் கேள்வியை நேராகக் கேளுங்கள்.`
       : language === "en"
-      ? "I am built on the official Sri Lanka NIE Grade 5 Teacher's Guide, with extra tips for top marks. Pick a topic below or ask me anything."
-      : "මම ශ්‍රී ලංකා ජාතික අධ්‍යාපන ආයතනයේ (NIE) 5 ශ්‍රේණිය නිල පොදු ගුරු මාර්ගෝපදේශය පදනම් කරගත් 190+ AI ගුරුතුමා වෙමි. විෂය කරුණු, අනුමාන ප්‍රශ්න සහ කෙටි රහස් ඕනෑම දෙයක් අසන්න.";
+      ? `Hello! I am your Sri Lanka NIE Teacher's Guide AI Teacher for Grades 3, 4, and 5. Ask me any question directly.`
+      : `ආයුබෝවන් දුවේ / පුතේ! මම 3, 4 සහ 5 ශ්‍රේණි ශ්‍රී ලංකා ගුරු අත්පොතට (NIE Teacher's Guide) අනුව උගන්වන ඔබේ AI ගුරුතුමා. ඔබට දැනගැනීමට අවශ්‍ය ප්‍රශ්නය කෙලින්ම අසන්න.`;
 
   const [messages, setMessages] = useState([
     {
@@ -378,6 +379,7 @@ export default function AiChatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          grade: selectedGrade,
           language,
           customApiKey,
         }),
@@ -557,18 +559,32 @@ export default function AiChatbot() {
                 <i />
               </div>
               <div>
-                <h1>190+ AI Tutor</h1>
+                <h1>AI ගුරුතුමා (Grade {selectedGrade})</h1>
                 <small>
                   {language === "ta"
-                    ? "தரம் 5 புலமைப்பரிசில் ஆசிரியர்"
+                    ? "தரம் 3, 4, 5 ஆசிரியர் வழிகாட்டி"
                     : language === "en"
-                    ? "Grade 5 scholarship teacher"
-                    : "5 ශ්‍රේණිය ශිෂ්‍යත්ව ගුරුතුමා"}
+                    ? "Grades 3, 4, 5 NIE Teacher's Guide"
+                    : "3, 4, 5 ශ්‍රේණි ශ්‍රී ලංකා ගුරු අත්පොත"}
                 </small>
               </div>
             </div>
 
             <div className="tools">
+              {/* Grade selector (3, 4, 5) */}
+              <div className="seg" role="group" aria-label="Grade">
+                {[3, 4, 5].map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    aria-pressed={selectedGrade === g}
+                    onClick={() => setSelectedGrade(g)}
+                    title={`${g} ශ්‍රේණිය`}
+                  >
+                    {g} ශ්‍රේ
+                  </button>
+                ))}
+              </div>
               {/* Segmented language switch */}
               <div className="seg" role="group" aria-label="Language">
                 <button

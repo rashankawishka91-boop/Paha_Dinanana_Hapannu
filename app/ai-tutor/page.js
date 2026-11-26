@@ -1,56 +1,33 @@
 "use client";
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState, useRef, useEffect } from "react";
 import { useApp, getYoutubeEmbedUrl } from "../../lib/Provider";
 
-// Formatter component for cleanly structured teacher responses with Markdown Tables
-function FormattedMessage({ content, isSi = true }) {
-  if (!content) return null;
-
-  const syllabusMatch = content.match(/##\s*📘\s*1\.\s*විෂය නිර්දේශය[^\n]*\n([\s\S]*?)(?=(##\s*💡|$))/i);
-  const extraMatch = content.match(/##\s*💡\s*2\.\s*අමතර දැනුම[^\n]*\n([\s\S]*?)$/i);
-
-  if (syllabusMatch || extraMatch) {
-    const introText = content.split(/##\s*📘/)[0].trim();
-    const syllabusText = syllabusMatch ? syllabusMatch[1].trim() : "";
-    const extraText = extraMatch ? extraMatch[1].trim() : "";
-
-    return (
-      <div className="ai-structured-msg">
-        {introText && (
-          <div className="ai-intro-block" style={{ marginBottom: 10 }}>
-            {renderBlocks(introText)}
-          </div>
-        )}
-
-        {syllabusText && (
-          <div className="ai-section-card ai-syllabus-card">
-            <div className="ai-syllabus-header">
-              <span>📘</span>
-              <span>{isSi ? "1. විෂය නිර්දේශය හා ගුරු මාර්ගෝපදේශය අනුව" : "1. Official Syllabus & NIE Teacher Guide"}</span>
-            </div>
-            <div className="ai-syllabus-body">
-              {renderBlocks(syllabusText)}
-            </div>
-          </div>
-        )}
-
-        {extraText && (
-          <div className="ai-section-card ai-extra-card">
-            <div className="ai-extra-header">
-              <span>💡</span>
-              <span>{isSi ? "2. අමතර දැනුම සහ 190+ විභාග රහස්" : "2. Extra Knowledge & 190+ Exam Secrets"}</span>
-            </div>
-            <div className="ai-extra-body">
-              {renderBlocks(extraText)}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return <div>{renderBlocks(content)}</div>;
+function parseBold(text) {
+  if (typeof text !== "string") return text;
+  const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
+  return parts.map((p, idx) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return <strong key={idx}>{p.slice(2, -2)}</strong>;
+    }
+    if (p.startsWith("`") && p.endsWith("`")) {
+      return (
+        <code
+          key={idx}
+          style={{
+            background: "rgba(217, 119, 6, 0.14)",
+            padding: "1px 6px",
+            borderRadius: "5px",
+            fontFamily: "monospace",
+            fontSize: "0.92em",
+            fontWeight: 700,
+          }}
+        >
+          {p.slice(1, -1)}
+        </code>
+      );
+    }
+    return p;
+  });
 }
 
 function renderTable(tableLines, key) {
@@ -65,7 +42,7 @@ function renderTable(tableLines, key) {
   };
 
   const headerCells = parseRow(cleanLines[0]);
-  let bodyRows = [];
+  const bodyRows = [];
   let startIndex = 1;
 
   if (cleanLines.length > 1 && /^\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?$/.test(cleanLines[1].trim())) {
@@ -74,14 +51,13 @@ function renderTable(tableLines, key) {
 
   for (let r = startIndex; r < cleanLines.length; r++) {
     const row = cleanLines[r].trim();
-    if (!row) continue;
-    if (/^\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?$/.test(row)) continue;
+    if (!row || /^\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?$/.test(row)) continue;
     bodyRows.push(parseRow(row));
   }
 
   return (
-    <div key={key} className="ai-table-wrap">
-      <table className="ai-chat-table">
+    <div key={key} className="ait-table-wrap">
+      <table className="ait-table">
         <thead>
           <tr>
             {headerCells.map((cell, cIdx) => (
@@ -103,9 +79,9 @@ function renderTable(tableLines, key) {
   );
 }
 
-function renderBlocks(text) {
-  if (!text) return null;
-  const lines = text.split("\n");
+function FormattedTeacherMessage({ content }) {
+  if (!content) return null;
+  const lines = content.split("\n");
   const blocks = [];
   let currentTable = null;
 
@@ -128,9 +104,7 @@ function renderBlocks(text) {
     const isTableRow = trimmed.includes("|") && (trimmed.startsWith("|") || pipeCount >= 2);
 
     if (isTableRow) {
-      if (!currentTable) {
-        currentTable = [];
-      }
+      if (!currentTable) currentTable = [];
       currentTable.push(trimmed);
       continue;
     } else {
@@ -142,7 +116,6 @@ function renderBlocks(text) {
       continue;
     }
 
-    // Check if line contains a YouTube URL
     const ytInLine = getYoutubeEmbedUrl(trimmed);
     if (ytInLine) {
       blocks.push({ type: "video", url: ytInLine, text: rawLine });
@@ -155,8 +128,8 @@ function renderBlocks(text) {
       blocks.push({ type: "h2", text: trimmed.slice(3) });
     } else if (trimmed.startsWith("# ")) {
       blocks.push({ type: "h2", text: trimmed.slice(2) });
-    } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-      blocks.push({ type: "bullet", text: trimmed.slice(2) });
+    } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("• ")) {
+      blocks.push({ type: "bullet", text: trimmed.replace(/^[-*•]\s+/, "") });
     } else {
       const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
       if (numMatch) {
@@ -169,131 +142,153 @@ function renderBlocks(text) {
 
   flushTable();
 
-  return blocks.map((block, idx) => {
-    if (block.type === "video") {
-      return (
-        <div key={idx} style={{ margin: "10px 0" }}>
-          {block.text && !block.text.startsWith("http") && (
-            <p className="ai-msg-p" style={{ marginBottom: "6px" }}>{parseBold(block.text)}</p>
-          )}
-          <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", borderRadius: "10px", background: "#000", border: "1px solid rgba(245, 166, 35, 0.3)" }}>
-            <iframe
-              src={block.url}
-              allowFullScreen
-              title="YouTube Video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
-            />
-          </div>
-        </div>
-      );
-    }
-    if (block.type === "table") {
-      return renderTable(block.lines, idx);
-    }
-    if (block.type === "spacer") {
-      return <div key={idx} style={{ height: 6 }} />;
-    }
-    if (block.type === "h2") {
-      return (
-        <h3 key={idx} className="ai-msg-h2" style={{ color: "#1e3a8a" }}>
-          {parseBold(block.text)}
-        </h3>
-      );
-    }
-    if (block.type === "h3") {
-      return (
-        <h4 key={idx} className="ai-msg-h3" style={{ color: "#1e3a8a" }}>
-          {parseBold(block.text)}
-        </h4>
-      );
-    }
-    if (block.type === "bullet") {
-      return (
-        <div key={idx} className="ai-bullet-item">
-          <span className="ai-bullet-dot">•</span>
-          <span style={{ flex: 1 }}>{parseBold(block.text)}</span>
-        </div>
-      );
-    }
-    if (block.type === "num") {
-      return (
-        <div key={idx} className="ai-bullet-item">
-          <span className="ai-bullet-num" style={{ color: "#0284c7" }}>{block.num}.</span>
-          <span style={{ flex: 1 }}>{parseBold(block.text)}</span>
-        </div>
-      );
-    }
-    return (
-      <p key={idx} className="ai-msg-p">
-        {parseBold(block.text)}
-      </p>
-    );
-  });
+  return (
+    <div className="ait-msg-formatted">
+      {blocks.map((block, idx) => {
+        if (block.type === "table") return renderTable(block.lines, idx);
+        if (block.type === "spacer") return <div key={idx} style={{ height: 6 }} />;
+        if (block.type === "h2") {
+          return (
+            <h4 key={idx} className="ait-h2">
+              {parseBold(block.text)}
+            </h4>
+          );
+        }
+        if (block.type === "h3") {
+          return (
+            <h5 key={idx} className="ait-h3">
+              {parseBold(block.text)}
+            </h5>
+          );
+        }
+        if (block.type === "bullet") {
+          return (
+            <div key={idx} className="ait-bullet">
+              <span className="ait-dot">•</span>
+              <span>{parseBold(block.text)}</span>
+            </div>
+          );
+        }
+        if (block.type === "num") {
+          return (
+            <div key={idx} className="ait-bullet">
+              <span className="ait-num">{block.num}.</span>
+              <span>{parseBold(block.text)}</span>
+            </div>
+          );
+        }
+        return (
+          <p key={idx} className="ait-p">
+            {parseBold(block.text)}
+          </p>
+        );
+      })}
+    </div>
+  );
 }
 
-function parseBold(text) {
-  if (typeof text !== "string") return text;
-  const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
-  return parts.map((p, idx) => {
-    if (p.startsWith("**") && p.endsWith("**")) {
-      return <strong key={idx}>{p.slice(2, -2)}</strong>;
-    }
-    if (p.startsWith("`") && p.endsWith("`")) {
-      return (
-        <code
-          key={idx}
-          style={{
-            background: "rgba(37, 99, 235, 0.08)",
-            padding: "1px 5px",
-            borderRadius: "4px",
-            fontFamily: "monospace",
-            fontSize: "0.9em",
-            color: "#1d4ed8",
-          }}
-        >
-          {p.slice(1, -1)}
-        </code>
-      );
-    }
-    return p;
-  });
-}
+const GRADE_CURRICULUM = {
+  3: {
+    label: "3 ශ්‍රේණිය",
+    badge: "Grade 3 · NIE ගුරු අත්පොත",
+    desc: "3 ශ්‍රේණිය නිල ගුරු අත්පොතට අනුව පරිසරය, මව්බස, ගණිතය, දෙමළ සහ ඉංග්‍රීසි පාඩම් සරලව",
+    quickQuestions: [
+      { label: "🌱 මුදුන් මුල් හා කෙඳි මුල්", q: "3 ශ්‍රේණිය පරිසරය පාඩමට අනුව මුදුන් මුල් සහ කෙඳි මුල් ඇති ශාක උදාහරණ සහිතව කියා දෙන්න." },
+      { label: "🔢 ස්ථානීය අගය (ගණිතය)", q: "3 ශ්‍රේණිය ගණිතයට අනුව ඉලක්කම් තුනක සංඛ්‍යාවක එකස්ථානය, දසස්ථානය සහ සියස්ථානය සොයන හැටි කියා දෙන්න." },
+      { label: "🐾 සතුන්ගේ ආහාර පුරුදු", q: "ශාක භක්ෂක, මාංශ භක්ෂක සහ සර්ව භක්ෂක සතුන් උදාහරණ සහිතව සරලව කියා දෙන්න." },
+      { label: "📖 උක්ත ආඛ්‍යාත (සිංහල)", q: "3 ශ්‍රේණිය සිංහල පාඩමට අනුව ඒකවචන හා බහුවචන වාක්‍ය නිවැරදිව ලියන හැටි කියා දෙන්න." },
+      { label: "❓ 3 ශ්‍රේණිය ප්‍රශ්නයක් අහන්න", q: "3 ශ්‍රේණිය ගුරු අත්පොතෙන් මගෙන් ප්‍රශ්නයක් අහන්න." },
+    ],
+  },
+  4: {
+    label: "4 ශ්‍රේණිය",
+    badge: "Grade 4 · NIE ගුරු අත්පොත",
+    desc: "4 ශ්‍රේණිය නිල ගුරු අත්පොතට අනුව පරිසරය තේමා 16, ගණිත ගැටළු, සිංහල ව්‍යාකරණ සහ දෙමළ",
+    quickQuestions: [
+      { label: "🥗 විටමින් හා පෝෂණය", q: "4 ශ්‍රේණිය ගුරු අත්පොතට අනුව විටමින් A, B, C, D සහ යකඩ අඩු වීමෙන් වැළඳෙන රෝග මොනවාද?" },
+      { label: "⌚ රෝම සංඛ්‍යා හා කාලය", q: "4 ශ්‍රේණිය ගණිතයට අනුව 1 සිට 12 දක්වා රෝම සංඛ්‍යා සහ පැය 24 ඔරලෝසු වේලාව ලියන හැටි කියා දෙන්න." },
+      { label: "💧 ජලයේ ගුණ හා පරීක්ෂණ", q: "ජලයේ දියවන ද්‍රව්‍ය, දිය නොවන ද්‍රව්‍ය සහ ලුණු වතුරේ බිත්තරය පාවීමේ පරීක්ෂණය පැහැදිලි කරන්න." },
+      { label: "🇱🇰 ජාතික සංකේත හා වීරයන්", q: "අපේ ජාතික සංකේත සහ ජාතික වීරයන් ගැන 4 ශ්‍රේණිය ගුරු අත්පොතට අනුව කියා දෙන්න." },
+      { label: "❓ 4 ශ්‍රේණිය ප්‍රශ්නයක් අහන්න", q: "4 ශ්‍රේණිය ගුරු අත්පොතෙන් මගෙන් ප්‍රශ්නයක් අහන්න." },
+    ],
+  },
+  5: {
+    label: "5 ශ්‍රේණිය (ශිෂ්‍යත්වය)",
+    badge: "Grade 5 · ශිෂ්‍යත්ව ගුරු අත්පොත",
+    desc: "5 ශ්‍රේණිය නිල ගුරු මාර්ගෝපදේශයට අනුව පරිසරය තේමා 16, ගණිත කෙටි ක්‍රම, සිංහල, දෙමළ සහ ඉංග්‍රීසි",
+    quickQuestions: [
+      { label: "🌿 බීජ ව්‍යාප්ත වන ක්‍රම 4", q: "5 ශ්‍රේණිය ගුරු අත්පොතට අනුව බීජ හා ඵල ව්‍යාප්ත වන ක්‍රම 4 උදාහරණ සහිතව කියා දෙන්න." },
+      { label: "👑 රජවරුන් සහ වැව් / දාගැබ්", q: "5 ශ්‍රේණිය ගුරු අත්පොතට අනුව පණ්ඩුකාභය, දේවානම්පියතිස්ස, දුටුගැමුණු, මහසෙන් සහ ධාතුසේන රජවරුන් කළ සේවාවන් මොනවාද?" },
+      { label: "⚙️ සරල යන්ත්‍ර (ලීවර, කප්පි)", q: "වැඩ පහසු කරන සරල යන්ත්‍ර (ලීවර, ආනත තලය, කප්පිය, ආපඤ්ඤය) උදාහරණ සහිතව පැහැදිලි කරන්න." },
+      { label: "📐 ත්‍රිකෝණ සංඛ්‍යා හා ඔරලෝසු ගැටළු", q: "5 ශ්‍රේණිය ශිෂ්‍යත්ව ගණිතයේ ත්‍රිකෝණ සංඛ්‍යා සූත්‍රය සහ කැඩපත් ඔරලෝසු වේලාව සොයන කෙටි ක්‍රමය කියා දෙන්න." },
+      { label: "❓ 5 ශ්‍රේණිය ප්‍රශ්නයක් අහන්න", q: "5 ශ්‍රේණිය ගුරු අත්පොතෙන් මගෙන් ශිෂ්‍යත්ව බහුවරණ ප්‍රශ්නයක් අහන්න." },
+    ],
+  },
+};
+
+const THEMES_16 = [
+  { id: 1, title: "අපේ යහපැවැත්ම", desc: "පෞද්ගලික පිරිසිදුකම, යහපත් පුරුදු, සිත පහන් කිරීමේ අභ්‍යාස, අවශ්‍යතා සහ උවමනා" },
+  { id: 2, title: "අපි ලක් වැසියෝ", desc: "ජාතික කොඩිය, ජාතික ගීය, රාජ්‍ය ලාංඡනය, ජාතික වීරයන් සහ සහජීවනය" },
+  { id: 3, title: "පැළෑටි හා ගස්වැල්", desc: "මුදුන් මුල් හා කෙඳි මුල්, විශේෂ මුල්, භූගත කඳන්, බීජ හා ඵල ව්‍යාප්තිය" },
+  { id: 4, title: "අප අවට සත්තු", desc: "සතුන්ගේ ආහාර පුරුදු, රූපාන්තරණය (සමනලයා, මදුරුවා, ගෙම්බා), ආවේණික සතුන්" },
+  { id: 5, title: "අප පරිහරණය කරන දේ", desc: "උපකරණ ආරක්ෂිත භාවිතය, ප්‍රමිති ලාංඡන (SLS), පාරිභෝගික තොරතුරු" },
+  { id: 6, title: "අපේ ආහාර", desc: "සමබල ආහාර වේල, විටමින් A, B, C, D, යකඩ හා අයඩීන් ඌනතා රෝග" },
+  { id: 7, title: "ආරක්ෂාව හා පරිස්සම", desc: "ප්‍රථමාධාර, අකුණු අනතුරු, හදිසි ඇමතුම් අංක (119, 1990, 1929, 110, 117)" },
+  { id: 8, title: "ජලය", desc: "ජලයේ අවස්ථා 3, දියවන හා දිය නොවන ද්‍රව්‍ය, ලුණු ජලයේ බිත්තර පරීක්ෂණය, ජල පීඩනය" },
+  { id: 9, title: "වැඩ පහසු කිරීමේ මං", desc: "සරල යන්ත්‍ර: ලීවරය, ආනත තලය, කප්පිය, දණ්ඩ හා රෝදය, ආපඤ්ඤය" },
+  { id: 10, title: "ගෙවත්ත", desc: "3R සංකල්පය (Reduce, Reuse, Recycle), කොම්පෝස්ට් පොහොර, වගාවට හිතකර සතුන්" },
+  { id: 11, title: "ගමනාගමනය", desc: "මාර්ග නීති, ආලෝක සංඥා, පදික මාරුව, දුම්රිය හා මහාමාර්ග" },
+  { id: 12, title: "මිනිස් හැසිරීම්", desc: "මූලික අවශ්‍යතා සහ උවමනා, සාමකාමී පැවැත්ම, කණ්ඩායම් හැඟීම" },
+  { id: 13, title: "පොළොව හා අහස", desc: "පාංශු ඛාදනය වැළැක්වීම, සූර්යග්‍රහණ හා චන්ද්‍රග්‍රහණ, තාරකා රටා (දඩයක්කාරයා, මහ වලසා)" },
+  { id: 14, title: "අපට කළ හැකි වෙනස්කම්", desc: "කසළ වර්ගීකරණ බඳුන් වර්ණ (කොළ, නිල්, තැඹිලි, රතු), පරිසර සංරක්ෂණය" },
+  { id: 15, title: "මිනිසා හා තොරතුරු", desc: "පැරණි හා නවීන සන්නිවේදන ක්‍රම, අන්තර්ජාතික සම්මත සංකේත" },
+  { id: 16, title: "අපේ අතීත විත්ති", desc: "පණ්ඩුකාභය, දේවානම්පියතිස්ස, දුටුගැමුණු, මහසෙන්, ධාතුසේන, පරාක්‍රමබාහු රජවරුන්" },
+];
 
 export default function AiTutorPage() {
-  const { lang, toggleLang, t } = useApp();
-  const isSi = lang === "si";
-  const [selectedTheme, setSelectedTheme] = useState(1);
-  const [activeTab, setActiveTab] = useState("chat"); // 'chat' | 'curriculum' | 'tamil' | 'aboe'
+  const { me, theme } = useApp();
+  const isLight = theme === "light";
+
+  const [selectedGrade, setSelectedGrade] = useState(Number(me?.grade) || 5);
+  const [activeTab, setActiveTab] = useState("chat"); // 'chat' | 'themes' | 'tamil'
+  const [chatLang, setChatLang] = useState("si");
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
-  const [chatLang, setChatLang] = useState("si");
+
+  const chatEndRef = useRef(null);
+
+  const getInitialGreeting = (g) =>
+    `ආයුබෝවන් දුවේ / පුතේ! මම **${g} ශ්‍රේණිය** ශ්‍රී ලංකා ගුරු අත්පොතට (NIE Teacher's Guide) අනුව උගන්වන ඔබේ AI ගුරුතුමා.\n\nඔබට **පරිසරය, ගණිතය, සිංහල, දෙමළ හෝ ඉංග්‍රීසි** විෂයයන්වලින් දැනගැනීමට අවශ්‍ය ඕනෑම ප්‍රශ්නයක් පහතින් අසන්න. අසන ප්‍රශ්නයට පමණක් ඉතා පැහැදිලිව සහ නිවැරදිව මම පිළිතුරු ලබා දෙන්නම්.`;
+
   const [chatLog, setChatLog] = useState([
     {
       role: "assistant",
-      content:
-        "👋 ආයුබෝවන්! මම **පහ දිනන හපන්නු 190+ AI ගුරු සහයක**. \n\nශ්‍රී ලංකා ජාතික අධ්‍යාපන ආයතනයේ (NIE) 5 ශ්‍රේණිය **පොදු ගුරු මාර්ගෝපදේශය** (Teacher's Guide) පදනම් කරගත් නිල AI උපදේශකයා මමයි. පරිසරය තේමා 16, ඉංග්‍රීසි (ABOE) සහ දෙමළ 1-19 සංවාද පිළිබඳ ඕනෑම ගැටළුවක් සිංහල, English හෝ தமிழ் බසින් විමසන්න!",
+      content: getInitialGreeting(Number(me?.grade) || 5),
     },
   ]);
 
-  const themes = [
-    { id: 1, title: "අපේ යහපැවැත්ම", en: "Our Good Behaviour", ta: "எமது நன்னடத்தை", desc: "යහපත් පුරුදු, සිත පහන් කිරීමේ අභ්‍යාස, අවශ්‍යතා සහ උවමනා, ආචාරශීලී කතාබහ" },
-    { id: 2, title: "අපි ලක් වැසියෝ", en: "We Sri Lankans", ta: "நாம் இலங்கையர்", desc: "ජාතික සංකේත (කොඩිය, ගීය, ලාංඡනය), ජාතික වීරයන් (ගොංගාලේගොඩ බණ්ඩා, කැප්පෙටිපොළ), සහජීවනය" },
-    { id: 3, title: "පැළෑටි හා ගස්වැල්", en: "Plants & Trees", ta: "தாவரங்களும் மரங்களும்", desc: "ශාක කොටස්, මුල් පද්ධති, පත්‍ර, බීජ හා ඵල ව්‍යාප්ති ක්‍රම, ලංකාවට ආවේණික ශාක" },
-    { id: 4, title: "අප අවට සත්තු", en: "Animals Around Us", ta: "எம்மைச் சூழவுள்ள விலங்குகள்", desc: "ශාක භක්ෂක, මාංශ භක්ෂක, සර්ව භක්ෂක, හැඩගැසීම්, ආවේණික සතුන් (වලි කුකුළා, කළු වඳුරා)" },
-    { id: 5, title: "අප පරිහරණය කරන දේ", en: "Things We Use", ta: "நாம் பயன்படுத்தும் பொருட்கள்", desc: "උපකරණ භාවිතය, ආරක්ෂාව, පාරිභෝගික අයිතිවාසිකම්, පොදු දේපළ රැකගැනීම" },
-    { id: 6, title: "අපේ ආහාර", en: "Our Food", ta: "எமது உணவு", desc: "සමබල ආහාර, විටමින් A, B, C, D, යකඩ, කැල්සියම්, අයඩීන් ඌනතා රෝග, ආහාර සුරක්ෂිතතාව" },
-    { id: 7, title: "ආරක්ෂාව හා පරිස්සම", en: "Safety & Care", ta: "பாதுகாப்பும் அவதானமும்", desc: "අකුණු අනතුරු, පිළිස්සුම් හා තුවාල ප්‍රථමාධාර, හදිසි අංක (119, 1929, 1990), ඩෙංගු මර්දනය" },
-    { id: 8, title: "ජලය", en: "Water", ta: "நீர்", desc: "ලෝක ජල ව්‍යාප්තිය (1% මිරිදිය), බිත්තර ඝනත්ව පරීක්ෂණය, ජල පීඩනය, ජල පෙරණ, ආගමික සිරිත්" },
-    { id: 9, title: "වැඩ පහසු කිරීමේ මං", en: "Ways of Making Work Easy", ta: "வேலையை எளிதாக்கும் வழிகள்", desc: "සරල යන්ත්‍ර (ආනත තලය, කප්පිය, දණ්ඩ හා රෝදය, විද්‍යුත් චුම්බකය, දැති රෝද)" },
-    { id: 10, title: "ගෙවත්ත", en: "Home Garden", ta: "வீட்டுத் தோட்டம்", desc: "3R සංකල්පය (Reduce, Reuse, Recycle), එල්ලෙන බෝතල් වගාව, හිතකර හා අහිතකර සතුන්, නවදැලි හේන" },
-    { id: 11, title: "ගමනාගමනය", en: "Transport", ta: "போக்குவரத்து", desc: "මාර්ග නීති, මාර්ග සංඥා (රතු, කහ, කොළ), පදික මාරු, වරාය සහ ගුවන් තොටුපළවල්" },
-    { id: 12, title: "මිනිස් හැසිරීම්", en: "Human Behaviour", ta: "மனித நடத்தை", desc: "මූලික අවශ්‍යතා සහ උවමනා, සාමකාමී පැවැත්ම, අන්‍යෝන්‍ය ගෞරවය, කණ්ඩායම් හැඟීම" },
-    { id: 13, title: "පොළොව හා අහස", en: "Earth & Sky", ta: "பூமியும் வானமும்", desc: "පාංශු ඛාදනය වැළැක්වීම, සූර්යයා, පෘථිවිය, චන්ද්‍රයා, ග්‍රහණ, තාරකා රටා (දඩයක්කාරයා)" },
-    { id: 14, title: "අපට කළ හැකි වෙනස්කම්", en: "Changes We Can Do", ta: "நாம் செய்யக்கூடிய மாற்றங்கள்", desc: "කසළ කළමනාකරණය, අසරණයන්ට පිහිට වීම, පරිසරය සුරැකීමේ ධනාත්මක පුරුදු" },
-    { id: 15, title: "මිනිසා හා තොරතුරු", en: "Man & Information", ta: "மனிதனும் தகவலும்", desc: "සන්නිවේදන පරිණාමය, අන්තර්ජාතික සම්මත සංකේත (ආබාධිත, ගුවන් තොටුපළ), තිර කාල අවදානම්" },
-    { id: 16, title: "අපේ අතීත විත්ති", en: "Our Past", ta: "எமது கடந்த காலம்", desc: "පණ්ඩුකාභය, දේවානම්පියතිස්ස, එළාර, දුටුගැමුණු රජවරුන්, අභය වැව, රුවන්වැලිසෑය, චක්ගුඩු ක්‍රීඩාව" },
-  ];
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatLog, chatLoading]);
+
+  const handleSelectGrade = (g) => {
+    setSelectedGrade(g);
+    setChatLog([
+      {
+        role: "assistant",
+        content: getInitialGreeting(g),
+      },
+    ]);
+  };
+
+  const handleClearChat = () => {
+    setChatLog([
+      {
+        role: "assistant",
+        content: getInitialGreeting(selectedGrade),
+      },
+    ]);
+  };
 
   const handleAskTutor = async (customPrompt = null) => {
     const q = customPrompt || chatInput.trim();
@@ -316,6 +311,7 @@ export default function AiTutorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: updated,
+          grade: selectedGrade,
           language: chatLang,
           customApiKey,
         }),
@@ -328,26 +324,16 @@ export default function AiTutorPage() {
       }
 
       if (!replyText) {
-        replyText = isSi
-          ? "ආදරණීය දරුවා, ගුරුතුමා ඔබ වෙනුවෙන් සූදානම්! කරුණාකර ඔබගේ ප්‍රශ්නය නැවත විමසන්න."
-          : "Dear student, teacher is ready to help you! Please try asking your question again.";
+        replyText = "පුතේ, කරුණාකර ඔබගේ ප්‍රශ්නය නැවත වරක් විමසන්න.";
       }
 
-      setChatLog((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: replyText,
-        },
-      ]);
+      setChatLog((prev) => [...prev, { role: "assistant", content: replyText }]);
     } catch (e) {
       setChatLog((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: isSi
-            ? "ආදරණීය දරුවා, ගුරුතුමා ඔබ වෙනුවෙන් සූදානම්! කරුණාකර ඔබගේ ප්‍රශ්නය නැවත විමසන්න."
-            : "Dear student, teacher is ready to help you! Please try asking your question again.",
+          content: "පුතේ, සම්බන්ධතාවයේ සුළු දෝෂයක් ඇති වුණා. කරුණාකර නැවත උත්සාහ කරන්න.",
         },
       ]);
     } finally {
@@ -355,468 +341,734 @@ export default function AiTutorPage() {
     }
   };
 
-  const selectedThemeObj = themes.find((t) => t.id === selectedTheme) || themes[0];
+  const gradeInfo = GRADE_CURRICULUM[selectedGrade] || GRADE_CURRICULUM[5];
 
   return (
-    <main className="ai-page-wrap">
-      {/* Page Hero */}
-      <section className="ai-page-hero">
-        <div className="hero-badge" style={{ margin: "0 auto 14px auto" }}>
-          🤖 NIE නිල 5 ශ්‍රේණිය පොදු ගුරු මාර්ගෝපදේශය පාදක කරගත් AI පද්ධතිය
-        </div>
-        <h1 className="hero-title" style={{ fontSize: "2.5rem" }}>
-          190+ AI ගුරු සහයක Learning Hub
-        </h1>
-        <p className="hero-desc" style={{ maxWidth: 780, margin: "0 auto 20px auto" }}>
-          පරිසරය තේමා 16, ඉංග්‍රීසි (ABOE) සහ දෙමළ 1-19 සංවාද ආවරණය වන, ශිෂ්‍යත්ව දරුවන්ගේ වේගය හා දැනුම හදන බුද්ධිමත්
-          AI අධ්‍යාපන සහයකයා.
-        </p>
+    <main className={`ait-root ${isLight ? "ait-light" : "ait-dark"}`}>
+      <style jsx global>{`
+        .ait-root {
+          --bg: #16090b;
+          --surface: #241114;
+          --surface-2: #2f161a;
+          --chat-bg: #1c0c0f;
+          --ink: #fff6ec;
+          --muted: #d4b9a9;
+          --line: #543225;
+          --gold: #f5b027;
+          --gold-ink: #241002;
+          --bot-bub: #2b1518;
+          --bot-border: #5a3728;
+          --user-bub: #7a1c28;
+          --user-ink: #ffffff;
+          --green: #10b981;
+          min-height: calc(100vh - 58px);
+          background: var(--bg);
+          color: var(--ink);
+          padding: 24px 16px 64px;
+          font-family: "Noto Sans Sinhala", "Figtree", system-ui, sans-serif;
+        }
 
-        {/* Tab switcher */}
-        <div className="ai-tabs-bar">
-          <button
-            className={`ai-tab-pill ${activeTab === "chat" ? "active" : ""}`}
-            onClick={() => setActiveTab("chat")}
-          >
-            💬 AI සමඟ සාකච්ඡා කරන්න
-          </button>
-          <button
-            className={`ai-tab-pill ${activeTab === "curriculum" ? "active" : ""}`}
-            onClick={() => setActiveTab("curriculum")}
-          >
-            📚 පරිසරය තේමා 16 සාරාංශය
-          </button>
-          <button
-            className={`ai-tab-pill ${activeTab === "tamil" ? "active" : ""}`}
-            onClick={() => setActiveTab("tamil")}
-          >
-            🗣️ දෙමළ සංවාද 1-19
-          </button>
-          <button
-            className={`ai-tab-pill ${activeTab === "aboe" ? "active" : ""}`}
-            onClick={() => setActiveTab("aboe")}
-          >
-            🔤 English ABOE
-          </button>
-        </div>
-      </section>
+        .ait-root.ait-light {
+          --bg: #f8f3eb;
+          --surface: #ffffff;
+          --surface-2: #f4eadc;
+          --chat-bg: #fcf9f4;
+          --ink: #231215;
+          --muted: #665155;
+          --line: #decbb2;
+          --gold: #d98200;
+          --gold-ink: #ffffff;
+          --bot-bub: #ffffff;
+          --bot-border: #e2d2bc;
+          --user-bub: #5a1420;
+          --user-ink: #ffffff;
+          --green: #0f7a4b;
+        }
 
-      {/* Main Tab View */}
-      <div className="ai-page-body container">
-        {activeTab === "chat" && (
-          <div className="ai-fullscreen-chat">
-            <div className="ai-chat-topbar">
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <img
-                  src="/teacher-face.jpg"
-                  alt="190+ AI Tutor"
-                  style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid #e9a23b", flexShrink: 0 }}
-                />
-                <div>
-                  <h3 style={{ margin: 0, color: "#0f172a", fontSize: "1.1rem" }}>
-                    ශිෂ්‍යත්ව 190+ AI සජීවී ගුරු සහයක
-                  </h3>
-                  <small style={{ color: "#64748b" }}>
-                    භාෂාව තෝරන්න (Select Language):
-                  </small>
+        .ait-container {
+          max-width: 1080px;
+          margin: 0 auto;
+        }
+
+        /* Header Banner */
+        .ait-top-card {
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: 20px;
+          padding: 20px 24px;
+          margin-bottom: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+        }
+
+        .ait-title-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 14px;
+        }
+
+        .ait-teacher-profile {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .ait-avatar {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2.5px solid var(--gold);
+          flex-shrink: 0;
+        }
+
+        .ait-title-row h1 {
+          margin: 0;
+          font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+          font-weight: 800;
+          color: var(--ink);
+        }
+
+        .ait-title-row p {
+          margin: 3px 0 0;
+          font-size: 0.92rem;
+          color: var(--muted);
+        }
+
+        /* Grade Selector Bar (Grades 3, 4, 5) */
+        .ait-controls-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+          padding-top: 14px;
+          border-top: 1px solid var(--line);
+        }
+
+        .ait-grade-pills {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .ait-grade-btn {
+          padding: 9px 18px;
+          border-radius: 12px;
+          border: 1.5px solid var(--line);
+          background: var(--surface-2);
+          color: var(--ink);
+          font-weight: 700;
+          font-size: 0.92rem;
+          cursor: pointer;
+          transition: all 0.18s ease;
+          box-shadow: none;
+        }
+
+        .ait-grade-btn:hover {
+          border-color: var(--gold);
+          transform: translateY(-1px);
+        }
+
+        .ait-grade-btn.active {
+          background: linear-gradient(135deg, #ffd25a, #e59400);
+          color: #241002;
+          border-color: transparent;
+          font-weight: 800;
+          box-shadow: 0 4px 14px rgba(229, 148, 0, 0.28);
+        }
+
+        .ait-view-tabs {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .ait-tab-btn {
+          padding: 8px 14px;
+          border-radius: 10px;
+          border: 1px solid var(--line);
+          background: transparent;
+          color: var(--muted);
+          font-weight: 700;
+          font-size: 0.86rem;
+          cursor: pointer;
+          box-shadow: none;
+        }
+
+        .ait-tab-btn.active {
+          background: var(--surface-2);
+          color: var(--ink);
+          border-color: var(--gold);
+        }
+
+        /* Main Chat Workspace */
+        .ait-chat-box {
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: 22px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
+        }
+
+        .ait-chat-subbar {
+          background: var(--surface-2);
+          padding: 12px 20px;
+          border-bottom: 1px solid var(--line);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+
+        .ait-quick-row {
+          padding: 12px 20px;
+          background: var(--surface);
+          border-bottom: 1px solid var(--line);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          overflow-x: auto;
+        }
+
+        .ait-q-chip {
+          padding: 7px 14px;
+          border-radius: 99px;
+          border: 1px solid var(--line);
+          background: var(--surface-2);
+          color: var(--ink);
+          font-size: 0.84rem;
+          font-weight: 700;
+          white-space: nowrap;
+          cursor: pointer;
+          box-shadow: none;
+          transition: all 0.15s ease;
+        }
+
+        .ait-q-chip:hover {
+          border-color: var(--gold);
+          background: rgba(245, 176, 39, 0.15);
+        }
+
+        /* Messages Stream */
+        .ait-messages {
+          height: 500px;
+          overflow-y: auto;
+          padding: 22px 20px;
+          background: var(--chat-bg);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .ait-msg-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          max-width: 86%;
+        }
+
+        .ait-msg-row.user {
+          align-self: flex-end;
+          flex-direction: row-reverse;
+        }
+
+        .ait-msg-av {
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid var(--gold);
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .ait-bubble {
+          background: var(--bot-bub);
+          border: 1px solid var(--bot-border);
+          color: var(--ink);
+          padding: 14px 18px;
+          border-radius: 6px 18px 18px 18px;
+          font-size: 0.98rem;
+          line-height: 1.68;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .ait-msg-row.user .ait-bubble {
+          background: var(--user-bub);
+          border-color: transparent;
+          color: var(--user-ink);
+          border-radius: 18px 6px 18px 18px;
+          font-weight: 600;
+        }
+
+        .ait-msg-formatted .ait-p {
+          margin: 4px 0;
+        }
+
+        .ait-msg-formatted .ait-h2 {
+          margin: 10px 0 6px;
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: var(--gold);
+        }
+
+        .ait-msg-formatted .ait-h3 {
+          margin: 8px 0 4px;
+          font-size: 0.96rem;
+          font-weight: 700;
+        }
+
+        .ait-bullet {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          margin: 5px 0;
+        }
+
+        .ait-dot {
+          color: var(--gold);
+          font-weight: 900;
+        }
+
+        .ait-num {
+          color: var(--gold);
+          font-weight: 800;
+          min-width: 20px;
+        }
+
+        .ait-table-wrap {
+          width: 100%;
+          overflow-x: auto;
+          margin: 10px 0;
+          border-radius: 12px;
+          border: 1px solid var(--line);
+        }
+
+        .ait-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.9rem;
+          text-align: left;
+        }
+
+        .ait-table th {
+          background: var(--surface-2);
+          color: var(--gold);
+          padding: 10px 14px;
+          font-weight: 800;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .ait-table td {
+          padding: 9px 14px;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .ait-table tr:last-child td {
+          border-bottom: none;
+        }
+
+        /* Input Composer */
+        .ait-input-area {
+          padding: 16px 20px;
+          background: var(--surface);
+          border-top: 1px solid var(--line);
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+
+        .ait-input {
+          flex: 1;
+          background: var(--chat-bg);
+          border: 1.5px solid var(--line);
+          border-radius: 14px;
+          padding: 13px 16px;
+          color: var(--ink);
+          font: inherit;
+          font-size: 0.98rem;
+          outline: none;
+          resize: none;
+        }
+
+        .ait-input:focus {
+          border-color: var(--gold);
+        }
+
+        .ait-send-btn {
+          padding: 0 24px;
+          height: 50px;
+          border-radius: 14px;
+          background: linear-gradient(135deg, #ffd25a, #e59400);
+          color: #241002;
+          font-weight: 800;
+          font-size: 0.96rem;
+          border: none;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+
+        .ait-send-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        /* 16 Themes Reference Grid */
+        .ait-themes-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+          gap: 14px;
+        }
+
+        .ait-theme-card {
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        @media (max-width: 720px) {
+          .ait-msg-row {
+            max-width: 96%;
+          }
+          .ait-messages {
+            height: 440px;
+            padding: 16px 12px;
+          }
+        }
+      `}</style>
+
+      <div className="ait-container">
+        {/* TOP HEADER & GRADE SELECTOR (GRADES 3, 4, 5) */}
+        <section className="ait-top-card">
+          <div className="ait-title-row">
+            <div className="ait-teacher-profile">
+              <img src="/teacher-face.jpg" alt="AI Teacher" className="ait-avatar" />
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <h1>ශ්‍රී ලංකා ගුරු අත්පොත AI ගුරුතුමා</h1>
+                  <span
+                    style={{
+                      background: "rgba(16, 185, 129, 0.16)",
+                      border: "1px solid rgba(16, 185, 129, 0.45)",
+                      color: "var(--green)",
+                      padding: "2px 10px",
+                      borderRadius: "99px",
+                      fontSize: "0.76rem",
+                      fontWeight: 800,
+                    }}
+                  >
+                    ● NIE Teacher&apos;s Guide (3, 4, 5 ශ්‍රේණි)
+                  </span>
                 </div>
-              </div>
-
-              <div className="ai-lang-pills">
-                <button
-                  type="button"
-                  className={`ai-lang-btn ${chatLang === "si" ? "active" : ""}`}
-                  onClick={() => setChatLang("si")}
-                >
-                  🇱🇰 සිංහල
-                </button>
-                <button
-                  type="button"
-                  className={`ai-lang-btn ${chatLang === "en" ? "active" : ""}`}
-                  onClick={() => setChatLang("en")}
-                >
-                  🇬🇧 English
-                </button>
-                <button
-                  type="button"
-                  className={`ai-lang-btn ${chatLang === "ta" ? "active" : ""}`}
-                  onClick={() => setChatLang("ta")}
-                >
-                  🇮🇳 தமிழ்
-                </button>
+                <p>{gradeInfo.desc}</p>
               </div>
             </div>
 
-            {/* Quick Prompts Bar */}
-            <div className="ai-page-quick-prompts">
-              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#64748b", alignSelf: "center" }}>
-                ඉක්මන් ප්‍රශ්න:
+            {/* Language Selector */}
+            <div style={{ display: "flex", gap: "6px" }}>
+              {[
+                { id: "si", label: "🇱🇰 සිංහල" },
+                { id: "en", label: "🇬🇧 English" },
+                { id: "ta", label: "🇮🇳 தமிழ்" },
+              ].map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  className={`ait-tab-btn ${chatLang === l.id ? "active" : ""}`}
+                  onClick={() => setChatLang(l.id)}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Grade Buttons (3, 4, 5) & Mode Switcher */}
+          <div className="ait-controls-bar">
+            <div className="ait-grade-pills">
+              <span style={{ fontSize: "0.86rem", fontWeight: 800, color: "var(--muted)" }}>
+                ශ්‍රේණිය තෝරන්න:
               </span>
+              {[3, 4, 5].map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  className={`ait-grade-btn ${selectedGrade === g ? "active" : ""}`}
+                  onClick={() => handleSelectGrade(g)}
+                >
+                  🎓 {g} ශ්‍රේණිය {g === 5 ? "(ශිෂ්‍යත්වය)" : ""}
+                </button>
+              ))}
+            </div>
+
+            <div className="ait-view-tabs">
               <button
-                className="ai-chip"
-                onClick={() =>
-                  handleAskTutor(
-                    chatLang === "ta"
-                      ? "பண்டுRelease மன்னனின் சாதனைகள் மற்றும் அபய வாவியை விளக்குக."
-                      : chatLang === "en"
-                      ? "Explain King Pandukabhaya, Abhaya Wewa and Anuradhapura city planning."
-                      : "පණ්ඩුකාභය රජතුමා අභය වැව ඉදිකිරීම හා අනුරාධපුර නගර සැලසුම්කරණය ගැන කියා දෙන්න."
-                  )
-                }
+                type="button"
+                className={`ait-tab-btn ${activeTab === "chat" ? "active" : ""}`}
+                onClick={() => setActiveTab("chat")}
               >
-                👑 පණ්ඩුකාභය රජතුමා
+                💬 ගුරුතුමාගෙන් අසන්න
               </button>
               <button
-                className="ai-chip"
-                onClick={() =>
-                  handleAskTutor(
-                    chatLang === "ta"
-                      ? "முட்டை அடர்த்தி பரிசோதனை பற்றி விளக்குக."
-                      : chatLang === "en"
-                      ? "How does the egg water density experiment work?"
-                      : "ජල ඝනත්වය සහ ලුණු දියරයේ බිත්තරය පාවීමේ පරීක්ෂණය පැහැදිලි කරන්න."
-                  )
-                }
+                type="button"
+                className={`ait-tab-btn ${activeTab === "themes" ? "active" : ""}`}
+                onClick={() => setActiveTab("themes")}
               >
-                💧 බිත්තර ඝනත්ව පරීක්ෂණය
+                📚 පරිසරය තේමා 16
               </button>
               <button
-                className="ai-chip"
-                onClick={() =>
-                  handleAskTutor(
-                    chatLang === "ta"
-                      ? "விற்றமின் A, B, C, D குறைபாட்டினால் ஏற்படும் நோய்கள் எவை?"
-                      : chatLang === "en"
-                      ? "What diseases are caused by Vitamin A, B, C, and D deficiencies?"
-                      : "විටමින් A, B, C, D සහ යකඩ ඌනතාවයෙන් වැළඳෙන රෝග මොනවාද?"
-                  )
-                }
+                type="button"
+                className={`ait-tab-btn ${activeTab === "tamil" ? "active" : ""}`}
+                onClick={() => setActiveTab("tamil")}
               >
-                🥗 විටමින් ඌනතා රෝග
+                🗣️ දෙමළ හා ඉංග්‍රීසි
               </button>
+            </div>
+          </div>
+        </section>
+
+        {/* TAB 1: CLEAN TEACHER CHAT INTERFACE */}
+        {activeTab === "chat" && (
+          <section className="ait-chat-box">
+            <div className="ait-chat-subbar">
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <strong style={{ color: "var(--gold)", fontSize: "0.95rem" }}>
+                  📘 සක්‍රීය විෂය නිර්දේශය: {gradeInfo.label} (ශ්‍රී ලංකා ගුරු අත්පොත)
+                </strong>
+              </div>
+
               <button
-                className="ai-chip"
-                onClick={() =>
-                  handleAskTutor(
-                    chatLang === "ta"
-                      ? "தரம் 5 ஆசிரியர் வழிகாட்டியில் உள்ள எண்கள் 16-20 மற்றும் திசைகளை தமிழில் தருக."
-                      : chatLang === "en"
-                      ? "Teach me Tamil numbers 16-20 and location words like ಮೇಲೆ, கீழே."
-                      : "දෙමළ භාෂාවෙන් 16-20 ඉලක්කම් සහ மேலே, கீழே, உள்ளේ, வெளியே යන ස්ථාන වචන කියා දෙන්න."
-                  )
-                }
+                type="button"
+                className="ait-tab-btn"
+                onClick={handleClearChat}
+                style={{ padding: "5px 12px", fontSize: "0.8rem" }}
               >
-                🗣️ දෙමළ 16-20 & දිශා
-              </button>
-              <button
-                className="ai-chip"
-                onClick={() =>
-                  handleAskTutor(
-                    chatLang === "ta"
-                      ? "5ம் ஆண்டு புலமைப்பரிசில் வினாத்தாளிலிருந்து எனக்கு ஒரு மாதிரி வினாவைத் தாருங்கள்!"
-                      : chatLang === "en"
-                      ? "Ask me a challenging Grade 5 scholarship multiple-choice question from Environmental Studies!"
-                      : "පරිසරය විෂයෙන් මට ශිෂ්‍යත්ව ආදර්ශ බහුවරණ ප්‍රශ්නයක් දෙන්න. මම පිළිතුරු දෙන්නම්!"
-                  )
-                }
-              >
-                ❓ ආදර්ශ ප්‍රශ්නයක් අහන්න
+                🔄 අලුත් සංවාදයක් (Clear Chat)
               </button>
             </div>
 
-            {/* Messages Log */}
-            <div className="ai-page-chat-log">
+            {/* Grade-Specific Quick Questions */}
+            <div className="ait-quick-row">
+              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                ඉක්මන් ප්‍රශ්න ({selectedGrade} ශ්‍රේණිය):
+              </span>
+              {gradeInfo.quickQuestions.map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className="ait-q-chip"
+                  onClick={() => handleAskTutor(item.q)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Chat Messages */}
+            <div className="ait-messages">
               {chatLog.map((m, i) => {
                 const isUser = m.role === "user";
                 return (
-                  <div
-                    key={i}
-                    className={`ai-msg-row ${isUser ? "ai-msg-user" : "ai-msg-bot"}`}
-                  >
+                  <div key={i} className={`ait-msg-row ${isUser ? "user" : "bot"}`}>
                     {!isUser && (
-                      <div className="ai-msg-avatar" style={{ overflow: "hidden", padding: 0 }}>
-                        <img
-                          src="/teacher-face.jpg"
-                          alt="Teacher"
-                          style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
-                        />
-                      </div>
+                      <img src="/teacher-face.jpg" alt="Teacher" className="ait-msg-av" />
                     )}
-                    <div className="ai-msg-bubble">
-                      <div className="ai-msg-content">
-                        <FormattedMessage content={m.content} isSi={isSi} />
-                      </div>
+                    <div className="ait-bubble">
+                      {!isUser && (
+                        <div
+                          style={{
+                            fontSize: "0.75rem",
+                            fontWeight: 800,
+                            color: "var(--gold)",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          👨‍🏫 {selectedGrade} ශ්‍රේණිය ගුරුතුමා (NIE ගුරු අත්පොත)
+                        </div>
+                      )}
+                      <FormattedTeacherMessage content={m.content} />
                     </div>
-                    {isUser && (
-                      <div className="ai-msg-avatar ai-user-avatar">
-                        <span>👤</span>
-                      </div>
-                    )}
                   </div>
                 );
               })}
 
               {chatLoading && (
-                <div className="ai-msg-row ai-msg-bot">
-                  <div className="ai-msg-avatar" style={{ overflow: "hidden", padding: 0 }}>
-                    <img
-                      src="/teacher-face.jpg"
-                      alt="Teacher"
-                      style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
-                    />
-                  </div>
-                  <div className="ai-msg-bubble ai-loading-bubble">
-                    <span className="ai-typing-dot" />
-                    <span className="ai-typing-dot" />
-                    <span className="ai-typing-dot" />
-                    <span style={{ marginLeft: 8, fontSize: "0.85rem", color: "#64748b" }}>
-                      ගුරු මාර්ගෝපදේශය කියවමින් පිළිතුර සකසයි...
-                    </span>
+                <div className="ait-msg-row bot">
+                  <img src="/teacher-face.jpg" alt="Teacher" className="ait-msg-av" />
+                  <div className="ait-bubble" style={{ color: "var(--muted)", fontWeight: 700 }}>
+                    ⏳ {selectedGrade} ශ්‍රේණිය ගුරු අත්පොතට අනුව පිළිතුර සකසමින් පවතී...
                   </div>
                 </div>
               )}
+              <div ref={chatEndRef} />
             </div>
 
-            {/* Input Bar */}
-            <div className="ai-page-input-bar">
-              <textarea
-                className="ai-textarea"
-                placeholder={
-                  chatLang === "ta"
-                    ? "5ம் ஆண்டு புலமைப்பரிசில் வினாவை கேளுங்கள்..."
-                    : chatLang === "en"
-                    ? "Ask any Grade 5 scholarship question..."
-                    : "5 ශ්‍රේණිය ශිෂ්‍යත්ව විෂය කරුණක් අසන්න (සිංහල / English / தமிழ்)..."
-                }
+            {/* Input Form */}
+            <form
+              className="ait-input-area"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAskTutor();
+              }}
+            >
+              <input
+                type="text"
+                className="ait-input"
+                placeholder={`${selectedGrade} ශ්‍රේණියේ ඕනෑම විෂය ප්‍රශ්නයක් මෙහි ලියා අසන්න...`}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleAskTutor();
-                  }
-                }}
-                rows={2}
               />
               <button
-                className="btn btn-primary"
-                onClick={() => handleAskTutor()}
+                type="submit"
+                className="ait-send-btn"
                 disabled={chatLoading || !chatInput.trim()}
-                style={{ padding: "0 24px", height: 52 }}
               >
-                විමසන්න 🚀
+                අසන්න ➔
               </button>
-            </div>
-          </div>
+            </form>
+          </section>
         )}
 
-        {activeTab === "curriculum" && (
-          <div className="curriculum-view-grid">
-            {/* Sidebar list of 16 themes */}
-            <div className="curriculum-sidebar">
-              <h3 style={{ fontSize: "1.1rem", marginBottom: 12, color: "#1e293b" }}>
-                🌿 පරිසරය තේමා 16
-              </h3>
-              <div className="curriculum-list">
-                {themes.map((t) => (
-                  <button
-                    key={t.id}
-                    className={`curriculum-item-btn ${selectedTheme === t.id ? "active" : ""}`}
-                    onClick={() => setSelectedTheme(t.id)}
-                  >
-                    <span className="curriculum-num">{t.id}</span>
-                    <div style={{ textAlign: "left" }}>
-                      <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>{t.title}</div>
-                      <small style={{ color: "#64748b", fontSize: "0.75rem" }}>{t.en}</small>
-                    </div>
-                  </button>
-                ))}
-              </div>
+        {/* TAB 2: 16 ENVIRONMENTAL STUDIES THEMES */}
+        {activeTab === "themes" && (
+          <section>
+            <div style={{ marginBottom: "14px" }}>
+              <h2 style={{ margin: "0 0 4px", fontSize: "1.3rem" }}>
+                🌿 3, 4 සහ 5 ශ්‍රේණි පරිසරය ආශ්‍රිත ක්‍රියාකාරකම් — තේමා 16
+              </h2>
+              <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.92rem" }}>
+                ඕනෑම තේමාවක් මත ක්ලික් කර {selectedGrade} ශ්‍රේණිය ගුරු අත්පොතට අනුව එම පාඩමේ කරුණු ගුරුතුමාගෙන් විමසන්න.
+              </p>
             </div>
 
-            {/* Detailed theme viewer */}
-            <div className="curriculum-details card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+            <div className="ait-themes-grid">
+              {THEMES_16.map((t) => (
+                <div key={t.id} className="ait-theme-card">
+                  <div>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "2px 10px",
+                        borderRadius: "99px",
+                        background: "rgba(245, 176, 39, 0.16)",
+                        color: "var(--gold)",
+                        fontSize: "0.76rem",
+                        fontWeight: 800,
+                        marginBottom: "8px",
+                      }}
+                    >
+                      තේමාව {t.id}
+                    </span>
+                    <h3 style={{ margin: "0 0 6px", fontSize: "1.08rem" }}>{t.title}</h3>
+                    <p style={{ margin: 0, fontSize: "0.86rem", color: "var(--muted)", lineHeight: 1.55 }}>
+                      {t.desc}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="ait-q-chip"
+                    style={{ width: "100%", textAlign: "center", justifyContent: "center" }}
+                    onClick={() => {
+                      setActiveTab("chat");
+                      handleAskTutor(
+                        `${selectedGrade} ශ්‍රේණිය ගුරු අත්පොතට අනුව පරිසරය '${t.title}' පාඩමේ ප්‍රධාන කරුණු පැහැදිලිව කියා දෙන්න.`
+                      );
+                    }}
+                  >
+                    📘 {selectedGrade} ශ්‍රේණිය පාඩම අසන්න ➔
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* TAB 3: TAMIL & ENGLISH (ABOE) */}
+        {activeTab === "tamil" && (
+          <section className="ait-top-card">
+            <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
+              🗣️ දෙවන බස දෙමළ සහ ඉංග්‍රීසි (ABOE) — 3, 4, 5 ශ්‍රේණි ගුරු අත්පොත
+            </h2>
+            <div className="ait-themes-grid">
+              <div className="ait-theme-card">
                 <div>
-                  <span className="badge" style={{ background: "#fef3c7", color: "#92400e", fontWeight: 700 }}>
-                    තේමාව {selectedThemeObj.id}
-                  </span>
-                  <h2 style={{ margin: "8px 0 4px 0", color: "#0f172a" }}>{selectedThemeObj.title}</h2>
-                  <p style={{ color: "#64748b", margin: 0 }}>
-                    {selectedThemeObj.en} | {selectedThemeObj.ta}
+                  <h3 style={{ margin: "0 0 8px", color: "var(--gold)" }}>🔢 දෙමළ සංඛ්‍යා (1 - 20)</h3>
+                  <p style={{ margin: 0, fontSize: "0.9rem", lineHeight: 1.7 }}>
+                    1 - ඔන්රු | 2 - ඉරණ්ඩු | 3 - මූන්රු | 4 - නාන්ගු | 5 - අයින්දු
+                    <br />
+                    16 - පදිනාරු | 17 - පදිනේළු | 18 - පදිනෙට්ටු | 19 - පත්තොන්බදු | 20 - ඉරුබදු
                   </p>
                 </div>
                 <button
-                  className="btn btn-sm"
+                  type="button"
+                  className="ait-q-chip"
                   onClick={() => {
                     setActiveTab("chat");
-                    handleAskTutor(
-                      `5 ශ්‍රේණිය ගුරු මාර්ගෝපදේශයේ ${selectedThemeObj.id} වන තේමාව: '${selectedThemeObj.title}' පිළිබඳ සියලුම වැදගත් කරුණු සහ ශිෂ්‍යත්ව ප්‍රශ්න කියා දෙන්න.`
-                    );
+                    handleAskTutor(`${selectedGrade} ශ්‍රේණිය ගුරු අත්පොතට අනුව දෙමළ සංඛ්‍යා සහ දිශා වචන සිංහල උච්චාරණය සමඟ කියා දෙන්න.`);
                   }}
                 >
-                  🤖 මේ ගැන AI ගෙන් අසන්න
+                  ගුරුතුමාගෙන් විමසන්න ➔
                 </button>
               </div>
 
-              <hr style={{ border: "none", borderTop: "1px solid #e2e8f0", margin: "16px 0" }} />
-
-              <div style={{ fontSize: "0.95rem", lineHeight: 1.7, color: "#334155" }}>
-                <h4 style={{ color: "#0284c7", marginBottom: 6 }}>විෂය අන්තර්ගතය සහ ප්‍රධාන සංකල්ප:</h4>
-                <p>{selectedThemeObj.desc}</p>
-
-                <div className="callout-box" style={{ background: "#f8fafc", padding: 16, borderRadius: 12, marginTop: 16, borderLeft: "4px solid #f59e0b" }}>
-                  <strong style={{ color: "#b45309" }}>💡 ශිෂ්‍යත්ව 190+ විභාග උපදෙස:</strong>
-                  <p style={{ margin: "6px 0 0 0", fontSize: "0.88rem" }}>
-                    මෙම තේමාවෙන් නිතරම පළාත් පේපර්වල විවරණ ප්‍රශ්න 2-3ක් විමසනු ලැබේ. දරුවාට ක්‍රියාකාරකම් සහ රූපසටහන් ඇසුරින් මතක තබා ගැනීමට සැලැස්වීම ලකුණු උපරිම කර ගැනීමට මඟපාදයි.
+              <div className="ait-theme-card">
+                <div>
+                  <h3 style={{ margin: "0 0 8px", color: "var(--gold)" }}>📍 දෙමළ ස්ථාන හා ආචාර</h3>
+                  <p style={{ margin: 0, fontSize: "0.9rem", lineHeight: 1.7 }}>
+                    • වනක්කම් (ආයුබෝවන්) | නන්රි (ස්තූතියි)
+                    <br />• මේලේ (උඩ) | කීළේ (යට) | උල්ලේ (ඇතුළේ) | වෙලියේ (එළියේ)
                   </p>
                 </div>
+                <button
+                  type="button"
+                  className="ait-q-chip"
+                  onClick={() => {
+                    setActiveTab("chat");
+                    handleAskTutor(`${selectedGrade} ශ්‍රේණිය දෙමළ එදිනෙදා දෙබස් සහ පවුලේ සාමාජිකයන් හඳුන්වන වචන කියා දෙන්න.`);
+                  }}
+                >
+                  ගුරුතුමාගෙන් විමසන්න ➔
+                </button>
+              </div>
+
+              <div className="ait-theme-card">
+                <div>
+                  <h3 style={{ margin: "0 0 8px", color: "var(--gold)" }}>🔤 ඉංග්‍රීසි (ABOE Vocabulary)</h3>
+                  <p style={{ margin: 0, fontSize: "0.9rem", lineHeight: 1.7 }}>
+                    • Opposites (විරුද්ධ පද): Big/Small, Clean/Dirty, Fast/Slow
+                    <br />• Plurals (බහුවචන): Child/Children, Tooth/Teeth, Leaf/Leaves
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="ait-q-chip"
+                  onClick={() => {
+                    setActiveTab("chat");
+                    handleAskTutor(`${selectedGrade} ශ්‍රේණිය ඉංග්‍රීසි (ABOE) විෂය නිර්දේශයේ වැදගත් වචන, විරුද්ධ පද සහ බහුවචන කියා දෙන්න.`);
+                  }}
+                >
+                  ගුරුතුමාගෙන් විමසන්න ➔
+                </button>
               </div>
             </div>
-          </div>
-        )}
-
-        {activeTab === "tamil" && (
-          <div className="tamil-view-wrap card">
-            <h2 style={{ color: "#0f172a" }}>🗣️ දෙවන ජාතික භාෂාව (දෙමළ) - 5 ශ්‍රේණිය නිල විෂය නිර්දේශය</h2>
-            <p style={{ color: "#64748b" }}>
-              ජාතික අධ්‍යාපන ආයතනයේ (NIE) 5 ශ්‍රේණිය පොදු ගුරු මාර්ගෝපදේශයට අනුව සකසන ලද නිල දෙමළ කොටස්
-            </p>
-
-            <div className="tamil-sections-grid">
-              <div className="tamil-box">
-                <h4>🔢 16-20 සංඛ්‍යා නාම</h4>
-                <ul>
-                  <li><strong>16:</strong> பதினாறு (පදිනාරු - දහසය)</li>
-                  <li><strong>17:</strong> பதினேழு (පදිනේළු - දහහත)</li>
-                  <li><strong>18:</strong> பதினெட்டு (පදිනෙට්ටු - දහඅට)</li>
-                  <li><strong>19:</strong> பத்தொன்பது (පත්ථොන්බදු - දහනවය)</li>
-                  <li><strong>20:</strong> இருபது (ඉරුබදු - විස්ස)</li>
-                </ul>
-              </div>
-
-              <div className="tamil-box">
-                <h4>🔟 10-100 දහයේ ගුණාකාර</h4>
-                <ul>
-                  <li><strong>10:</strong> பத்து (පත්තු) | <strong>20:</strong> இருபது (ඉරුබදු)</li>
-                  <li><strong>30:</strong> முப்பது (මුප්පදු) | <strong>40:</strong> நாற்பது (නාට්පදු)</li>
-                  <li><strong>50:</strong> ஐம்பது (අයිම්බදු) | <strong>60:</strong> அறுபது (අරුබදු)</li>
-                  <li><strong>70:</strong> எழுபது (එළුබදු) | <strong>80:</strong> எண்பது (එණ්බදු)</li>
-                  <li><strong>90:</strong> தொண்ணூறு (තොණ්ණූරු) | <strong>100:</strong> நூறு (නූරු)</li>
-                </ul>
-              </div>
-
-              <div className="tamil-box">
-                <h4>📍 ස්ථාන හා දිශා වචන</h4>
-                <ul>
-                  <li><strong>மேலே (මේලේ):</strong> උඩ / උඩට / උඩින්</li>
-                  <li><strong>கீழே (කීළේ):</strong> යට / යටට / යටින් / බිම</li>
-                  <li><strong>உள்ளே (උල්ලේ):</strong> ඇතුළේ / ඇතුළට</li>
-                  <li><strong>வெளியே (වෙලියේ):</strong> එළියේ / එළියට</li>
-                </ul>
-              </div>
-
-              <div className="tamil-box">
-                <h4>📅 සතියේ දින 7</h4>
-                <ul>
-                  <li><strong>திங்கள் (තිංගල්):</strong> සඳුදා</li>
-                  <li><strong>செவ்வாய் (සෙව්වායි):</strong> අඟහරුවාදා</li>
-                  <li><strong>புதன் (බුදන්):</strong> බදාදා</li>
-                  <li><strong>வியாழன் (වියාළන්):</strong> බ්‍රහස්පතින්දා</li>
-                  <li><strong>வெள்ளி (වෙල්ලි):</strong> සිකුරාදා</li>
-                  <li><strong>சனி (සනි):</strong> සෙනසුරාදා</li>
-                  <li><strong>ஞாயிறு (ඤායිරු):</strong> ඉරිදා</li>
-                </ul>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 24, textAlign: "center" }}>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  setActiveTab("chat");
-                  handleAskTutor("දෙමළ විෂය නිර්දේශයේ 1 සිට 19 දක්වා සංවාද සියල්ල සිංහල තේරුම සමඟ මට කියා දෙන්න.");
-                }}
-              >
-                🤖 දෙමළ සංවාද 1-19 සම්පූර්ණයෙන්ම AI ගෙන් ඉගෙන ගන්න ↗
-              </button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "aboe" && (
-          <div className="aboe-view-wrap card">
-            <h2 style={{ color: "#0f172a" }}>🔤 Activity Based Oral English (ABOE)</h2>
-            <p style={{ color: "#64748b" }}>
-              Grade 5 NIE Syllabus songs, classroom language patterns, and "Simon Says" games.
-            </p>
-
-            <div className="aboe-songs-grid">
-              <div className="aboe-song-card">
-                <h4>🎵 Song: We are Sri Lankans (Theme 2)</h4>
-                <pre style={{ fontFamily: "inherit", background: "#f8fafc", padding: 12, borderRadius: 8, fontSize: "0.88rem" }}>
-{`We are Sri Lankans,
-We are sons and daughters of you.
-We are Sinhalese, we are Tamils,
-We are Muslims or Burgers.
-We are Sri Lankans,
-Though our food, though our dress,
-Though our language is different,
-Let's live happily hand in hand!`}
-                </pre>
-              </div>
-
-              <div className="aboe-song-card">
-                <h4>🎵 Song: Animal Friends (Theme 4)</h4>
-                <pre style={{ fontFamily: "inherit", background: "#f8fafc", padding: 12, borderRadius: 8, fontSize: "0.88rem" }}>
-{`They are animal friends of mine,
-Who says meow meow? Cat says meow meow.
-Who says bow wow? Dog says bow wow.
-Who says quack quack? Duck says quack quack.
-Who says moo moo? Cow says moo moo.
-They are animal friends of mine!`}
-                </pre>
-              </div>
-
-              <div className="aboe-song-card">
-                <h4>🎵 Song: Road Safety (Theme 9)</h4>
-                <pre style={{ fontFamily: "inherit", background: "#f8fafc", padding: 12, borderRadius: 8, fontSize: "0.88rem" }}>
-{`Look to the right,
-Look to the left,
-Look to the right again.
-Cross the road, if the road is clear!
-No playing, no running on the road,
-As vehicles moving on the road.`}
-                </pre>
-              </div>
-
-              <div className="aboe-song-card">
-                <h4>🎯 Game: Simon Says Commands</h4>
-                <ul style={{ fontSize: "0.88rem", lineHeight: 1.8 }}>
-                  <li>"Simon says stand up!"</li>
-                  <li>"Simon says touch your toes!"</li>
-                  <li>"Simon says show your pencil!"</li>
-                  <li>"Simon says wash your hands!"</li>
-                  <li>"Simon says look at the blackboard!"</li>
-                </ul>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 24, textAlign: "center" }}>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  setActiveTab("chat");
-                  handleAskTutor("Explain Grade 5 English ABOE vocabulary and classroom questions.");
-                }}
-              >
-                🤖 Ask AI Tutor about Grade 5 English ABOE ↗
-              </button>
-            </div>
-          </div>
+          </section>
         )}
       </div>
     </main>
   );
 }
-
