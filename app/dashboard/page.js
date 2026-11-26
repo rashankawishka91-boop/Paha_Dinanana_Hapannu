@@ -149,6 +149,19 @@ export default function Dash() {
     }
   };
 
+  // Automatically mark student attendance when they join a Zoom Live Class
+  const recordZoomAttendance = (folderId, weekLabel = "1 වන සතිය") => {
+    if (!currentMe || !folderId) return;
+    update(s => {
+      if (!s.attendance) s.attendance = {};
+      const key = `${folderId}__${currentMe.id}`;
+      const existing = s.attendance[key] || { sessions: {}, lastJoined: "" };
+      existing.sessions[weekLabel] = true;
+      existing.lastJoined = new Date().toLocaleString();
+      s.attendance[key] = existing;
+    });
+  };
+
   const formatTimer = secs => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
@@ -867,6 +880,7 @@ export default function Dash() {
                           href={f.zoomUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => recordZoomAttendance(f.id, "1 වන සතිය")}
                         >
                           Join Zoom Live Class ↗
                         </a>
@@ -982,6 +996,10 @@ export default function Dash() {
                                     href={i.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    download={i.fileName || undefined}
+                                    onClick={() => {
+                                      if (isZoom) recordZoomAttendance(f.id, i.week || "1 වන සතිය");
+                                    }}
                                   >
                                     {isZoom ? "Join Zoom ↗" : "Open PDF ↗"}
                                   </a>

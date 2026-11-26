@@ -3,14 +3,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useApp, uid, readFile, getYoutubeEmbedUrl, isYoutubeUrl, MONTH_OPTIONS } from "../../lib/Provider";
-import DashboardSidebar from "../../components/DashboardSidebar";
 import VideoPlayer from "../../components/VideoPlayer";
 
+const WEEKS_LIST = ["1 වන සතිය", "2 වන සතිය", "3 වන සතිය", "4 වන සතිය"];
+
 export default function Admin() {
-  const { S, update, me, login, lang, ready } = useApp();
+  const { S, update, me, login, lang, theme, ready } = useApp();
   const router = useRouter();
 
   const isSi = lang === "si";
+  const isLight = theme === "light";
 
   const [tab, setTab] = useState("overview"); // overview, packages, content, payments, students, settings
   const [filterStatus, setFilterStatus] = useState("all");
@@ -22,18 +24,45 @@ export default function Admin() {
   const [viewSlip, setViewSlip] = useState(null);
   const [previewVideoItem, setPreviewVideoItem] = useState(null);
 
+  // Students Roster, Monthly Class Filter, Attendance & WhatsApp Broadcast state
+  const [selectedRosterFolderId, setSelectedRosterFolderId] = useState("all");
+  const [rosterGradeFilter, setRosterGradeFilter] = useState("all");
+  const [rosterPayFilter, setRosterPayFilter] = useState("paid"); // "paid", "pending", "all"
+  const [attendanceWeek, setAttendanceWeek] = useState("1 වන සතිය");
+  const [waMessage, setWaMessage] = useState("");
+  const [copiedPhones, setCopiedPhones] = useState(false);
+
+  // Content Input Mode: "link" | "upload"
+  const [inputMode, setInputMode] = useState("link");
+  const [uploadedFileName, setUploadedFileName] = useState("");
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [channelVideos, setChannelVideos] = useState([
+    {
+      videoId: "BbZdfLXfW9A",
+      title: "ශිෂ්‍යත්ව විභාගයට වටිනා පරිසරය ප්‍රශ්න 100ක්",
+      url: "https://youtu.be/BbZdfLXfW9A",
+      subject: "පරිසරය"
+    },
+    {
+      videoId: "murCwFZRlJo",
+      title: "අදිති 30 - 1 කොටස සහ 30 - 2 කොටස - 190+ පේපර් පන්තිය",
+      url: "https://youtu.be/murCwFZRlJo",
+      subject: "විෂයයන් 5ම"
+    }
+  ]);
+
   // New / Edit Monthly Class Form State
   const [nf, setNf] = useState({
     grade: 5,
-    month: "2026 නොවැම්බර්",
+    month: "2026 දෙසැම්බර්",
     isCurrentMonth: true,
     name: "",
-    category: isSi ? "මාසික ප්‍රශ්න පත්‍ර පන්තිය" : "Monthly Paper Class",
+    category: "මාසික ප්‍රශ්න පත්‍ර පන්තිය",
     price: "2000",
-    papersCount: isSi ? "දිනකට පේපර් 2ක් + Zoom Live" : "2 Papers Daily + Zoom Live",
-    subjects: isSi ? "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි" : "Environmental Studies, Sinhala, Mathematics, Tamil, English",
+    papersCount: "දිනකට පේපර් 2ක් + Zoom Live",
+    subjects: "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි",
     zoomUrl: "https://zoom.us/j/94771234567",
-    zoomSchedule: isSi ? "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)" : "Every Saturday & Sunday 7:00 PM (Zoom Live)",
+    zoomSchedule: "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)",
     desc: ""
   });
 
@@ -42,9 +71,10 @@ export default function Admin() {
     fid: "",
     type: "video", // "zoom" | "video" | "pdf"
     week: "1 වන සතිය",
-    subject: isSi ? "විෂයයන් 5ම" : "All 5 Subjects",
+    subject: "විෂයයන් 5ම",
     title: "",
     url: "",
+    fileName: "",
     schedule: ""
   });
 
@@ -69,12 +99,23 @@ export default function Admin() {
   }, [ready, me, S.users, router, login]);
 
   useEffect(() => {
+    fetch("/api/youtube")
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (data && Array.isArray(data.videos) && data.videos.length > 0) {
+          setChannelVideos(data.videos);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (ready && S.set) {
       setSet({
         name: S.set.name || "පහ දිනන හපන්නු - 190+ පේපර් පන්තිය",
         slogan: S.set.slogan || "කොපි කරන්නත් බෑ.. සම කරන්නත් බෑ... ඒ තමයි පහ දිනන හපන්නු!",
         bank: S.set.bank || "",
-        hotline: S.set.hotline || "077 123 4567"
+        hotline: S.set.hotline || "0705 771 778"
       });
     }
   }, [ready, S.set]);
@@ -84,12 +125,30 @@ export default function Admin() {
       setSelectedFolderForContent(S.folders[0].id);
       setNi(prev => ({ ...prev, fid: S.folders[0].id }));
     }
-  }, [S.folders, selectedFolderForContent]);
+    if (S.folders.length && selectedRosterFolderId === "all") {
+      const cur = S.folders.find(f => f.isCurrentMonth) || S.folders[0];
+      if (cur) setSelectedRosterFolderId(cur.id);
+    }
+  }, [S.folders, selectedFolderForContent, selectedRosterFolderId]);
+
+  // Update default WhatsApp template when roster month changes
+  useEffect(() => {
+    const folder = S.folders.find(f => f.id === selectedRosterFolderId);
+    if (folder) {
+      setWaMessage(
+        `ආදරණීය දරුවා, ${folder.grade} ශ්‍රේණිය ${folder.month} මාසික පන්තියේ (${folder.name}) අද සජීවී Zoom පන්තියට මෙම සබැඳියෙන් සම්බන්ධ වන්න: ${folder.zoomUrl || "https://zoom.us/j/94771234567"} (${folder.zoomSchedule || "ප.ව. 7.00 ට"})`
+      );
+    } else {
+      setWaMessage(
+        "ආදරණීය දරුවා, පහ දිනන හපන්නු 190+ පේපර් පන්තියේ අද දින සජීවී Zoom පන්තිය සහ නව ප්‍රශ්න පත්‍ර සඳහා ඔබගේ ශිෂ්‍ය පුවරුවට පිවිසෙන්න."
+      );
+    }
+  }, [selectedRosterFolderId, S.folders]);
 
   if (!ready) {
     return (
-      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#f6f1ec", color: "#2a1a1a", fontFamily: "Figtree, sans-serif" }}>
-        <p style={{ fontWeight: 600 }}>{isSi ? "පාලක මැදිරිය සූදානම් වෙමින් පවතී..." : "Loading Admin Portal..."}</p>
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#1b0b08", color: "#fff1dc", fontFamily: "Nunito, sans-serif" }}>
+        <p style={{ fontWeight: 700 }}>Loading Admin Portal...</p>
       </div>
     );
   }
@@ -99,6 +158,73 @@ export default function Admin() {
       const p = d.pays.find(x => x.id === id);
       if (p) p.status = s;
     });
+  };
+
+  // Manually enroll/unlock a student into a specific monthly class
+  const handleManualEnrollStudent = (studentId, folderId) => {
+    if (!studentId || !folderId || folderId === "all") return;
+    update(d => {
+      const existing = d.pays.find(p => p.uid === studentId && p.fid === folderId);
+      if (existing) {
+        existing.status = existing.status === "approved" ? "pending" : "approved";
+      } else {
+        d.pays.push({
+          id: uid(),
+          uid: studentId,
+          fid: folderId,
+          slip: "",
+          status: "approved",
+          date: new Date().toLocaleDateString()
+        });
+      }
+    });
+  };
+
+  // Toggle attendance for a student on a specific week in a monthly class
+  const toggleStudentAttendance = (folderId, studentId, weekLabel) => {
+    const targetFolderId = folderId === "all" ? (S.folders[0]?.id || "f1") : folderId;
+    update(d => {
+      if (!d.attendance) d.attendance = {};
+      const key = `${targetFolderId}__${studentId}`;
+      const rec = d.attendance[key] || { sessions: {}, lastJoined: "" };
+      rec.sessions[weekLabel] = !rec.sessions[weekLabel];
+      if (rec.sessions[weekLabel]) {
+        rec.lastJoined = new Date().toLocaleDateString();
+      }
+      d.attendance[key] = rec;
+    });
+  };
+
+  // Mark all displayed students present for the selected week
+  const markAllPresentForWeek = (studentsArray, folderId, weekLabel) => {
+    const targetFolderId = folderId === "all" ? (S.folders[0]?.id || "f1") : folderId;
+    update(d => {
+      if (!d.attendance) d.attendance = {};
+      studentsArray.forEach(stu => {
+        const key = `${targetFolderId}__${stu.id}`;
+        const rec = d.attendance[key] || { sessions: {}, lastJoined: "" };
+        rec.sessions[weekLabel] = true;
+        rec.lastJoined = new Date().toLocaleDateString();
+        d.attendance[key] = rec;
+      });
+    });
+  };
+
+  const getStudentAttendanceInfo = (folderId, studentId) => {
+    const targetFolderId = folderId === "all" ? (S.folders[0]?.id || "f1") : folderId;
+    const key = `${targetFolderId}__${studentId}`;
+    const rec = S.attendance?.[key] || { sessions: {}, lastJoined: "" };
+    const sessions = rec.sessions || {};
+    const attendedCount = WEEKS_LIST.filter(w => Boolean(sessions[w])).length;
+    const pct = Math.round((attendedCount / WEEKS_LIST.length) * 100);
+    return { sessions, attendedCount, pct, lastJoined: rec.lastJoined };
+  };
+
+  const formatWhatsAppHref = (phone, studentName, customMsg) => {
+    const cleanPhone = String(phone || "").replace(/\D/g, "").replace(/^0/, "94");
+    const finalPhone = cleanPhone.startsWith("94") ? cleanPhone : `94${cleanPhone}`;
+    const personalized = (customMsg || "").replace(/ආදරණීය දරුවා/g, `ආදරණීය ${studentName || "දරුවා"}`);
+    return `https://wa.me/${finalPhone}?text=${encodeURIComponent(personalized)}`;
   };
 
   const handleSetCurrentMonth = (folder) => {
@@ -119,15 +245,13 @@ export default function Admin() {
       month: defaultMonth,
       isCurrentMonth: true,
       name: `${defaultMonth} මාසයේ පන්තිය (190+ පළාත් පේපර් සහ සජීවී පන්ති)`,
-      category: isSi ? "මාසික ප්‍රශ්න පත්‍ර පන්තිය" : "Monthly Paper Class",
+      category: "මාසික ප්‍රශ්න පත්‍ර පන්තිය",
       price: "2000",
-      papersCount: isSi ? "දිනකට පේපර් 2ක් + Zoom Live" : "2 Papers Daily + Zoom Live",
-      subjects: isSi ? "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි" : "Environmental Studies, Sinhala, Mathematics, Tamil, English",
+      papersCount: "දිනකට පේපර් 2ක් + Zoom Live",
+      subjects: "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි",
       zoomUrl: "https://zoom.us/j/94771234567",
-      zoomSchedule: isSi ? "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)" : "Every Saturday & Sunday 7:00 PM (Zoom Live)",
-      desc: isSi
-        ? "රු. 2000 මාසික පන්ති ගාස්තුව ගෙවූ පසු මෙම මාසයට අදාළ සියලුම සජීවී Zoom පන්ති, වීඩියෝ විවරණ සහ PDF ප්‍රශ්න පත්‍ර සම්පූර්ණයෙන්ම විවෘත වේ."
-        : "Pay Rs. 2000 monthly fee to unlock all Zoom live classes, video discussions, and PDF papers for this month."
+      zoomSchedule: "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)",
+      desc: "රු. 2000 මාසික පන්ති ගාස්තුව ගෙවූ පසු මෙම මාසයට අදාළ සියලුම සජීවී Zoom පන්ති, වීඩියෝ විවරණ සහ PDF ප්‍රශ්න පත්‍ර සම්පූර්ණයෙන්ම විවෘත වේ."
     });
     setShowPackageModal(true);
   };
@@ -139,12 +263,12 @@ export default function Admin() {
       month: f.month || "2026 නොවැම්බර්",
       isCurrentMonth: Boolean(f.isCurrentMonth),
       name: f.name || "",
-      category: f.category || (isSi ? "මාසික ප්‍රශ්න පත්‍ර පන්තිය" : "Monthly Paper Class"),
+      category: f.category || "මාසික ප්‍රශ්න පත්‍ර පන්තිය",
       price: f.price?.toString() || "2000",
-      papersCount: f.papersCount || (isSi ? "දිනකට පේපර් 2ක් + Zoom Live" : "2 Papers Daily + Zoom Live"),
-      subjects: f.subjects || (isSi ? "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි" : "Environmental Studies, Sinhala, Mathematics, Tamil, English"),
+      papersCount: f.papersCount || "දිනකට පේපර් 2ක් + Zoom Live",
+      subjects: f.subjects || "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි",
       zoomUrl: f.zoomUrl || "https://zoom.us/j/94771234567",
-      zoomSchedule: f.zoomSchedule || (isSi ? "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 ට" : "Every Saturday & Sunday 7:00 PM"),
+      zoomSchedule: f.zoomSchedule || "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 ට",
       desc: f.desc || ""
     });
     setShowPackageModal(true);
@@ -153,13 +277,12 @@ export default function Admin() {
   const handleSavePackage = (e) => {
     e.preventDefault();
     if (!nf.name.trim()) {
-      return alert(isSi ? "කරුණාකර මාසික පන්තියේ නම ඇතුළත් කරන්න." : "Please enter the monthly class name.");
+      return alert("කරුණාකර මාසික පන්තියේ නම ඇතුළත් කරන්න.");
     }
     const priceNum = parseInt(nf.price) || 2000;
     const gradeNum = parseInt(nf.grade) || 5;
 
     update(d => {
-      // If marked as current month, unmark other current months in the same grade so only the chosen month is highlighted
       if (nf.isCurrentMonth) {
         d.folders.forEach(x => {
           if (Number(x.grade) === gradeNum) {
@@ -196,8 +319,8 @@ export default function Admin() {
           name: nf.name.trim(),
           category: nf.category,
           price: priceNum,
-          papersCount: nf.papersCount.trim() || (isSi ? "දිනකට පේපර් 2ක් + Zoom Live" : "2 Papers Daily + Zoom Live"),
-          subjects: nf.subjects.trim() || (isSi ? "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි" : "All 5 Subjects"),
+          papersCount: nf.papersCount.trim() || "දිනකට පේපර් 2ක් + Zoom Live",
+          subjects: nf.subjects.trim() || "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි",
           zoomUrl: nf.zoomUrl.trim(),
           zoomSchedule: nf.zoomSchedule.trim(),
           desc: nf.desc.trim()
@@ -205,21 +328,12 @@ export default function Admin() {
       }
     });
 
-    const isEdit = !!editingFolderId;
     setShowPackageModal(false);
     setEditingFolderId(null);
-    alert(
-      isEdit
-        ? (isSi ? "මාසික පන්තිය සාර්ථකව යාවත්කාලීන විය!" : "Monthly class updated successfully!")
-        : (isSi ? "නව මාසික පන්තිය සාර්ථකව එක් කරන ලදී! දැන් එය අදාළ ශ්‍රේණියේ ශිෂ්‍ය පුවරුවේ දිස්වේ." : "New monthly class added! It is now live on the Student Dashboard.")
-    );
   };
 
   const handleDeletePackage = (f) => {
-    const confirmMsg = isSi
-      ? `"${f.name}" මාසික පන්තිය ඉවත් කිරීමට ඔබට සහතිකද? මෙහි ඇති සියලුම Zoom සබැඳි, වීඩියෝ සහ PDF ලිපිගොනුද ඉවත් වනු ඇත.`
-      : `Are you sure you want to delete "${f.name}"? All Zoom links, videos, and PDFs inside it will also be deleted.`;
-    if (confirm(confirmMsg)) {
+    if (confirm(`"${f.name}" මාසික පන්තිය ඉවත් කිරීමට ඔබට සහතිකද?`)) {
       update(d => {
         d.folders = d.folders.filter(x => x.id !== f.id);
         d.items = d.items.filter(i => i.fid !== f.id);
@@ -227,11 +341,32 @@ export default function Admin() {
     }
   };
 
+  // Handle direct file upload for PDF / Document / Image / Video in Content Form
+  const handleContentFileUpload = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 4.5 * 1024 * 1024) {
+      return alert("ගොනුවේ ප්‍රමාණය 4.5MB ට අඩු විය යුතුය. විශාල වීඩියෝ සඳහා YouTube හෝ Google Drive Link භාවිතා කරන්න.");
+    }
+    setUploadingFile(true);
+    setUploadedFileName(f.name);
+    readFile(f, (dataUrl) => {
+      setNi(prev => ({
+        ...prev,
+        url: dataUrl,
+        fileName: f.name,
+        title: prev.title || f.name.replace(/\.[^/.]+$/, ""),
+        type: f.type.includes("video") ? "video" : "pdf"
+      }));
+      setUploadingFile(false);
+    });
+  };
+
   const handleAddItem = (e) => {
     e.preventDefault();
     const fid = ni.fid || selectedFolderForContent || S.folders[0]?.id;
     if (!fid || !ni.title.trim() || !ni.url.trim()) {
-      return alert(isSi ? "කරුණාකර මාතෘකාව සහ සබැඳිය ඇතුළත් කරන්න." : "Please enter title and link.");
+      return alert("කරුණාකර මාතෘකාව සහ සබැඳිය (හෝ Upload කළ ගොනුව) ඇතුළත් කරන්න.");
     }
 
     const isYt = isYoutubeUrl(ni.url);
@@ -246,6 +381,7 @@ export default function Admin() {
         subject: ni.subject,
         title: ni.title.trim(),
         url: ni.url.trim(),
+        fileName: ni.fileName || "",
         schedule: ni.schedule?.trim() || ""
       });
     });
@@ -254,19 +390,17 @@ export default function Admin() {
       ...prev,
       title: "",
       url: "",
+      fileName: "",
       schedule: ""
     }));
-    alert(
-      isSi
-        ? "නව ඉගෙනුම් අයිතමය (Zoom / Video / PDF) අදාළ මාසයට සාර්ථකව එක් කරන ලදී!"
-        : "New item (Zoom / Video / PDF) added to the selected month!"
-    );
+    setUploadedFileName("");
+    alert("නව ඉගෙනුම් අයිතමය (Zoom / Video / PDF) අදාළ මාසයට සාර්ථකව එක් කරන ලදී!");
   };
 
   const onLogoUpload = f => {
     if (!f) return;
     if (f.size > 1.5e6) {
-      return alert(isSi ? "රූපයේ ප්‍රමාණය 1.5MB ට අඩු විය යුතුය." : "Image size must be under 1.5MB.");
+      return alert("රූපයේ ප්‍රමාණය 1.5MB ට අඩු විය යුතුය.");
     }
     readFile(f, d => update(s => { s.set.logo = d; }));
   };
@@ -279,7 +413,7 @@ export default function Admin() {
       d.set.bank = set.bank;
       d.set.hotline = set.hotline;
     });
-    alert(isSi ? "පන්ති සැකසුම් සාර්ථකව සුරකින ලදී!" : "Class settings saved successfully!");
+    alert("පන්ති සැකසුම් සාර්ථකව සුරකින ලදී!");
   };
 
   const studentsList = S.users.filter(u => !u.admin);
@@ -295,1006 +429,2000 @@ export default function Admin() {
     f => f.id === (selectedFolderForContent || S.folders[0]?.id)
   );
 
-  const searchedStudents = studentsList.filter(stu => {
+  const selectedRosterFolder = S.folders.find(f => f.id === selectedRosterFolderId);
+
+  // Filter students for the Roster & Attendance tab
+  const rosterStudents = studentsList.filter(stu => {
     const q = studentSearch.toLowerCase();
-    return (
+    const matchesSearch =
+      !q ||
       stu.name?.toLowerCase().includes(q) ||
-      stu.phone?.toLowerCase().includes(q)
-    );
+      stu.phone?.toLowerCase().includes(q) ||
+      stu.id?.toLowerCase().includes(q);
+    if (!matchesSearch) return false;
+
+    const stuGrade = Number(stu.grade) || 5;
+    if (rosterGradeFilter !== "all" && stuGrade !== Number(rosterGradeFilter)) {
+      return false;
+    }
+
+    if (selectedRosterFolderId !== "all" && selectedRosterFolder) {
+      const payStatus =
+        (S.pays.filter(p => p.uid === stu.id && p.fid === selectedRosterFolderId).pop() || {}).status || "none";
+      if (rosterPayFilter === "paid") return payStatus === "approved";
+      if (rosterPayFilter === "pending") return payStatus === "pending";
+      // If "all", show all students in that folder's grade
+      return stuGrade === Number(selectedRosterFolder.grade);
+    }
+
+    return true;
   });
 
-  return (
-    <div className="app">
-      {/* Royal Burgundy Sidebar */}
-      <DashboardSidebar
-        role="admin"
-        activeTab={tab}
-        onTabChange={setTab}
-        pendingCount={pendingCount}
-        foldersCount={S.folders.length}
-        studentsCount={studentsList.length}
-      />
+  const copyAllRosterPhones = () => {
+    const phones = rosterStudents.map(s => `${s.name} (${s.grade} ශ්‍රේණිය): ${s.phone}`).join("\n");
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(phones || "No students");
+      setCopiedPhones(true);
+      setTimeout(() => setCopiedPhones(false), 2500);
+    }
+  };
 
-      {/* Main Workspace */}
-      <main>
-        {/* Top Header Bar */}
-        <div className="top" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span className="sp" style={{ fontWeight: 800 }}>
-              {isSi ? "👑 ගුරු පාලක මැදිරිය (මාසික පන්ති කළමනාකරණය)" : "👑 Admin Portal (Monthly Classes Management)"}
+  return (
+    <div className={`adm-root ${isLight ? "adm-light" : "adm-dark"}`}>
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap');
+
+        .adm-root {
+          --bg: #1b0b08;
+          --card: #2a1510;
+          --card2: #351a11;
+          --ink: #fff1dc;
+          --muted: #dcc3a8;
+          --line: #6b4a1f;
+          --soft: #4a2c18;
+          --gold: #ffc84a;
+          --gold2: #f0a020;
+          --dk: #2a1208;
+          --green: #4ee0a0;
+          color: var(--ink);
+          font-family: "Nunito", "Noto Sans Sinhala", system-ui, sans-serif;
+          line-height: 1.55;
+          font-size: 16px;
+          min-height: 100vh;
+          background: radial-gradient(1000px 500px at 60% -10%, #5a2410, rgba(90, 36, 16, 0) 60%), var(--bg);
+          position: relative;
+        }
+
+        .adm-root.adm-light {
+          --bg: #fbf6ee;
+          --card: #ffffff;
+          --card2: #f6ecdd;
+          --ink: #2a1418;
+          --muted: #6b5358;
+          --line: #e2cfa9;
+          --soft: #e8d9c4;
+          --gold: #b86e00;
+          --gold2: #d98200;
+          --dk: #2a1208;
+          --green: #0f7a4b;
+          background: radial-gradient(1000px 500px at 60% -10%, rgba(245, 166, 35, 0.14), transparent 60%), var(--bg);
+        }
+
+        .adm-root::before {
+          content: "";
+          position: fixed;
+          inset: 0;
+          background-image: radial-gradient(rgba(255, 200, 74, 0.07) 1.2px, transparent 1.2px);
+          background-size: 30px 30px;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .adm-root .si {
+          font-family: "Noto Sans Sinhala", "Nunito", sans-serif;
+        }
+
+        .adm-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 7px 15px;
+          border-radius: 99px;
+          border: 1px solid var(--line);
+          background: var(--card);
+          font: inherit;
+          font-weight: 700;
+          font-size: 14px;
+          color: var(--ink);
+          cursor: pointer;
+          text-decoration: none;
+          box-shadow: none;
+          transition: all 0.18s ease;
+        }
+
+        .adm-chip:hover {
+          background: var(--card2);
+          border-color: var(--gold);
+          transform: translateY(-1px);
+        }
+
+        .adm-chip.gold {
+          background: linear-gradient(135deg, #ffd45e, var(--gold2));
+          color: #2a1208 !important;
+          border-color: transparent;
+          font-weight: 800;
+        }
+
+        .adm-chip.wa {
+          background: rgba(16, 185, 129, 0.16);
+          border-color: rgba(78, 224, 160, 0.45);
+          color: var(--green) !important;
+        }
+
+        .adm-chip.danger {
+          background: rgba(239, 68, 68, 0.14);
+          border-color: rgba(239, 68, 68, 0.4);
+          color: #f87171 !important;
+        }
+
+        .adm-app {
+          display: grid;
+          grid-template-columns: 270px minmax(0, 1fr);
+          min-height: calc(100vh - 58px);
+          position: relative;
+          z-index: 1;
+        }
+
+        .adm-aside {
+          background: ${isLight ? "#ffffff" : "rgba(36, 17, 12, 0.92)"};
+          border-right: 1px solid var(--soft);
+          padding: 20px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          position: sticky;
+          top: 58px;
+          align-self: start;
+          height: calc(100vh - 58px);
+          overflow: auto;
+        }
+
+        .adm-me {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          background: var(--card2);
+          border: 1px solid var(--soft);
+          border-radius: 16px;
+          padding: 12px;
+          margin-bottom: 10px;
+        }
+
+        .adm-av {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #ffd45e, var(--gold2));
+          color: #2a1208;
+          display: grid;
+          place-items: center;
+          font-weight: 800;
+          flex: none;
+          font-size: 16px;
+        }
+
+        .adm-me b {
+          display: block;
+          line-height: 1.25;
+          color: var(--ink);
+        }
+
+        .adm-me span {
+          font-size: 13px;
+          color: var(--muted);
+        }
+
+        .adm-lbl {
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #a98a6c;
+          padding: 14px 12px 4px;
+        }
+
+        .adm-nav {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 11px 14px;
+          border-radius: 14px;
+          font-weight: 700;
+          font-size: 15px;
+          color: var(--ink);
+          background: transparent;
+          border: 1px solid transparent;
+          width: 100%;
+          text-align: left;
+          cursor: pointer;
+          box-shadow: none;
+        }
+
+        .adm-nav svg {
+          width: 20px;
+          height: 20px;
+          flex: none;
+          stroke: currentColor;
+          fill: none;
+          stroke-width: 1.8;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+          opacity: 0.9;
+        }
+
+        .adm-nav:hover {
+          background: var(--card2);
+          border-color: var(--soft);
+          transform: none;
+          box-shadow: none;
+        }
+
+        .adm-nav.on {
+          background: linear-gradient(135deg, #ffd45e, var(--gold2));
+          color: #2a1208;
+          box-shadow: 0 6px 18px rgba(240, 160, 32, 0.25);
+        }
+
+        .adm-nav em {
+          margin-left: auto;
+          font-style: normal;
+          font-size: 13px;
+          min-width: 26px;
+          text-align: center;
+          padding: 1px 8px;
+          border-radius: 99px;
+          background: #4d3510;
+          color: #ffd45e;
+          font-weight: 800;
+        }
+
+        .adm-nav.on em {
+          background: #2a1208;
+          color: #ffd45e;
+        }
+
+        .adm-live {
+          margin-top: auto;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border: 1px solid var(--line);
+          border-radius: 14px;
+          padding: 12px 14px;
+          font-weight: 700;
+          background: var(--card);
+          color: var(--ink);
+          text-decoration: none;
+        }
+
+        .adm-live span {
+          margin-left: auto;
+          background: #12402b;
+          color: #6df0ae;
+          font-size: 12px;
+          padding: 1px 10px;
+          border-radius: 99px;
+        }
+
+        .adm-main {
+          padding: 28px clamp(16px, 3vw, 40px) 110px;
+          min-width: 0;
+          width: 100%;
+        }
+
+        .adm-eyebrow {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          color: var(--gold);
+          font-weight: 800;
+        }
+
+        .adm-crumb {
+          color: var(--muted);
+          font-size: 14px;
+          margin-top: 10px;
+        }
+
+        .adm-head {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          align-items: center;
+          gap: 14px;
+          margin: 2px 0 22px;
+        }
+
+        .adm-head h1 {
+          margin: 0;
+          font-size: clamp(26px, 3.6vw, 38px);
+          line-height: 1.2;
+          color: var(--ink);
+          font-weight: 800;
+        }
+
+        .adm-grp {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+
+        .adm-stats {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+        }
+
+        .adm-stat {
+          background: linear-gradient(160deg, var(--card2), var(--card));
+          border: 1px solid var(--line);
+          border-radius: 20px;
+          padding: 20px;
+          cursor: pointer;
+          transition: transform 0.18s ease, border-color 0.18s ease;
+        }
+
+        .adm-stat:hover {
+          transform: translateY(-2px);
+          border-color: var(--gold);
+        }
+
+        .adm-stat .t {
+          display: flex;
+          justify-content: space-between;
+          color: var(--muted);
+          font-weight: 600;
+          font-size: 15px;
+        }
+
+        .adm-stat .t i {
+          font-style: normal;
+          width: 34px;
+          height: 34px;
+          display: grid;
+          place-items: center;
+          border-radius: 10px;
+          background: #4d3510;
+          color: #ffd45e;
+        }
+
+        .adm-stat b {
+          display: block;
+          font-size: 42px;
+          line-height: 1.15;
+          margin: 8px 0 2px;
+          color: var(--gold);
+          font-weight: 800;
+        }
+
+        .adm-stat.ok b {
+          color: var(--green);
+        }
+
+        .adm-stat span {
+          font-size: 14px;
+          color: var(--muted);
+        }
+
+        .adm-cols {
+          display: grid;
+          grid-template-columns: 1.2fr 1fr;
+          gap: 20px;
+          margin-top: 20px;
+        }
+
+        /* Equal 50/50 balanced grid for Add Zoom / Video / PDF */
+        .adm-cols-equal {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 22px;
+          align-items: stretch;
+        }
+
+        .adm-panel {
+          background: linear-gradient(160deg, var(--card2), var(--card));
+          border: 1px solid var(--line);
+          border-radius: 22px;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .adm-panel h2 {
+          margin: 0;
+          font-size: 21px;
+          color: var(--ink);
+          font-weight: 800;
+        }
+
+        .adm-panel > p {
+          margin: 2px 0 16px;
+          color: var(--muted);
+          font-size: 14.5px;
+        }
+
+        .adm-act {
+          display: grid;
+          grid-template-columns: 48px 1fr 20px;
+          gap: 14px;
+          align-items: center;
+          padding: 14px 16px;
+          border-radius: 16px;
+          background: var(--card);
+          border: 1px solid var(--soft);
+          margin-bottom: 10px;
+          width: 100%;
+          text-align: left;
+          color: var(--ink);
+          cursor: pointer;
+          box-shadow: none;
+          transition: all 0.18s ease;
+        }
+
+        .adm-act:hover {
+          border-color: var(--gold);
+          transform: translateX(3px);
+          background: var(--card2);
+        }
+
+        .adm-act .ic {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          background: #4d3510;
+          font-size: 22px;
+        }
+
+        .adm-act b {
+          display: block;
+          line-height: 1.3;
+          font-size: 15.5px;
+          color: var(--ink);
+        }
+
+        .adm-act small {
+          color: var(--muted);
+          font-size: 13.5px;
+          line-height: 1.4;
+          display: block;
+        }
+
+        .adm-act .go {
+          color: var(--gold);
+          font-size: 22px;
+        }
+
+        .adm-kv {
+          display: flex;
+          justify-content: space-between;
+          gap: 14px;
+          padding: 13px 0;
+          border-bottom: 1px solid var(--soft);
+        }
+
+        .adm-kv:last-of-type {
+          border: 0;
+        }
+
+        .adm-kv span {
+          color: var(--muted);
+        }
+
+        .adm-kv b {
+          text-align: right;
+          color: var(--ink);
+        }
+
+        .adm-kv .fee {
+          color: var(--gold);
+        }
+
+        .adm-hot {
+          margin-top: auto;
+          padding-top: 14px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          background: #12402b;
+          border: 1px solid #1f7a52;
+          border-radius: 14px;
+          padding: 12px 16px;
+          color: #fff;
+        }
+
+        .adm-input,
+        .adm-select,
+        .adm-textarea {
+          width: 100%;
+          padding: 11px 14px;
+          border-radius: 12px;
+          border: 1px solid var(--line);
+          background: var(--bg);
+          color: var(--ink);
+          font: inherit;
+          font-size: 14.5px;
+          outline: none;
+          margin-top: 5px;
+        }
+
+        .adm-input:focus,
+        .adm-select:focus,
+        .adm-textarea:focus {
+          border-color: var(--gold);
+          box-shadow: 0 0 0 2px rgba(255, 200, 74, 0.2);
+        }
+
+        .adm-label {
+          display: block;
+          font-size: 13.5px;
+          font-weight: 700;
+          color: var(--muted);
+          margin-bottom: 12px;
+        }
+
+        .adm-row-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 14px;
+          padding: 15px 18px;
+          border-radius: 16px;
+          background: var(--card);
+          border: 1px solid var(--soft);
+          margin-bottom: 10px;
+        }
+
+        .adm-row-item.cur {
+          border: 2px solid var(--gold);
+        }
+
+        @media (max-width: 1020px) {
+          .adm-stats {
+            grid-template-columns: 1fr 1fr;
+          }
+          .adm-cols,
+          .adm-cols-equal {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 820px) {
+          .adm-app {
+            grid-template-columns: 1fr;
+          }
+          .adm-aside {
+            position: static;
+            height: auto;
+            flex-direction: row;
+            overflow-x: auto;
+            padding: 10px;
+            gap: 6px;
+          }
+          .adm-me,
+          .adm-lbl,
+          .adm-live {
+            display: none;
+          }
+          .adm-nav {
+            white-space: nowrap;
+            width: auto;
+            padding: 9px 14px;
+          }
+          .adm-nav em {
+            margin-left: 6px;
+          }
+        }
+      `}</style>
+
+      <div className="adm-app">
+        {/* ================================================================== */}
+        {/* LEFT SIDEBAR MATCHING EXACT HTML TEMPLATE                          */}
+        {/* ================================================================== */}
+        <aside className="adm-aside" aria-label="Admin menu">
+          <div className="adm-me">
+            <div className="adm-av">ප්‍</div>
+            <div>
+              <b className="si">ප්‍රධාන ගුරුතුමා</b>
+              <span>Administrator</span>
+            </div>
+          </div>
+
+          <div className="adm-lbl">Overview</div>
+          <button
+            type="button"
+            className={`adm-nav ${tab === "overview" ? "on" : ""}`}
+            onClick={() => setTab("overview")}
+          >
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+            <span>Dashboard overview</span>
+          </button>
+
+          <div className="adm-lbl">Manage</div>
+          <button
+            type="button"
+            className={`adm-nav ${tab === "packages" ? "on" : ""}`}
+            onClick={() => setTab("packages")}
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            </svg>
+            <span>Monthly classes</span>
+            <em>{S.folders.length}</em>
+          </button>
+
+          <button
+            type="button"
+            className={`adm-nav ${tab === "content" ? "on" : ""}`}
+            onClick={() => setTab("content")}
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+              <path d="M14 3v5h5M12 11v6M9 14h6" />
+            </svg>
+            <span>Add Zoom / Video / PDF</span>
+          </button>
+
+          <button
+            type="button"
+            className={`adm-nav ${tab === "payments" ? "on" : ""}`}
+            onClick={() => setTab("payments")}
+          >
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M3 10h18M7 15h4" />
+            </svg>
+            <span>Monthly fee slips</span>
+            <em>{pendingCount}</em>
+          </button>
+
+          <button
+            type="button"
+            className={`adm-nav ${tab === "students" ? "on" : ""}`}
+            onClick={() => setTab("students")}
+          >
+            <svg viewBox="0 0 24 24">
+              <circle cx="9" cy="8" r="3.5" />
+              <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6" />
+            </svg>
+            <span>Students &amp; Attendance</span>
+            <em>{studentsList.length}</em>
+          </button>
+
+          <div className="adm-lbl">System</div>
+          <button
+            type="button"
+            className={`adm-nav ${tab === "settings" ? "on" : ""}`}
+            onClick={() => setTab("settings")}
+          >
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3.2" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" />
+            </svg>
+            <span>Class settings</span>
+          </button>
+
+          <Link href="/ai-tutor" className="adm-live">
+            ✦ 190+ AI Tutor <span>Live</span>
+          </Link>
+        </aside>
+
+        {/* ================================================================== */}
+        {/* MAIN WORKSPACE                                                     */}
+        {/* ================================================================== */}
+        <main className="adm-main">
+          <div className="adm-eyebrow">
+            👑 Admin Portal{" "}
+            <span style={{ color: "var(--muted)", fontWeight: 600 }}>
+              · Monthly Classes Management
             </span>
           </div>
-        </div>
 
-        {/* Page Head */}
-        <div className="head">
-          <div>
-            <p>
-              {isSi ? "පාලක පුවරුව" : "Admin portal"} / {" "}
-              {tab === "overview" && (isSi ? "දළ විශ්ලේෂණය" : "Dashboard")}
-              {tab === "packages" && (isSi ? "මාසික පන්ති කළමනාකරණය" : "Monthly classes")}
-              {tab === "content" && (isSi ? "Zoom / Video / PDF එක් කරන්න" : "Add Zoom / Video / PDF")}
-              {tab === "payments" && (isSi ? "මාසික ගෙවීම් රිසිට්පත්" : "Monthly fee slips")}
-              {tab === "students" && (isSi ? "ශිෂ්‍ය නාමාවලිය" : "Students")}
-              {tab === "settings" && (isSi ? "පන්ති සැකසුම්" : "Class settings")}
-            </p>
+          <div className="adm-crumb">
+            Admin portal /{" "}
+            {tab === "overview" && "Dashboard"}
+            {tab === "packages" && "Monthly classes"}
+            {tab === "content" && "Add Zoom / Video / PDF"}
+            {tab === "payments" && "Monthly fee slips"}
+            {tab === "students" && "Students, Class Roster & Attendance"}
+            {tab === "settings" && "Class settings"}
+          </div>
+
+          <div className="adm-head">
             <h1>
-              {tab === "overview" && (isSi ? "දළ විශ්ලේෂණය" : "Dashboard overview")}
-              {tab === "packages" && (isSi ? "මාසෙන් මාසෙට පන්ති කළමනාකරණය" : "Month-by-Month Classes")}
-              {tab === "content" && (isSi ? "මාසික පන්තියට Zoom / Video / PDF එක් කරන්න" : "Add Zoom / Video / PDF to Month")}
-              {tab === "payments" && (isSi ? "රු. 2000 මාසික ගෙවීම් රිසිට්පත්" : "Rs. 2000 Monthly Fee Slips")}
-              {tab === "students" && (isSi ? "ශිෂ්‍ය නාමාවලිය" : "Students directory")}
-              {tab === "settings" && (isSi ? "පන්ති සැකසුම්" : "Class settings")}
+              {tab === "overview" && "Dashboard overview"}
+              {tab === "packages" && "Monthly classes"}
+              {tab === "content" && "Add Zoom / Video / PDF"}
+              {tab === "payments" && "Monthly fee slips (Rs. 2,000)"}
+              {tab === "students" && "Students, Class Roster & Attendance"}
+              {tab === "settings" && "Class settings"}
             </h1>
-          </div>
 
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className="btn gold"
-              onClick={handleOpenCreatePackage}
-            >
-              <svg><use href="#plus" /></svg>
-              <span>{isSi ? "📅 අලුත් මාසයක් එක් කරන්න" : "📅 Add New Month"}</span>
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => setTab("content")}
-            >
-              <span>🎥 {isSi ? "Zoom / Video / PDF දාන්න" : "Add Zoom / Video / PDF"}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* ==================================================================== */}
-        {/* TAB 1: OVERVIEW                                                      */}
-        {/* ==================================================================== */}
-        {tab === "overview" && (
-          <>
-            <section className="stats" aria-label="Summary">
-              <div className="stat" onClick={() => setTab("students")}>
-                <div className="l">
-                  <span>{isSi ? "ලියාපදිංචි සිසුන්" : "Registered students"}</span>
-                  <svg><use href="#users" /></svg>
-                </div>
-                <div className="v">{studentsList.length}</div>
-                <small>{isSi ? "සම්බන්ධ වූ මුළු සිසුන් ගණන" : "Enrolled in total"}</small>
-              </div>
-
-              <div className="stat" onClick={() => setTab("packages")}>
-                <div className="l">
-                  <span>{isSi ? "මාසික පන්ති ගණන" : "Monthly classes"}</span>
-                  <svg><use href="#folder" /></svg>
-                </div>
-                <div className="v">{S.folders.length}</div>
-                <small>{isSi ? "සියලු ශ්‍රේණිවල ක්‍රියාත්මක මාස" : "Active monthly classes"}</small>
-              </div>
-
-              <div
-                className={`stat ${pendingCount > 0 ? "alert" : ""}`}
-                onClick={() => { setTab("payments"); setFilterStatus("pending"); }}
+            <div className="adm-grp">
+              <button
+                type="button"
+                className="adm-chip gold"
+                onClick={handleOpenCreatePackage}
               >
-                <div className="l">
-                  <span>{isSi ? "අනුමැතියට ඇති රිසිට්පත්" : "Pending receipts"}</span>
-                  <svg><use href="#clock" /></svg>
-                </div>
-                <div className={`v ${pendingCount > 0 ? "warn" : ""}`}>{pendingCount}</div>
-                <small>{isSi ? "රු. 2000 මාසික ගාස්තු රිසිට්පත්" : "Waiting for approval"}</small>
-              </div>
-
-              <div
-                className="stat"
-                onClick={() => { setTab("payments"); setFilterStatus("approved"); }}
+                ＋ Add New Month
+              </button>
+              <button
+                type="button"
+                className="adm-chip"
+                onClick={() => setTab("content")}
               >
-                <div className="l">
-                  <span>{isSi ? "අනුමත මාසික ගෙවීම්" : "Approved payments"}</span>
-                  <svg><use href="#check" /></svg>
-                </div>
-                <div className="v ok">{approvedCount}</div>
-                <small>{isSi ? "විවෘත කරදුන් මුළු මාස ගණන" : "Months unlocked"}</small>
-              </div>
-            </section>
-
-            <div className="cols">
-              <section className="card">
-                <h2>{isSi ? "ක්ෂණික ක්‍රියාමාර්ග" : "Quick actions"}</h2>
-                <p>{isSi ? "මාසික පන්ති සහ ඉගෙනුම් ද්‍රව්‍ය කළමනාකරණය" : "Manage monthly classes and materials"}</p>
-
-                <button
-                  type="button"
-                  className="act"
-                  onClick={handleOpenCreatePackage}
-                >
-                  <span className="ic"><svg><use href="#folder" /></svg></span>
-                  <span>
-                    <b>{isSi ? "📅 අලුත් මාසයක් / මාසික පන්තියක් එක් කරන්න" : "📅 Add a New Monthly Class"}</b>
-                    <small>{isSi ? "ඕනෑම ශ්‍රේණියකට නව මාසයක් එක්කර මේ මාසය ලෙස Highlight කරන්න" : "Create a new month for any grade and highlight as current month"}</small>
-                  </span>
-                  <svg className="go"><use href="#arrow" /></svg>
-                </button>
-
-                <button
-                  type="button"
-                  className="act"
-                  onClick={() => setTab("content")}
-                >
-                  <span className="ic"><svg><use href="#video" /></svg></span>
-                  <span>
-                    <b>{isSi ? "🔴 Zoom Live Link, වීඩියෝ සහ PDF එක් කරන්න" : "🔴 Add Zoom Live Link, Video & PDF"}</b>
-                    <small>{isSi ? "අදාළ මාසය තුළට සජීවී Zoom සබැඳි, YouTube වීඩියෝ සහ PDF පේපර්ස් දාන්න" : "Add Zoom links, YouTube recordings, and PDF papers inside any month"}</small>
-                  </span>
-                  <svg className="go"><use href="#arrow" /></svg>
-                </button>
-
-                <button
-                  type="button"
-                  className="act"
-                  onClick={() => { setTab("payments"); setFilterStatus("pending"); }}
-                >
-                  <span className="ic"><svg><use href="#card" /></svg></span>
-                  <span>
-                    <b>{isSi ? "💳 රු. 2000 මාසික ගෙවීම් රිසිට්පත් අනුමත කරන්න" : "💳 Approve Rs. 2000 Monthly Fee Slips"}</b>
-                    <small>{isSi ? `${pendingCount} ක් අනුමැතිය අපේක්ෂාවෙන් පවතී` : `${pendingCount} slips waiting for approval`}</small>
-                  </span>
-                  <svg className="go"><use href="#arrow" /></svg>
-                </button>
-
-                <button
-                  type="button"
-                  className="act"
-                  onClick={() => setTab("settings")}
-                >
-                  <span className="ic"><svg><use href="#cog" /></svg></span>
-                  <span>
-                    <b>{isSi ? "බැංකු විස්තර සහ පන්ති සැකසුම්" : "Bank details & settings"}</b>
-                    <small>{isSi ? "ගිණුම් අංක සහ ක්ෂණික දුරකථන අංකය සංස්කරණය" : "Update account numbers and contact hotline"}</small>
-                  </span>
-                  <svg className="go"><use href="#arrow" /></svg>
-                </button>
-              </section>
-
-              <section className="card">
-                <h2>{isSi ? "මාසික පන්ති පද්ධතියේ තත්ත්වය" : "Monthly Class System Status"}</h2>
-                <p>{isSi ? "ශ්‍රේණි අනුව ක්‍රියාත්මක මාස සහ මාසික ගාස්තු" : "Active months and monthly fee summary"}</p>
-
-                <dl>
-                  <div>
-                    <dt>{isSi ? "ක්‍රියාත්මක ශ්‍රේණි" : "Active grades"}</dt>
-                    <dd>{isSi ? "3, 4 සහ 5 ශ්‍රේණිය (190+ විශේෂ)" : "Grades 3, 4 & Grade 5 (190+)"}</dd>
-                  </div>
-                  <div>
-                    <dt>{isSi ? "සම්මත මාසික පන්ති ගාස්තුව" : "Standard monthly fee"}</dt>
-                    <dd style={{ color: "var(--gold-ink)", fontWeight: 700 }}>{isSi ? "රු. 2000 (මසකට)" : "Rs. 2000 / month"}</dd>
-                  </div>
-                  <div>
-                    <dt>{isSi ? "පවතින මුළු මාසික පන්ති" : "Total monthly classes"}</dt>
-                    <dd>{S.folders.length} {isSi ? "මාස" : "months"}</dd>
-                  </div>
-                  <div>
-                    <dt>{isSi ? "එකතු කළ Zoom / Video / PDF" : "Total Zoom / Video / PDF items"}</dt>
-                    <dd>{S.items.length} {isSi ? "අයිතම" : "items"}</dd>
-                  </div>
-                  <div>
-                    <dt>{isSi ? "ක්ෂණික දුරකථන අංකය" : "WhatsApp hotline"}</dt>
-                    <dd>{S.set?.hotline || "077 123 4567"}</dd>
-                  </div>
-                </dl>
-
-                <div className="tip">
-                  <b>{isSi ? "💡 වැදගත්:" : "💡 Note:"}</b>{" "}
-                  {isSi
-                    ? "ශිෂ්‍යයෙකු ලියාපදිංචි වූ ශ්‍රේණියට අදාළ මාස ලැයිස්තුව ඔවුන් ලොග් වූ සැණින් දිස්වේ. ඔබ \"මේ මාසය\" ලෙස ලකුණු කරන මාසය රන්වන් පැහැයෙන් ඉහළින්ම Highlight වී පෙනේ."
-                    : "Students automatically see the months for their grade upon login. The month marked as 'Current Month' is highlighted at the top in gold."}
-                </div>
-              </section>
+                🎬 Add Zoom / Video / PDF
+              </button>
+              <button
+                type="button"
+                className="adm-chip"
+                onClick={() => setTab("students")}
+              >
+                📋 Class Roster &amp; Attendance
+              </button>
             </div>
-          </>
-        )}
+          </div>
 
-        {/* ==================================================================== */}
-        {/* TAB 2: MONTHLY CLASSES MANAGEMENT (ADD/EDIT MONTHS & HIGHLIGHT)      */}
-        {/* ==================================================================== */}
-        {tab === "packages" && (
-          <section className="card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
-              <div>
-                <h2>{isSi ? `මාසික පන්ති ලැයිස්තුව (${filteredAdminFolders.length})` : `Monthly Classes (${filteredAdminFolders.length})`}</h2>
-                <p style={{ margin: "4px 0 0" }}>
-                  {isSi
-                    ? "අලුත් මාස එක් කරන්න, මේ මාසයේ පන්තිය Highlight කරන්න, සහ එක් එක් මාසයට Zoom / Video / PDF එක් කරන්න."
-                    : "Add new months, highlight the current active month, and manage Zoom / Video / PDF items."}
-                </p>
+          {/* ================================================================ */}
+          {/* TAB 1: DASHBOARD OVERVIEW (EXACT TEMPLATE LAYOUT)                */}
+          {/* ================================================================ */}
+          {tab === "overview" && (
+            <>
+              <div className="adm-stats">
+                <div className="adm-stat" onClick={() => setTab("students")}>
+                  <div className="t">
+                    Registered students<i>👥</i>
+                  </div>
+                  <b>{studentsList.length}</b>
+                  <span>Enrolled in total</span>
+                </div>
+
+                <div className="adm-stat" onClick={() => setTab("packages")}>
+                  <div className="t">
+                    Monthly classes<i>📁</i>
+                  </div>
+                  <b>{S.folders.length}</b>
+                  <span>Active monthly classes</span>
+                </div>
+
+                <div
+                  className="adm-stat"
+                  onClick={() => {
+                    setTab("payments");
+                    setFilterStatus("pending");
+                  }}
+                >
+                  <div className="t">
+                    Pending receipts<i>⏳</i>
+                  </div>
+                  <b>{pendingCount}</b>
+                  <span>Waiting for approval</span>
+                </div>
+
+                <div
+                  className="adm-stat ok"
+                  onClick={() => {
+                    setTab("payments");
+                    setFilterStatus("approved");
+                  }}
+                >
+                  <div className="t">
+                    Approved payments<i>✔</i>
+                  </div>
+                  <b>{approvedCount}</b>
+                  <span>Months unlocked</span>
+                </div>
               </div>
 
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                {/* Grade Filter Pills */}
-                {["all", 5, 4, 3].map(g => (
+              <div className="adm-cols">
+                <section className="adm-panel">
+                  <h2>Quick actions</h2>
+                  <p>Manage monthly classes, student rosters, and materials</p>
+
                   <button
-                    key={g}
                     type="button"
-                    className={`btn ${adminGradeFilter === g ? "gold" : ""}`}
-                    style={{ padding: "6px 12px", fontSize: "12.5px" }}
-                    onClick={() => setAdminGradeFilter(g)}
+                    className="adm-act"
+                    onClick={handleOpenCreatePackage}
                   >
-                    {g === "all"
-                      ? (isSi ? "සියලු ශ්‍රේණි" : "All Grades")
-                      : (isSi ? `${g} ශ්‍රේණිය` : `Grade ${g}`)}
+                    <span className="ic">📅</span>
+                    <span>
+                      <b>Add a New Monthly Class</b>
+                      <small>
+                        Create a new month (e.g. December) for Grade 3, 4 or 5 and highlight as current month
+                      </small>
+                    </span>
+                    <span className="go">›</span>
                   </button>
-                ))}
 
-                <button type="button" className="btn gold" onClick={handleOpenCreatePackage}>
-                  <svg><use href="#plus" /></svg>
-                  <span>{isSi ? "📅 අලුත් මාසයක් එක් කරන්න" : "📅 Add New Month"}</span>
-                </button>
-              </div>
-            </div>
+                  <button
+                    type="button"
+                    className="adm-act"
+                    onClick={() => setTab("content")}
+                  >
+                    <span className="ic">🔴</span>
+                    <span>
+                      <b>Add Zoom Live Link, Video &amp; PDF (Link or Upload)</b>
+                      <small>
+                        Paste links or directly upload PDF papers &amp; notes inside any monthly class
+                      </small>
+                    </span>
+                    <span className="go">›</span>
+                  </button>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {filteredAdminFolders.map((f, idx) => {
-                const folderItems = S.items.filter(i => i.fid === f.id);
-                const vCount = folderItems.filter(i => i.type === "video" || getYoutubeEmbedUrl(i.url)).length;
-                const pCount = folderItems.filter(i => i.type === "pdf").length;
-                const zCount = folderItems.filter(i => i.type === "zoom").length;
+                  <button
+                    type="button"
+                    className="adm-act"
+                    onClick={() => setTab("students")}
+                  >
+                    <span className="ic">📋</span>
+                    <span>
+                      <b>View Month-Wise Paid Students, Attendance &amp; WhatsApp</b>
+                      <small>
+                        See who paid for December/November, mark attendance, and send WhatsApp messages
+                      </small>
+                    </span>
+                    <span className="go">›</span>
+                  </button>
 
-                return (
-                  <div
-                    key={f.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: "16px",
-                      padding: "16px 20px",
-                      borderRadius: "14px",
-                      border: f.isCurrentMonth ? "2px solid var(--gold)" : "1px solid var(--line)",
-                      background: f.isCurrentMonth
-                        ? "linear-gradient(135deg, rgba(245, 166, 35, 0.12), var(--surface))"
-                        : "var(--surface)"
+                  <button
+                    type="button"
+                    className="adm-act"
+                    onClick={() => {
+                      setTab("payments");
+                      setFilterStatus("pending");
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", flex: 1, minWidth: "280px" }}>
-                      <div
-                        style={{
-                          width: "44px",
-                          height: "44px",
-                          borderRadius: "12px",
-                          background: f.isCurrentMonth ? "linear-gradient(135deg, #f5a623, #d97706)" : "var(--bg)",
-                          color: f.isCurrentMonth ? "#1a0800" : "var(--ink)",
-                          display: "grid",
-                          placeItems: "center",
-                          fontWeight: 800,
-                          flexShrink: 0
-                        }}
-                      >
-                        {f.isCurrentMonth ? "🔥" : String(idx + 1).padStart(2, "0")}
+                    <span className="ic">💳</span>
+                    <span>
+                      <b>Approve Rs. 2000 Monthly Fee Slips</b>
+                      <small>{pendingCount} slips waiting for approval</small>
+                    </span>
+                    <span className="go">›</span>
+                  </button>
+                </section>
+
+                <section className="adm-panel">
+                  <h2>Monthly Class System Status</h2>
+                  <p>Active months and monthly fee summary</p>
+
+                  <div className="adm-kv">
+                    <span>Active grades</span>
+                    <b>Grades 3, 4 &amp; Grade 5 (190+)</b>
+                  </div>
+                  <div className="adm-kv">
+                    <span>Standard monthly fee</span>
+                    <b className="fee">Rs. 2000 / month</b>
+                  </div>
+                  <div className="adm-kv">
+                    <span>Total monthly classes</span>
+                    <b>{S.folders.length} months</b>
+                  </div>
+                  <div className="adm-kv">
+                    <span>Total Zoom / Video / PDF items</span>
+                    <b>{S.items.length} items</b>
+                  </div>
+                  <div className="adm-kv">
+                    <span>WhatsApp hotline</span>
+                    <b>{S.set?.hotline || "0705 771 778"}</b>
+                  </div>
+
+                  <div className="adm-hot">
+                    <b>All systems running · Supabase Synced</b>
+                    <span style={{ color: "var(--green)", fontWeight: 800 }}>
+                      ● Online
+                    </span>
+                  </div>
+                </section>
+              </div>
+            </>
+          )}
+
+          {/* ================================================================ */}
+          {/* TAB 2: MONTHLY CLASSES MANAGEMENT                                */}
+          {/* ================================================================ */}
+          {tab === "packages" && (
+            <section className="adm-panel">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "18px" }}>
+                <div>
+                  <h2>Monthly Classes ({filteredAdminFolders.length})</h2>
+                  <p style={{ margin: "2px 0 0", color: "var(--muted)", fontSize: "14px" }}>
+                    Click &ldquo;👥 Paid Students Roster&rdquo; on any month to see everyone enrolled in that month, mark attendance, and send WhatsApp messages.
+                  </p>
+                </div>
+
+                <div className="adm-grp">
+                  {["all", 5, 4, 3].map(g => (
+                    <button
+                      key={g}
+                      type="button"
+                      className={`adm-chip ${adminGradeFilter === g ? "gold" : ""}`}
+                      onClick={() => setAdminGradeFilter(g)}
+                    >
+                      {g === "all" ? "All Grades (3, 4, 5)" : `Grade ${g} (${g} ශ්‍රේණිය)`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                {filteredAdminFolders.map((f, idx) => {
+                  const folderItems = S.items.filter(i => i.fid === f.id);
+                  const vCount = folderItems.filter(i => i.type === "video" || getYoutubeEmbedUrl(i.url)).length;
+                  const pCount = folderItems.filter(i => i.type === "pdf").length;
+                  const zCount = folderItems.filter(i => i.type === "zoom").length + (f.zoomUrl ? 1 : 0);
+                  const paidStudentsForMonth = S.pays.filter(p => p.fid === f.id && p.status === "approved").length;
+
+                  return (
+                    <div key={f.id} className={`adm-row-item ${f.isCurrentMonth ? "cur" : ""}`}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", flex: 1, minWidth: "280px" }}>
+                        <div
+                          style={{
+                            width: "46px",
+                            height: "46px",
+                            borderRadius: "14px",
+                            background: f.isCurrentMonth ? "linear-gradient(135deg, #ffd45e, var(--gold2))" : "#4d3510",
+                            color: f.isCurrentMonth ? "#2a1208" : "#ffd45e",
+                            display: "grid",
+                            placeItems: "center",
+                            fontWeight: 800,
+                            fontSize: "18px",
+                            flexShrink: 0
+                          }}
+                        >
+                          {f.isCurrentMonth ? "🔥" : String(idx + 1).padStart(2, "0")}
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "5px" }}>
+                            <span className="adm-chip gold" style={{ padding: "2px 10px", fontSize: "12px" }}>
+                              🎓 Grade {f.grade} ({f.grade} ශ්‍රේණිය)
+                            </span>
+                            <span className="adm-chip" style={{ padding: "2px 10px", fontSize: "12px" }}>
+                              📅 {f.month}
+                            </span>
+                            <span className="adm-chip wa" style={{ padding: "2px 10px", fontSize: "12px" }}>
+                              👥 {paidStudentsForMonth} Paid Students
+                            </span>
+                            {f.isCurrentMonth ? (
+                              <span className="adm-chip wa" style={{ padding: "2px 10px", fontSize: "12px" }}>
+                                🔥 Current Highlighted Month
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                className="adm-chip"
+                                style={{ padding: "2px 10px", fontSize: "11.5px" }}
+                                onClick={() => handleSetCurrentMonth(f)}
+                              >
+                                ⭐ Set as Current Month
+                              </button>
+                            )}
+                          </div>
+
+                          <h3 className="si" style={{ margin: "0 0 4px", fontSize: "17.5px", color: "var(--ink)" }}>
+                            {f.name}
+                          </h3>
+
+                          <div style={{ fontSize: "13.5px", color: "var(--muted)" }}>
+                            🔴 {zCount} Zoom · 🎥 {vCount} Videos · 📄 {pCount} PDFs · 💰 Rs. {f.price || 2000}
+                          </div>
+                        </div>
                       </div>
 
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "6px" }}>
-                          <span className="badge-tag gold">
-                            🎓 {isSi ? `${f.grade} ශ්‍රේණිය` : `Grade ${f.grade}`}
-                          </span>
-                          <span className="badge-tag" style={{ background: "var(--bg)", fontWeight: 700 }}>
-                            📅 {f.month || (isSi ? "මාසික පන්තිය" : "Monthly")}
-                          </span>
-                          {f.isCurrentMonth ? (
-                            <span className="badge-tag ok" style={{ fontWeight: 800 }}>
-                              🔥 {isSi ? "මේ මාසය (Highlighted)" : "Current Month"}
+                      <div className="adm-grp" style={{ marginLeft: "auto" }}>
+                        {/* 1-Click Button to view Paid Students Roster & Attendance for this specific Month */}
+                        <button
+                          type="button"
+                          className="adm-chip wa"
+                          onClick={() => {
+                            setSelectedRosterFolderId(f.id);
+                            setRosterGradeFilter(f.grade);
+                            setRosterPayFilter("paid");
+                            setTab("students");
+                          }}
+                        >
+                          👥 Paid Students ({paidStudentsForMonth})
+                        </button>
+
+                        <button
+                          type="button"
+                          className="adm-chip gold"
+                          onClick={() => {
+                            setSelectedFolderForContent(f.id);
+                            setNi(prev => ({ ...prev, fid: f.id }));
+                            setTab("content");
+                          }}
+                        >
+                          ＋ Zoom / Video / PDF
+                        </button>
+
+                        <button
+                          type="button"
+                          className="adm-chip"
+                          onClick={() => handleEditPackage(f)}
+                          title="Edit Month"
+                        >
+                          ✏️
+                        </button>
+
+                        <button
+                          type="button"
+                          className="adm-chip danger"
+                          onClick={() => handleDeletePackage(f)}
+                          title="Delete Month"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* ================================================================ */}
+          {/* TAB 3: ADD ZOOM / VIDEO / PDF (BALANCED EQUAL 50/50 + UPLOAD)    */}
+          {/* ================================================================ */}
+          {tab === "content" && (
+            <div className="adm-cols-equal">
+              {/* LEFT PANEL: EASY STREAMLINED FORM WITH LINK OR DIRECT FILE UPLOAD */}
+              <section className="adm-panel">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "6px" }}>
+                  <h2>1. Add Zoom / Video / PDF</h2>
+                  <span className="adm-chip gold" style={{ padding: "3px 10px", fontSize: "12px" }}>
+                    Link හෝ File Upload
+                  </span>
+                </div>
+                <p>Select the month, choose Zoom / Video / PDF, and paste a link or upload a file directly from your device.</p>
+
+                <form onSubmit={handleAddItem} style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                  <label className="adm-label">
+                    <span>Target Monthly Class (මාසික පන්තිය තෝරන්න)</span>
+                    <select
+                      className="adm-select si"
+                      value={ni.fid || selectedFolderForContent || S.folders[0]?.id}
+                      onChange={e => {
+                        setNi({ ...ni, fid: e.target.value });
+                        setSelectedFolderForContent(e.target.value);
+                      }}
+                    >
+                      {S.folders.map(f => (
+                        <option key={f.id} value={f.id}>
+                          Grade {f.grade} | {f.month} {f.isCurrentMonth ? "🔥 (Current)" : ""} — {f.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {/* 3 Big Easy Content Type Selector Buttons */}
+                  <div className="adm-label">
+                    <span>Content Type (වර්ගය තෝරන්න)</span>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginTop: "6px" }}>
+                      {[
+                        { id: "zoom", label: "🔴 Zoom Live", mode: "link" },
+                        { id: "video", label: "🎥 Video Lesson", mode: "link" },
+                        { id: "pdf", label: "📄 PDF / Note", mode: inputMode }
+                      ].map(tItem => (
+                        <button
+                          key={tItem.id}
+                          type="button"
+                          className={`adm-chip ${ni.type === tItem.id ? "gold" : ""}`}
+                          style={{ justifyContent: "center", padding: "10px 8px" }}
+                          onClick={() => {
+                            setNi({ ...ni, type: tItem.id });
+                            if (tItem.id === "zoom") setInputMode("link");
+                          }}
+                        >
+                          {tItem.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Week & Subject in a clean 2-column row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <label className="adm-label">
+                      <span>Week / Session (සතිය)</span>
+                      <select
+                        className="adm-select si"
+                        value={ni.week}
+                        onChange={e => setNi({ ...ni, week: e.target.value })}
+                      >
+                        {WEEKS_LIST.map(w => (
+                          <option key={w} value={w}>🗓️ {w}</option>
+                        ))}
+                        <option value="විශේෂ පන්තිය">⭐ විශේෂ පන්තිය</option>
+                      </select>
+                    </label>
+
+                    <label className="adm-label">
+                      <span>Subject (විෂය)</span>
+                      <select
+                        className="adm-select si"
+                        value={ni.subject}
+                        onChange={e => setNi({ ...ni, subject: e.target.value })}
+                      >
+                        <option value="විෂයයන් 5ම">🌟 විෂයයන් 5ම ආවරණය</option>
+                        <option value="පරිසරය">🌿 පරිසරය</option>
+                        <option value="මව්බස">📖 මව්බස (සිංහල)</option>
+                        <option value="ගණිතය">🔢 ගණිතය</option>
+                        <option value="දෙමළ">🗣️ දෙමළ</option>
+                        <option value="ඉංග්‍රීසි">🔤 ඉංග්‍රීසි</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <label className="adm-label">
+                    <span>Lesson / Paper Title (මාතෘකාව)</span>
+                    <input
+                      className="adm-input si"
+                      placeholder={
+                        ni.type === "zoom"
+                          ? "උදා: සෙනසුරාදා රාත්‍රී 7.00 සජීවී Zoom පේපර් සාකච්ඡාව"
+                          : ni.type === "pdf"
+                          ? "උදා: දෙසැම්බර් පළමු සතිය - බස්නාහිර පළාත් පේපර් 01 (PDF)"
+                          : "උදා: බස්නාහිර පළාත් පේපර් 01 - සම්පූර්ණ වීඩියෝ විවරණය"
+                      }
+                      value={ni.title}
+                      onChange={e => setNi({ ...ni, title: e.target.value })}
+                      required
+                    />
+                  </label>
+
+                  {ni.type === "zoom" && (
+                    <label className="adm-label">
+                      <span>Zoom Live Schedule (දිනය සහ වේලාව)</span>
+                      <input
+                        className="adm-input si"
+                        placeholder="උදා: සෙනසුරාදා සහ ඉරිදා ප.ව. 7.00 - 9.00"
+                        value={ni.schedule}
+                        onChange={e => setNi({ ...ni, schedule: e.target.value })}
+                      />
+                    </label>
+                  )}
+
+                  {/* Toggle between Paste Link vs Direct File Upload */}
+                  <div className="adm-label" style={{ marginBottom: "14px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", flexWrap: "wrap", gap: "8px" }}>
+                      <span>
+                        {inputMode === "upload"
+                          ? "Upload File from Computer/Phone (ගොනුවක් Upload කරන්න)"
+                          : "Paste URL / Link (සබැඳිය ඇතුළත් කරන්න)"}
+                      </span>
+
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button
+                          type="button"
+                          className={`adm-chip ${inputMode === "link" ? "gold" : ""}`}
+                          style={{ padding: "4px 11px", fontSize: "12px" }}
+                          onClick={() => setInputMode("link")}
+                        >
+                          🔗 Paste Link
+                        </button>
+                        <button
+                          type="button"
+                          className={`adm-chip ${inputMode === "upload" ? "gold" : ""}`}
+                          style={{ padding: "4px 11px", fontSize: "12px" }}
+                          onClick={() => {
+                            setInputMode("upload");
+                            if (ni.type === "zoom") setNi({ ...ni, type: "pdf" });
+                          }}
+                        >
+                          📤 Upload File (PDF / Image)
+                        </button>
+                      </div>
+                    </div>
+
+                    {inputMode === "link" ? (
+                      <>
+                        <input
+                          className="adm-input"
+                          placeholder={
+                            ni.type === "zoom"
+                              ? "https://zoom.us/j/..."
+                              : ni.type === "pdf"
+                              ? "https://drive.google.com/... හෝ PDF Link එක"
+                              : "https://youtu.be/... හෝ YouTube Video Link එක"
+                          }
+                          value={ni.url.startsWith("data:") ? "" : ni.url}
+                          onChange={e => {
+                            const val = e.target.value;
+                            const autoType = val.includes("zoom.us")
+                              ? "zoom"
+                              : isYoutubeUrl(val)
+                              ? "video"
+                              : ni.type;
+                            setNi({ ...ni, url: val, fileName: "", type: autoType });
+                          }}
+                          required={inputMode === "link"}
+                        />
+
+                        {/* Quick 1-Click Picker from Official YouTube Channel Videos */}
+                        {ni.type === "video" && channelVideos.length > 0 && (
+                          <div style={{ marginTop: "8px", display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+                            <small style={{ color: "var(--muted)", fontSize: "12px" }}>
+                              ▶️ ඔබගේ YouTube නාලිකාවෙන් තෝරන්න:
+                            </small>
+                            {channelVideos.map(v => (
+                              <button
+                                key={v.videoId}
+                                type="button"
+                                className="adm-chip"
+                                style={{ padding: "3px 10px", fontSize: "11.5px" }}
+                                onClick={() =>
+                                  setNi({
+                                    ...ni,
+                                    type: "video",
+                                    title: v.title,
+                                    url: v.url,
+                                    subject: v.subject || ni.subject
+                                  })
+                                }
+                              >
+                                🎬 {v.title.slice(0, 28)}...
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div
+                        style={{
+                          marginTop: "6px",
+                          padding: "18px",
+                          borderRadius: "14px",
+                          border: "2px dashed var(--gold)",
+                          background: "var(--bg)",
+                          textAlign: "center"
+                        }}
+                      >
+                        <input
+                          type="file"
+                          accept=".pdf,image/*,video/*,.doc,.docx"
+                          onChange={handleContentFileUpload}
+                          style={{ maxWidth: "100%", color: "var(--ink)" }}
+                        />
+                        <div style={{ fontSize: "12.5px", color: "var(--muted)", marginTop: "8px" }}>
+                          {uploadingFile
+                            ? "⏳ ගොනුව සූදානම් වෙමින් පවතී..."
+                            : uploadedFileName
+                            ? `✅ තෝරාගත් ගොනුව: ${uploadedFileName}`
+                            : "PDF ප්‍රශ්න පත්‍රයක්, සටහන් පින්තූරයක් හෝ ලේඛනයක් ඔබගේ පරිගණකයෙන් හෝ දුරකථනයෙන් කෙලින්ම තෝරන්න."}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ marginTop: "auto", paddingTop: "10px" }}>
+                    <button
+                      type="submit"
+                      className="adm-chip gold"
+                      style={{ width: "100%", justifyContent: "center", padding: "12px 18px", fontSize: "15px" }}
+                    >
+                      ＋ {ni.type === "zoom"
+                        ? "Add Zoom Live Link to Month"
+                        : ni.type === "pdf"
+                        ? "Add PDF Paper / Note to Month"
+                        : "Add Video Lesson to Month"}
+                    </button>
+                  </div>
+                </form>
+              </section>
+
+              {/* RIGHT PANEL: MATCHING EQUAL-HEIGHT MATERIALS LIST & MAIN ZOOM UPDATER */}
+              <section className="adm-panel">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "6px" }}>
+                  <h2>2. Materials in Selected Month</h2>
+                  {activeContentFolder && (
+                    <button
+                      type="button"
+                      className="adm-chip"
+                      style={{ padding: "4px 12px", fontSize: "12.5px" }}
+                      onClick={() => handleEditPackage(activeContentFolder)}
+                    >
+                      ✏️ Edit Month &amp; Main Zoom Link
+                    </button>
+                  )}
+                </div>
+                <p className="si">
+                  <b>{activeContentFolder?.month} (Grade {activeContentFolder?.grade})</b> — {activeContentFolder?.name}
+                </p>
+
+                {/* Active Month Main Zoom Link Summary Box */}
+                {activeContentFolder && (
+                  <div
+                    style={{
+                      padding: "13px 16px",
+                      borderRadius: "14px",
+                      background: "var(--bg)",
+                      border: "1px solid var(--line)",
+                      marginBottom: "14px",
+                      fontSize: "13.5px"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <strong style={{ color: "var(--gold)" }}>
+                        🔴 Main Monthly Zoom Live Link:
+                      </strong>
+                      <span style={{ fontSize: "12px", color: "var(--green)", fontWeight: 700 }}>
+                        {activeContentFolder.zoomSchedule || "Every Sat & Sun 7:00 PM"}
+                      </span>
+                    </div>
+                    <div style={{ color: "var(--muted)", wordBreak: "break-all", marginTop: "4px", fontSize: "13px" }}>
+                      {activeContentFolder.zoomUrl || "No main Zoom link set"}
+                    </div>
+                  </div>
+                )}
+
+                {/* Items List inside Selected Month (Scrollable so both panels stay balanced!) */}
+                <div style={{ flex: 1, maxHeight: "430px", overflowY: "auto", paddingRight: "4px" }}>
+                  {S.items.filter(i => i.fid === (selectedFolderForContent || S.folders[0]?.id)).length ? (
+                    S.items
+                      .filter(i => i.fid === (selectedFolderForContent || S.folders[0]?.id))
+                      .map(i => {
+                        const isZoom = i.type === "zoom";
+                        const isVid = !isZoom && (i.type === "video" || Boolean(getYoutubeEmbedUrl(i.url)));
+                        const isUploadedFile = i.url?.startsWith("data:");
+
+                        return (
+                          <div key={i.id} className="adm-row-item" style={{ padding: "12px 14px" }}>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
+                                <span
+                                  className={`adm-chip ${isZoom ? "danger" : isVid ? "gold" : "wa"}`}
+                                  style={{ padding: "1px 9px", fontSize: "11.5px" }}
+                                >
+                                  {isZoom ? "🔴 Zoom Live" : isVid ? "🎥 Video" : isUploadedFile ? "📤 Uploaded File" : "📄 PDF"}
+                                </span>
+                                {i.week && (
+                                  <span style={{ fontSize: "12px", color: "var(--gold)", fontWeight: 700 }}>
+                                    [{i.week}]
+                                  </span>
+                                )}
+                                <span style={{ fontSize: "12px", color: "var(--muted)" }}>
+                                  [{i.subject}]
+                                </span>
+                              </div>
+                              <div className="si" style={{ fontWeight: 700, fontSize: "14.5px", color: "var(--ink)" }}>
+                                {i.title}
+                              </div>
+                            </div>
+
+                            <div className="adm-grp">
+                              {!isZoom && getYoutubeEmbedUrl(i.url) && (
+                                <button
+                                  type="button"
+                                  className="adm-chip gold"
+                                  style={{ padding: "5px 11px", fontSize: "12px" }}
+                                  onClick={() => setPreviewVideoItem(i)}
+                                >
+                                  ▶ Watch
+                                </button>
+                              )}
+                              <a
+                                href={i.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download={i.fileName || undefined}
+                                className="adm-chip"
+                                style={{ padding: "5px 11px", fontSize: "12px" }}
+                              >
+                                {isUploadedFile ? "⬇ Download" : "Open ↗"}
+                              </a>
+                              <button
+                                type="button"
+                                className="adm-chip danger"
+                                style={{ padding: "5px 10px", fontSize: "12px" }}
+                                onClick={() => {
+                                  if (confirm("මෙම අයිතමය ඉවත් කිරීමට අවශ්‍යද?")) {
+                                    update(d => {
+                                      d.items = d.items.filter(x => x.id !== i.id);
+                                    });
+                                  }
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                  ) : (
+                    <div style={{ padding: "36px 20px", textAlign: "center", color: "var(--muted)", border: "1px dashed var(--line)", borderRadius: "16px" }}>
+                      මෙම මාසයට තවම පාඩම් එක්කර නැත. වම්පස පෝරමයෙන් Link එකක් හෝ File එකක් Upload කරන්න.
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* ================================================================ */}
+          {/* TAB 4: MONTHLY FEE SLIPS (RS. 2,000)                             */}
+          {/* ================================================================ */}
+          {tab === "payments" && (
+            <section className="adm-panel">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", flexWrap: "wrap", gap: "12px" }}>
+                <div>
+                  <h2>Rs. 2,000 Monthly Fee Slips</h2>
+                  <p style={{ margin: "2px 0 0", color: "var(--muted)", fontSize: "14px" }}>
+                    Approving a student&apos;s Rs. 2,000 receipt immediately unlocks that month and adds them to that month&apos;s Paid Students Roster.
+                  </p>
+                </div>
+
+                <div className="adm-grp">
+                  {["all", "pending", "approved", "rejected"].map(st => (
+                    <button
+                      key={st}
+                      type="button"
+                      className={`adm-chip ${filterStatus === st ? "gold" : ""}`}
+                      onClick={() => setFilterStatus(st)}
+                    >
+                      {st === "all" && "All Slips"}
+                      {st === "pending" && `Pending (${pendingCount})`}
+                      {st === "approved" && `Approved (${approvedCount})`}
+                      {st === "rejected" && "Rejected"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {filteredPays.length ? (
+                <div>
+                  {[...filteredPays].reverse().map(p => {
+                    const u = S.users.find(x => x.id === p.uid) || {};
+                    const f = S.folders.find(x => x.id === p.fid) || {};
+                    return (
+                      <div key={p.id} className="adm-row-item">
+                        <div style={{ flex: 1, minWidth: "240px" }}>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
+                            <span className="adm-chip gold" style={{ padding: "2px 10px", fontSize: "12px" }}>
+                              📅 {f.month || "Monthly Class"} · Grade {f.grade || u.grade || 5}
                             </span>
-                          ) : (
+                            <span
+                              className={`adm-chip ${
+                                p.status === "approved" ? "wa" : p.status === "pending" ? "gold" : "danger"
+                              }`}
+                              style={{ padding: "2px 10px", fontSize: "12px" }}
+                            >
+                              {p.status === "approved" ? "✔ Approved" : p.status === "pending" ? "⏳ Pending" : "✕ Rejected"}
+                            </span>
+                            <span style={{ fontSize: "12.5px", color: "var(--muted)" }}>
+                              Submitted: {p.date}
+                            </span>
+                          </div>
+
+                          <h4 className="si" style={{ margin: "0 0 2px", fontSize: "16.5px" }}>
+                            👤 {u.name || "Student"} ({u.phone})
+                          </h4>
+                          <div className="si" style={{ fontSize: "13.5px", color: "var(--muted)" }}>
+                            Class: {f.name} · <b style={{ color: "var(--gold)" }}>Rs. {f.price || 2000}</b>
+                          </div>
+                        </div>
+
+                        <div className="adm-grp">
+                          {p.slip && (
                             <button
                               type="button"
-                              className="btn"
-                              style={{ padding: "2px 8px", fontSize: "11px" }}
-                              onClick={() => handleSetCurrentMonth(f)}
-                              title={isSi ? "මෙම ශ්‍රේණියේ වත්මන් මාසය ලෙස Highlight කරන්න" : "Set as Current Highlighted Month for this grade"}
+                              className="adm-chip"
+                              onClick={() => setViewSlip(p.slip)}
                             >
-                              ⭐ {isSi ? "මේ මාසය ලෙස දාන්න" : "Set as Current"}
+                              👁️ View Slip
+                            </button>
+                          )}
+
+                          {u.phone && (
+                            <a
+                              href={formatWhatsAppHref(
+                                u.phone,
+                                u.name,
+                                `ආදරණීය දරුවා, ඔබගේ ${f.month || ""} මාසික පන්ති ගාස්තුව (රු. ${f.price || 2000}) අනුමත කර ඇත. දැන් ඔබට ශිෂ්‍ය පුවරුවෙන් සියලුම Zoom, Video සහ PDF ලබාගත හැක!`
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="adm-chip wa"
+                            >
+                              💬 WhatsApp
+                            </a>
+                          )}
+
+                          {p.status !== "approved" && (
+                            <button
+                              type="button"
+                              className="adm-chip gold"
+                              onClick={() => decide(p.id, "approved")}
+                            >
+                              ✔ Approve &amp; Unlock
+                            </button>
+                          )}
+
+                          {p.status !== "rejected" && (
+                            <button
+                              type="button"
+                              className="adm-chip danger"
+                              onClick={() => decide(p.id, "rejected")}
+                            >
+                              ✕ Reject
                             </button>
                           )}
                         </div>
-
-                        <h3 style={{ fontSize: "1.08rem", margin: "0 0 4px" }}>{f.name}</h3>
-
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontSize: "12.5px", color: "var(--muted)" }}>
-                          <span>🎯 {f.subjects}</span>
-                          <span>•</span>
-                          <span style={{ color: "#2563eb", fontWeight: 700 }}>
-                            🔴 {zCount + (f.zoomUrl ? 1 : 0)} Zoom
-                          </span>
-                          <span>•</span>
-                          <span>🎥 {vCount} Video</span>
-                          <span>•</span>
-                          <span>📄 {pCount} PDF</span>
-                        </div>
                       </div>
-                    </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ padding: "36px", textAlign: "center", color: "var(--muted)" }}>
+                  No payment slips found in this category.
+                </div>
+              )}
+            </section>
+          )}
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginLeft: "auto" }}>
-                      <span className="price" style={{ fontSize: "1.1rem", padding: "3px 10px" }}>
-                        {isSi ? `රු. ${f.price || 2000}` : `Rs. ${f.price || 2000}`}
-                      </span>
-
-                      <button
-                        type="button"
-                        className="btn gold"
-                        style={{ padding: "8px 14px", fontSize: "12.5px" }}
-                        onClick={() => {
-                          setSelectedFolderForContent(f.id);
-                          setNi(prev => ({ ...prev, fid: f.id }));
-                          setTab("content");
-                        }}
-                      >
-                        <svg style={{ width: 14, height: 14 }}><use href="#plus" /></svg>
-                        <span>{isSi ? "Zoom / Video / PDF දාන්න" : "Add Zoom / Video / PDF"}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className="btn"
-                        style={{ padding: "8px 12px" }}
-                        onClick={() => handleEditPackage(f)}
-                        title={isSi ? "මාසය සංස්කරණය කරන්න" : "Edit Month"}
-                      >
-                        <svg style={{ width: 15, height: 15 }}><use href="#edit" /></svg>
-                      </button>
-
-                      <button
-                        type="button"
-                        className="btn"
-                        style={{ padding: "8px 12px", color: "var(--warn)" }}
-                        onClick={() => handleDeletePackage(f)}
-                        title={isSi ? "ඉවත් කරන්න" : "Delete"}
-                      >
-                        <svg style={{ width: 15, height: 15 }}><use href="#trash" /></svg>
-                      </button>
-                    </div>
+          {/* ================================================================ */}
+          {/* TAB 5: MONTH-WISE PAID STUDENTS ROSTER, ATTENDANCE & WHATSAPP    */}
+          {/* ================================================================ */}
+          {tab === "students" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {/* TOP FILTER & MONTH ROSTER SELECTOR PANEL */}
+              <section className="adm-panel">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "14px", marginBottom: "16px" }}>
+                  <div>
+                    <h2>📋 මාසික පන්තිය අනුව මුදල් ගෙවූ සිසුන්ගේ නාමලේඛනය සහ පැමිණීම</h2>
+                    <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: "14px" }}>
+                      ඕනෑම මාසයක් (උදා: දෙසැම්බර් / නොවැම්බර්) තෝරා එම මාසයට රු. 2,000 ගෙවා සම්බන්ධ වූ සිසුන් වෙනම හඳුනාගන්න, පැමිණීම ලකුණු කරන්න, සහ WhatsApp පණිවිඩ යවන්න.
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
 
-        {/* ==================================================================== */}
-        {/* TAB 3: ADD ZOOM LIVE LINK / VIDEO / PDF TO SELECTED MONTH            */}
-        {/* ==================================================================== */}
-        {tab === "content" && (
-          <div className="cols">
-            {/* Left Column: Add Zoom Live / Video / PDF Form */}
-            <section className="card">
-              <h2>{isSi ? "මාසික පන්තියට Zoom / Video / PDF එක් කරන්න" : "Add Zoom / Video / PDF to Month"}</h2>
-              <p>{isSi ? "තෝරාගත් මාසය තුළට සජීවී Zoom පන්ති සබැඳි, YouTube වීඩියෝ හෝ PDF ප්‍රශ්න පත්‍ර එක් කරන්න" : "Attach Zoom live links, YouTube video lessons, or PDF papers to any month"}</p>
-
-              <form onSubmit={handleAddItem} className="app-form">
-                <label className="app-label">
-                  <span>{isSi ? "1. අදාළ මාසික පන්තිය තෝරන්න (ශ්‍රේණිය සහ මාසය)" : "1. Select Target Monthly Class"}</span>
-                  <select
-                    className="app-select"
-                    value={ni.fid || selectedFolderForContent || S.folders[0]?.id}
-                    onChange={e => {
-                      setNi({ ...ni, fid: e.target.value });
-                      setSelectedFolderForContent(e.target.value);
-                    }}
-                  >
-                    {S.folders.map(f => (
-                      <option key={f.id} value={f.id}>
-                        {isSi
-                          ? `${f.grade} ශ්‍රේණිය | ${f.month || ""} ${f.isCurrentMonth ? "🔥 (මේ මාසය)" : ""} - ${f.name}`
-                          : `Grade ${f.grade} | ${f.month || ""} ${f.isCurrentMonth ? "🔥 (Current)" : ""} - ${f.name}`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="app-form-row">
-                  <label className="app-label">
-                    <span>{isSi ? "2. ඇතුළත් කරන වර්ගය (Zoom / Video / PDF)" : "2. Content Type"}</span>
-                    <select
-                      className="app-select"
-                      value={ni.type}
-                      onChange={e => setNi({ ...ni, type: e.target.value })}
+                  <div className="adm-grp">
+                    <button
+                      type="button"
+                      className="adm-chip gold"
+                      onClick={() => markAllPresentForWeek(rosterStudents, selectedRosterFolderId, attendanceWeek)}
                     >
-                      <option value="zoom">🔴 {isSi ? "Zoom සජීවී පන්ති සබැඳිය (Zoom Live Link)" : "Zoom Live Class Link"}</option>
-                      <option value="video">🎥 {isSi ? "වීඩියෝ විවරණය (YouTube Video)" : "Video Discussion (YouTube)"}</option>
-                      <option value="pdf">📄 {isSi ? "ප්‍රශ්න පත්‍රය හෝ සටහන (PDF)" : "Question Paper / Note (PDF)"}</option>
+                      ✅ Mark All Present ({attendanceWeek})
+                    </button>
+                    <button
+                      type="button"
+                      className="adm-chip wa"
+                      onClick={copyAllRosterPhones}
+                    >
+                      {copiedPhones ? "✔ Numbers Copied!" : "📋 Copy Student Numbers"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3 Filter Controls: 1. Monthly Class, 2. Grade Filter, 3. Paid/All Status + Search */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "12px", marginBottom: "16px" }}>
+                  <label className="adm-label" style={{ margin: 0 }}>
+                    <span>1. Select Monthly Class (මාසික පන්තිය තෝරන්න)</span>
+                    <select
+                      className="adm-select si"
+                      value={selectedRosterFolderId}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setSelectedRosterFolderId(val);
+                        const fObj = S.folders.find(x => x.id === val);
+                        if (fObj) setRosterGradeFilter(fObj.grade);
+                      }}
+                    >
+                      <option value="all">🌟 සියලුම මාසික පන්ති (All Monthly Classes)</option>
+                      {S.folders.map(f => {
+                        const paidCnt = S.pays.filter(p => p.fid === f.id && p.status === "approved").length;
+                        return (
+                          <option key={f.id} value={f.id}>
+                            Grade {f.grade} | {f.month} ({paidCnt} Paid) — {f.name}
+                          </option>
+                        );
+                      })}
                     </select>
                   </label>
 
-                  <label className="app-label">
-                    <span>{isSi ? "3. සතිය / කාණ්ඩය" : "3. Week / Session"}</span>
+                  <label className="adm-label" style={{ margin: 0 }}>
+                    <span>2. Filter by Grade (ශ්‍රේණිය අනුව වෙන් කරන්න)</span>
                     <select
-                      className="app-select"
-                      value={ni.week}
-                      onChange={e => setNi({ ...ni, week: e.target.value })}
+                      className="adm-select si"
+                      value={rosterGradeFilter}
+                      onChange={e => setRosterGradeFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
                     >
-                      <option value="1 වන සතිය">🗓️ {isSi ? "1 වන සතිය" : "Week 01"}</option>
-                      <option value="2 වන සතිය">🗓️ {isSi ? "2 වන සතිය" : "Week 02"}</option>
-                      <option value="3 වන සතිය">🗓️ {isSi ? "3 වන සතිය" : "Week 03"}</option>
-                      <option value="4 වන සතිය">🗓️ {isSi ? "4 වන සතිය" : "Week 04"}</option>
-                      <option value="විශේෂ පන්තිය">⭐ {isSi ? "විශේෂ පන්තිය" : "Special Session"}</option>
+                      <option value="all">සියලුම ශ්‍රේණි (Grades 3, 4, 5)</option>
+                      <option value={5}>5 ශ්‍රේණිය (Grade 5 - 190+)</option>
+                      <option value={4}>4 ශ්‍රේණිය (Grade 4)</option>
+                      <option value={3}>3 ශ්‍රේණිය (Grade 3)</option>
                     </select>
+                  </label>
+
+                  <label className="adm-label" style={{ margin: 0 }}>
+                    <span>3. Enrollment Filter (ගෙවීම් තත්ත්වය)</span>
+                    <select
+                      className="adm-select si"
+                      value={rosterPayFilter}
+                      onChange={e => setRosterPayFilter(e.target.value)}
+                    >
+                      <option value="paid">✅ මෙම මාසයට මුදල් ගෙවා සම්බන්ධ වූ සිසුන් (Paid Only)</option>
+                      <option value="pending">⏳ රිසිට්පත් එවා අනුමැතිය බලාපොරොත්තු සිසුන් (Pending)</option>
+                      <option value="all">👥 මෙම ශ්‍රේණියේ සියලුම ලියාපදිංචි සිසුන් (All Students)</option>
+                    </select>
+                  </label>
+
+                  <label className="adm-label" style={{ margin: 0 }}>
+                    <span>4. Search Student (නම / දුරකථන අංකය)</span>
+                    <input
+                      type="text"
+                      className="adm-input si"
+                      placeholder="නම හෝ අංකය ගසා සොයන්න..."
+                      value={studentSearch}
+                      onChange={e => setStudentSearch(e.target.value)}
+                    />
                   </label>
                 </div>
 
-                <label className="app-label">
-                  <span>{isSi ? "4. අදාළ විෂය" : "4. Subject"}</span>
-                  <select
-                    className="app-select"
-                    value={ni.subject}
-                    onChange={e => setNi({ ...ni, subject: e.target.value })}
-                  >
-                    <option value={isSi ? "විෂයයන් 5ම" : "All 5 Subjects"}>🌟 {isSi ? "විෂයයන් 5ම ආවරණය" : "All 5 Subjects"}</option>
-                    <option value={isSi ? "පරිසරය" : "Environmental Studies"}>🌿 {isSi ? "පරිසරය" : "Environmental Studies"}</option>
-                    <option value={isSi ? "මව්බස" : "Sinhala (Mother Tongue)"}>📖 {isSi ? "මව්බස" : "Sinhala (Mother Tongue)"}</option>
-                    <option value={isSi ? "ගණිතය" : "Mathematics"}>🔢 {isSi ? "ගණිතය" : "Mathematics"}</option>
-                    <option value={isSi ? "දෙමළ" : "Tamil"}>🗣️ {isSi ? "දෙමළ" : "Tamil"}</option>
-                    <option value={isSi ? "ඉංග්‍රීසි" : "English"}>🔤 {isSi ? "ඉංග්‍රීසි" : "English"}</option>
-                  </select>
-                </label>
+                {/* WHATSAPP BROADCAST MESSAGECOMPOSER FOR THIS MONTH'S STUDENTS */}
+                <div
+                  style={{
+                    padding: "16px 18px",
+                    borderRadius: "16px",
+                    background: "rgba(18, 64, 43, 0.35)",
+                    border: "1px solid #1f7a52"
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "8px" }}>
+                    <strong style={{ color: "var(--green)", fontSize: "14.5px" }}>
+                      💬 මෙම මාසයේ සිසුන්ට යැවිය යුතු WhatsApp පණිවිඩය (Quick Templates):
+                    </strong>
 
-                <label className="app-label">
-                  <span>
-                    {ni.type === "zoom"
-                      ? (isSi ? "5. සජීවී Zoom පන්තියේ මාතෘකාව" : "5. Zoom Live Class Title")
-                      : ni.type === "pdf"
-                      ? (isSi ? "5. PDF ප්‍රශ්න පත්‍රයේ හෝ සටහනේ මාතෘකාව" : "5. PDF Paper / Note Title")
-                      : (isSi ? "5. වීඩියෝ පාඩමේ මාතෘකාව" : "5. Video Lesson Title")}
-                  </span>
-                  <input
-                    className="app-input"
-                    placeholder={
-                      ni.type === "zoom"
-                        ? (isSi ? "උදා: සෙනසුරාදා රාත්‍රී 7.00 සජීවී Zoom පේපර් සාකච්ඡාව" : "e.g. Saturday 7:00 PM Live Zoom Paper Discussion")
-                        : ni.type === "pdf"
-                        ? (isSi ? "උදා: බස්නාහිර පළාත් පේපර් 01 - සම්පූර්ණ ප්‍රශ්න පත්‍රය (PDF)" : "e.g. Western Province Paper 01 - Complete PDF")
-                        : (isSi ? "උදා: බස්නාහිර පළාත් පේපර් 01 - සම්පූර්ණ වීඩියෝ විවරණය" : "e.g. Western Province Paper 01 - Video Discussion")
-                    }
-                    value={ni.title}
-                    onChange={e => setNi({ ...ni, title: e.target.value })}
-                    required
-                  />
-                </label>
-
-                {ni.type === "zoom" && (
-                  <label className="app-label">
-                    <span>{isSi ? "පන්තිය පැවැත්වෙන දිනය සහ වේලාව (විකල්ප)" : "Live Class Date & Time (Optional)"}</span>
-                    <input
-                      className="app-input"
-                      placeholder={isSi ? "උදා: සෙනසුරාදා ප.ව. 7.00 - 9.00" : "e.g. Saturday 7:00 PM - 9:00 PM"}
-                      value={ni.schedule}
-                      onChange={e => setNi({ ...ni, schedule: e.target.value })}
-                    />
-                  </label>
-                )}
-
-                <label className="app-label">
-                  <span>
-                    {ni.type === "zoom"
-                      ? (isSi ? "6. Zoom Meeting Link (සබැඳිය)" : "6. Zoom Meeting URL")
-                      : ni.type === "pdf"
-                      ? (isSi ? "6. PDF ගොනුවේ සබැඳිය (Google Drive / Direct PDF Link)" : "6. PDF File URL")
-                      : (isSi ? "6. YouTube වීඩියෝ සබැඳිය (YouTube URL)" : "6. YouTube Video URL")}
-                  </span>
-                  <input
-                    className="app-input"
-                    placeholder={
-                      ni.type === "zoom"
-                        ? "https://zoom.us/j/..."
-                        : ni.type === "pdf"
-                        ? "https://drive.google.com/... හෝ PDF URL"
-                        : "https://www.youtube.com/watch?v=..."
-                    }
-                    value={ni.url}
-                    onChange={e => {
-                      const val = e.target.value;
-                      const autoType = val.includes("zoom.us")
-                        ? "zoom"
-                        : isYoutubeUrl(val)
-                        ? "video"
-                        : ni.type;
-                      setNi({ ...ni, url: val, type: autoType });
-                    }}
-                    required
-                  />
-                </label>
-
-                {/* Instant Live YouTube Video Preview */}
-                {ni.type !== "zoom" && getYoutubeEmbedUrl(ni.url) && (
-                  <div style={{ marginTop: "10px", padding: "14px", background: "var(--surface)", border: "1px solid var(--gold)", borderRadius: "12px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-                      <span style={{ fontWeight: 700, fontSize: "13px", color: "var(--gold)", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span>🎥</span>
-                        <span>{isSi ? "සජීවී වීඩියෝ පෙරදසුන (Live Video Preview):" : "Live Video Preview:"}</span>
-                      </span>
-                      <span className="badge-tag gold" style={{ fontSize: "11px" }}>{isSi ? "වෙබ් අඩවිය තුළම වාදනය වේ" : "Plays on site"}</span>
+                    <div className="adm-grp">
+                      <button
+                        type="button"
+                        className="adm-chip"
+                        style={{ padding: "4px 10px", fontSize: "12px" }}
+                        onClick={() => {
+                          const f = selectedRosterFolder || S.folders[0];
+                          setWaMessage(
+                            `ආදරණීය දරුවා, ${f?.grade || 5} ශ්‍රේණිය ${f?.month || ""} පන්තියේ අද සජීවී Zoom පන්තියට මෙම සබැඳියෙන් සම්බන්ධ වන්න: ${f?.zoomUrl || "https://zoom.us/j/94771234567"} (${f?.zoomSchedule || "ප.ව. 7.00 ට"})`
+                          );
+                        }}
+                      >
+                        🔴 Zoom Link පණිවිඩය
+                      </button>
+                      <button
+                        type="button"
+                        className="adm-chip"
+                        style={{ padding: "4px 10px", fontSize: "12px" }}
+                        onClick={() => {
+                          const f = selectedRosterFolder || S.folders[0];
+                          setWaMessage(
+                            `ආදරණීය දරුවා, ${f?.month || ""} මාසික පන්තියට අදාළ නව ප්‍රශ්න පත්‍ර PDF සහ වීඩියෝ විවරණය දැන් එක් කර ඇත. ඔබගේ ශිෂ්‍ය පුවරුවට පිවිස අධ්‍යයනය කරන්න.`
+                          );
+                        }}
+                      >
+                        📄 නව Paper / Video දැනුම්දීම
+                      </button>
+                      <button
+                        type="button"
+                        className="adm-chip"
+                        style={{ padding: "4px 10px", fontSize: "12px" }}
+                        onClick={() => {
+                          const f = selectedRosterFolder || S.folders[0];
+                          setWaMessage(
+                            `ආදරණීය දෙමාපියනි, ${f?.month || ""} මාසයේ අද පැවති සජීවී පන්තියට ඔබගේ දරුවා සහභාගී නොවූ බැවින් පුවරුවේ ඇති පටිගත කළ වීඩියෝව සහ PDF පේපරය කරවීමට කාරුණික වන්න.`
+                          );
+                        }}
+                      >
+                        ⚠️ නොපැමිණීම දැනුම්දීම
+                      </button>
                     </div>
-                    <VideoPlayer url={ni.url} title={ni.title || "Video Preview"} />
+                  </div>
+
+                  <textarea
+                    rows={2}
+                    className="adm-textarea si"
+                    value={waMessage}
+                    onChange={e => setWaMessage(e.target.value)}
+                    placeholder="සිසුන්ට යැවිය යුතු WhatsApp පණිවිඩය මෙහි ලියන්න..."
+                  />
+                </div>
+              </section>
+
+              {/* STUDENT ROSTER & ATTENDANCE LIST */}
+              <section className="adm-panel">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
+                  <div>
+                    <h2 className="si">
+                      {selectedRosterFolder
+                        ? `${selectedRosterFolder.month} (Grade ${selectedRosterFolder.grade}) — සිසුන්ගේ නාමලේඛනය (${rosterStudents.length})`
+                        : `සියලුම සිසුන්ගේ නාමලේඛනය (${rosterStudents.length})`}
+                    </h2>
+                    <p style={{ margin: "2px 0 0", color: "var(--muted)", fontSize: "13.5px" }}>
+                      සති 4ක පැමිණීම (S1, S2, S3, S4) බොත්තම් මත ක්ලික් කිරීමෙන් පැමිණීම (✅ / ❌) සලකුණු කළ හැක.
+                    </p>
+                  </div>
+
+                  {/* Week Selector for Quick Bulk Attendance */}
+                  <div className="adm-grp">
+                    <span style={{ fontSize: "13px", color: "var(--muted)", fontWeight: 700 }}>
+                      ක්ෂණික පැමිණීමේ සතිය:
+                    </span>
+                    {WEEKS_LIST.map(w => (
+                      <button
+                        key={w}
+                        type="button"
+                        className={`adm-chip ${attendanceWeek === w ? "gold" : ""}`}
+                        style={{ padding: "4px 11px", fontSize: "12.5px" }}
+                        onClick={() => setAttendanceWeek(w)}
+                      >
+                        {w}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {rosterStudents.length ? (
+                  <div>
+                    {rosterStudents.map((stu, sIdx) => {
+                      const stuGrade = Number(stu.grade) || 5;
+                      const studentCode = `G${stuGrade}-${String(sIdx + 1).padStart(3, "0")}`;
+                      const targetFid = selectedRosterFolderId === "all" ? (S.folders.find(f => Number(f.grade) === stuGrade)?.id || "f1") : selectedRosterFolderId;
+                      const payRecord = S.pays.filter(p => p.uid === stu.id && p.fid === targetFid).pop();
+                      const isPaidForSelectedMonth = payRecord?.status === "approved";
+                      const isPendingForSelectedMonth = payRecord?.status === "pending";
+                      const allUnlockedMonths = S.pays
+                        .filter(p => p.uid === stu.id && p.status === "approved")
+                        .map(p => S.folders.find(f => f.id === p.fid)?.month)
+                        .filter(Boolean);
+
+                      const att = getStudentAttendanceInfo(targetFid, stu.id);
+
+                      return (
+                        <div
+                          key={stu.id || sIdx}
+                          className={`adm-row-item ${isPaidForSelectedMonth ? "cur" : ""}`}
+                        >
+                          {/* Student Identification & Grade Badge */}
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", flex: 1, minWidth: "270px" }}>
+                            <div
+                              style={{
+                                width: "46px",
+                                height: "46px",
+                                borderRadius: "14px",
+                                background:
+                                  stuGrade === 5
+                                    ? "linear-gradient(135deg, #ffd45e, var(--gold2))"
+                                    : stuGrade === 4
+                                    ? "#1e3a8a"
+                                    : "#065f46",
+                                color: stuGrade === 5 ? "#2a1208" : "#fff",
+                                display: "grid",
+                                placeItems: "center",
+                                fontWeight: 800,
+                                fontSize: "13px",
+                                flexShrink: 0
+                              }}
+                            >
+                              {studentCode}
+                            </div>
+
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
+                                <span className="adm-chip gold" style={{ padding: "2px 9px", fontSize: "11.5px" }}>
+                                  🎓 {stuGrade} ශ්‍රේණිය
+                                </span>
+
+                                {isPaidForSelectedMonth ? (
+                                  <span className="adm-chip wa" style={{ padding: "2px 9px", fontSize: "11.5px" }}>
+                                    ✅ ගෙවා ඇත ({selectedRosterFolder?.month || "Active"})
+                                  </span>
+                                ) : isPendingForSelectedMonth ? (
+                                  <span className="adm-chip gold" style={{ padding: "2px 9px", fontSize: "11.5px" }}>
+                                    ⏳ රිසිට්පත පරීක්ෂාවට
+                                  </span>
+                                ) : (
+                                  <span className="adm-chip" style={{ padding: "2px 9px", fontSize: "11.5px", opacity: 0.75 }}>
+                                    🔒 ගෙවා නැත
+                                  </span>
+                                )}
+
+                                <span
+                                  className={`adm-chip ${att.pct >= 75 ? "wa" : "gold"}`}
+                                  style={{ padding: "2px 9px", fontSize: "11.5px" }}
+                                >
+                                  📊 පැමිණීම: {att.attendedCount}/4 ({att.pct}%)
+                                </span>
+                              </div>
+
+                              <h4 className="si" style={{ margin: "0 0 2px", fontSize: "17px", color: "var(--ink)" }}>
+                                {stu.name}
+                              </h4>
+
+                              <div style={{ fontSize: "13px", color: "var(--muted)" }}>
+                                📱 <b>{stu.phone}</b>
+                                {allUnlockedMonths.length > 0 && (
+                                  <span> · සක්‍රිය මාස: {allUnlockedMonths.join(", ")}</span>
+                                )}
+                                {att.lastJoined && (
+                                  <span> · අවසන් පැමිණීම: {att.lastJoined}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 4-Week Attendance Checkboxes (S1, S2, S3, S4) */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <small style={{ fontSize: "11.5px", color: "var(--muted)", fontWeight: 700 }}>
+                              පැමිණීම ලකුණු කරන්න (Click to mark):
+                            </small>
+                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                              {WEEKS_LIST.map((w, wIdx) => {
+                                const isPresent = Boolean(att.sessions[w]);
+                                return (
+                                  <button
+                                    key={w}
+                                    type="button"
+                                    onClick={() => toggleStudentAttendance(targetFid, stu.id, w)}
+                                    className={`adm-chip ${isPresent ? "wa" : ""}`}
+                                    style={{
+                                      padding: "5px 10px",
+                                      fontSize: "12px",
+                                      borderColor: isPresent ? "#10b981" : "var(--soft)"
+                                    }}
+                                    title={`${w} පැමිණීම වෙනස් කරන්න`}
+                                  >
+                                    {isPresent ? "✅" : "❌"} සතිය {wIdx + 1}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Actions: Send Personalized WhatsApp & Manual Unlock Toggle */}
+                          <div className="adm-grp" style={{ marginLeft: "auto" }}>
+                            <a
+                              href={formatWhatsAppHref(stu.phone, stu.name, waMessage)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="adm-chip wa"
+                              title="Send WhatsApp Message to this student"
+                            >
+                              💬 WhatsApp පණිවිඩය යවන්න ↗
+                            </a>
+
+                            {selectedRosterFolderId !== "all" && (
+                              <button
+                                type="button"
+                                className={`adm-chip ${isPaidForSelectedMonth ? "" : "gold"}`}
+                                style={{ fontSize: "12.5px" }}
+                                onClick={() => handleManualEnrollStudent(stu.id, selectedRosterFolderId)}
+                              >
+                                {isPaidForSelectedMonth ? "🔒 Lock Month" : "🔓 Unlock Month"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ padding: "36px", textAlign: "center", color: "var(--muted)", border: "1px dashed var(--line)", borderRadius: "16px" }}>
+                    <p style={{ margin: "0 0 12px" }}>
+                      තෝරාගත් මාසයට හෝ පෙරහනට (Filter) අදාළ සිසුන් තවම නොමැත.
+                    </p>
+                    {rosterPayFilter !== "all" && (
+                      <button
+                        type="button"
+                        className="adm-chip gold"
+                        onClick={() => setRosterPayFilter("all")}
+                      >
+                        👥 මෙම ශ්‍රේණියේ සියලුම සිසුන් පෙන්වන්න (Show All Students in Grade)
+                      </button>
+                    )}
                   </div>
                 )}
+              </section>
+            </div>
+          )}
 
-                <button type="submit" className="btn gold" style={{ marginTop: "8px" }}>
-                  <svg><use href="#plus" /></svg>
-                  <span>
-                    {ni.type === "zoom"
-                      ? (isSi ? "🔴 Zoom සජීවී පන්ති සබැඳිය එක් කරන්න" : "🔴 Add Zoom Live Link")
-                      : ni.type === "pdf"
-                      ? (isSi ? "📄 PDF ප්‍රශ්න පත්‍රය එක් කරන්න" : "📄 Add PDF Paper")
-                      : (isSi ? "🎥 වීඩියෝ පාඩම එක් කරන්න" : "🎥 Add Video Lesson")}
-                  </span>
+          {/* ================================================================ */}
+          {/* TAB 6: SETTINGS                                                  */}
+          {/* ================================================================ */}
+          {tab === "settings" && (
+            <section className="adm-panel" style={{ maxWidth: "720px" }}>
+              <h2>Class settings &amp; bank details</h2>
+              <p>Update class name, hotline contact, and Rs. 2,000 monthly fee bank account details</p>
+
+              <form onSubmit={handleSaveSettings}>
+                <label className="adm-label">
+                  <span>Class Name (පන්තියේ නම)</span>
+                  <input
+                    className="adm-input si"
+                    value={set.name}
+                    onChange={e => setSet({ ...set, name: e.target.value })}
+                  />
+                </label>
+
+                <label className="adm-label">
+                  <span>Class Slogan (පන්ති තේමා පාඨය)</span>
+                  <input
+                    className="adm-input si"
+                    value={set.slogan}
+                    onChange={e => setSet({ ...set, slogan: e.target.value })}
+                  />
+                </label>
+
+                <label className="adm-label">
+                  <span>WhatsApp Hotline (ක්ෂණික දුරකථන අංකය)</span>
+                  <input
+                    className="adm-input"
+                    value={set.hotline}
+                    onChange={e => setSet({ ...set, hotline: e.target.value })}
+                  />
+                </label>
+
+                <label className="adm-label">
+                  <span>Bank Account Details (සිසුන්ට පෙනෙන බැංකු ගිණුම් විස්තර)</span>
+                  <textarea
+                    rows={5}
+                    className="adm-textarea si"
+                    value={set.bank}
+                    onChange={e => setSet({ ...set, bank: e.target.value })}
+                  />
+                </label>
+
+                <label className="adm-label">
+                  <span>Class Official Logo (නිල ලාංඡනය)</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="adm-input"
+                    onChange={e => onLogoUpload(e.target.files[0])}
+                  />
+                </label>
+
+                <button type="submit" className="adm-chip gold" style={{ padding: "11px 22px", fontSize: "15px" }}>
+                  💾 Save Class Settings
                 </button>
               </form>
             </section>
-
-            {/* Right Column: Main Zoom Link Quick Updater & Existing Items in Selected Month */}
-            <section className="card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
-                <div>
-                  <h2>{isSi ? "තෝරාගත් මාසයේ පවතින පාඩම්" : "Materials in Selected Month"}</h2>
-                  <p style={{ margin: "4px 0 0" }}>
-                    <b>{activeContentFolder?.month}</b> — {activeContentFolder?.name}
-                  </p>
-                </div>
-                {activeContentFolder && (
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ padding: "6px 12px", fontSize: "12px" }}
-                    onClick={() => handleEditPackage(activeContentFolder)}
-                  >
-                    ✏️ {isSi ? "මාසයේ ප්‍රධාන Zoom Link වෙනස් කරන්න" : "Edit Month's Main Zoom Link"}
-                  </button>
-                )}
-              </div>
-
-              {/* Active Month's Main Zoom Banner Summary */}
-              {activeContentFolder && (
-                <div
-                  style={{
-                    margin: "12px 0 16px",
-                    padding: "12px 14px",
-                    background: "rgba(37, 99, 235, 0.08)",
-                    border: "1px solid rgba(59, 130, 246, 0.35)",
-                    borderRadius: "10px",
-                    fontSize: "12.5px"
-                  }}
-                >
-                  <div style={{ fontWeight: 700, color: "#1d4ed8", marginBottom: "4px" }}>
-                    🔴 {isSi ? "මෙම මාසයේ ප්‍රධාන Zoom සජීවී පන්ති සබැඳිය:" : "Main Zoom Live Link for this Month:"}
-                  </div>
-                  <div style={{ color: "var(--ink)", wordBreak: "break-all" }}>
-                    <b>Link:</b> {activeContentFolder.zoomUrl || (isSi ? "ඇතුළත් කර නැත" : "Not set")}
-                  </div>
-                  <div style={{ color: "var(--muted)", marginTop: "2px" }}>
-                    <b>{isSi ? "කාලසටහන:" : "Schedule:"}</b> {activeContentFolder.zoomSchedule || "-"}
-                  </div>
-                </div>
-              )}
-
-              {S.items.filter(i => i.fid === (selectedFolderForContent || S.folders[0]?.id)).length ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {S.items
-                    .filter(i => i.fid === (selectedFolderForContent || S.folders[0]?.id))
-                    .map(i => {
-                      const isZoom = i.type === "zoom";
-                      const isVid = !isZoom && (i.type === "video" || Boolean(getYoutubeEmbedUrl(i.url)));
-                      return (
-                        <div
-                          key={i.id}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "12px 14px",
-                            background: isZoom ? "rgba(37, 99, 235, 0.06)" : "var(--bg)",
-                            border: isZoom ? "1px solid rgba(59, 130, 246, 0.3)" : "1px solid var(--line)",
-                            borderRadius: "10px",
-                            gap: "10px"
-                          }}
-                        >
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ display: "flex", gap: "6px", alignItems: "center", marginBottom: "4px", flexWrap: "wrap" }}>
-                              <span
-                                className="badge-tag"
-                                style={{
-                                  fontSize: "11px",
-                                  padding: "1px 8px",
-                                  background: isZoom ? "#2563eb" : "rgba(245, 166, 35, 0.2)",
-                                  color: isZoom ? "#fff" : "var(--gold-ink)",
-                                  fontWeight: 700
-                                }}
-                              >
-                                {isZoom
-                                  ? "🔴 Zoom Live"
-                                  : isVid
-                                  ? (isSi ? "🎥 වීඩියෝ" : "🎥 Video")
-                                  : (isSi ? "📄 PDF" : "📄 PDF")}
-                              </span>
-                              {i.week && (
-                                <span style={{ fontSize: "11.5px", fontWeight: 600, color: "var(--ink)" }}>
-                                  [{i.week}]
-                                </span>
-                              )}
-                              <span style={{ fontSize: "12px", color: "var(--muted)" }}>[{i.subject}]</span>
-                            </div>
-                            <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {i.title}
-                            </div>
-                          </div>
-
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            {!isZoom && getYoutubeEmbedUrl(i.url) ? (
-                              <button
-                                type="button"
-                                className="btn gold"
-                                style={{ padding: "6px 12px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "5px" }}
-                                onClick={() => setPreviewVideoItem(i)}
-                              >
-                                <svg style={{ width: 13, height: 13 }}><use href="#video" /></svg>
-                                <span>{isSi ? "නරඹන්න" : "Watch"}</span>
-                              </button>
-                            ) : null}
-                            <a
-                              href={i.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn"
-                              style={{ padding: "6px 12px", fontSize: "12px" }}
-                            >
-                              <svg style={{ width: 13, height: 13 }}><use href="#eye" /></svg>
-                              <span>{isZoom ? "Zoom ↗" : (isSi ? "සබැඳිය" : "Link")}</span>
-                            </a>
-                            <button
-                              type="button"
-                              className="btn"
-                              style={{ padding: "6px 10px", color: "var(--warn)" }}
-                              onClick={() => {
-                                const confirmMsg = isSi ? "මෙම අයිතමය ඉවත් කිරීමට අවශ්‍යද?" : "Delete this item?";
-                                if (confirm(confirmMsg)) {
-                                  update(d => {
-                                    d.items = d.items.filter(x => x.id !== i.id);
-                                  });
-                                }
-                              }}
-                              title={isSi ? "ඉවත් කරන්න" : "Delete"}
-                            >
-                              <svg style={{ width: 13, height: 13 }}><use href="#trash" /></svg>
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              ) : (
-                <div style={{ padding: "26px", textAlign: "center", color: "var(--muted)" }}>
-                  <p>{isSi ? "මෙම මාසයට තවම පාඩම් එක්කර නැත. වම්පස පෝරමයෙන් Zoom / Video / PDF එක් කරන්න." : "No materials in this month yet. Add Zoom / Video / PDF using the form on the left."}</p>
-                </div>
-              )}
-            </section>
-          </div>
-        )}
-
-        {/* ==================================================================== */}
-        {/* TAB 4: MONTHLY PAYMENTS (RS. 2000 SLIPS APPROVAL)                    */}
-        {/* ==================================================================== */}
-        {tab === "payments" && (
-          <section className="card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", flexWrap: "wrap", gap: "12px" }}>
-              <div>
-                <h2>{isSi ? "රු. 2000 මාසික පන්ති ගාස්තු රිසිට්පත් පරීක්ෂාව" : "Rs. 2000 Monthly Fee Slips"}</h2>
-                <p style={{ margin: "4px 0 0" }}>
-                  {isSi
-                    ? "දරුවන් උඩුගත කළ රු. 2000 මාසික බැංකු රිසිට්පත් අනුමත කළ සැණින් ඔවුන්ට අදාළ මාසයේ සියලුම පන්ති විවෘත වේ."
-                    : "Approving a student's Rs. 2000 slip immediately unlocks all Zoom, Video, and PDF lessons for that month."}
-                </p>
-              </div>
-
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                {["all", "pending", "approved", "rejected"].map(st => (
-                  <button
-                    key={st}
-                    type="button"
-                    className={`btn ${filterStatus === st ? "gold" : ""}`}
-                    style={{ padding: "6px 14px", fontSize: "13px" }}
-                    onClick={() => setFilterStatus(st)}
-                  >
-                    {st === "all" && (isSi ? "සියල්ල" : "All")}
-                    {st === "pending" && (isSi ? `අනුමැතියට ඇති (${pendingCount})` : `Pending (${pendingCount})`)}
-                    {st === "approved" && (isSi ? "අනුමත" : "Approved")}
-                    {st === "rejected" && (isSi ? "ප්‍රතික්ෂේපිත" : "Rejected")}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {filteredPays.length ? (
-              <div style={{ overflowX: "auto" }}>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>{isSi ? "ශිෂ්‍යයා" : "Student"}</th>
-                      <th>{isSi ? "මාසය සහ පන්තිය" : "Month & Class"}</th>
-                      <th>{isSi ? "මාසික ගාස්තුව" : "Fee"}</th>
-                      <th>{isSi ? "දිනය" : "Date"}</th>
-                      <th>{isSi ? "රිසිට්පත" : "Receipt"}</th>
-                      <th>{isSi ? "තත්ත්වය" : "Status"}</th>
-                      <th>{isSi ? "ක්‍රියාමාර්ග" : "Action"}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...filteredPays].reverse().map(p => {
-                      const u = S.users.find(x => x.id === p.uid) || {};
-                      const f = S.folders.find(x => x.id === p.fid) || {};
-                      return (
-                        <tr key={p.id}>
-                          <td>
-                            <strong>{u.name || (isSi ? "ශිෂ්‍ය නම" : "Student Name")}</strong>
-                            <div style={{ color: "var(--muted)", fontSize: "12px" }}>
-                              {u.phone} · {isSi ? `${u.grade || 5} ශ්‍රේණිය` : `Grade ${u.grade || 5}`}
-                            </div>
-                          </td>
-                          <td>
-                            {f.month && (
-                              <span className="badge-tag gold" style={{ marginRight: "6px", fontSize: "11px" }}>
-                                📅 {f.month}
-                              </span>
-                            )}
-                            <span>{f.name || (isSi ? "මාසික පන්තිය" : "Monthly Class")}</span>
-                          </td>
-                          <td>
-                            <strong style={{ color: "var(--gold-ink)" }}>
-                              {isSi ? `රු. ${f.price || 2000}` : `Rs. ${f.price || 2000}`}
-                            </strong>
-                          </td>
-                          <td style={{ color: "var(--muted)", fontSize: "13px" }}>{p.date}</td>
-                          <td>
-                            {p.slip ? (
-                              <button
-                                type="button"
-                                className="btn"
-                                style={{ padding: "4px 8px", fontSize: "12px" }}
-                                onClick={() => setViewSlip(p.slip)}
-                              >
-                                <svg style={{ width: 13, height: 13 }}><use href="#eye" /></svg>
-                                <span>{isSi ? "බලන්න" : "View"}</span>
-                              </button>
-                            ) : (
-                              <span style={{ color: "var(--muted)" }}>{isSi ? "නැත" : "None"}</span>
-                            )}
-                          </td>
-                          <td>
-                            <span className={`badge-tag ${p.status === "approved" ? "ok" : p.status === "pending" ? "gold" : "warn"}`}>
-                              {p.status === "approved" && (isSi ? "අනුමතයි" : "Approved")}
-                              {p.status === "pending" && (isSi ? "අනුමැතියට" : "Pending")}
-                              {p.status === "rejected" && (isSi ? "ප්‍රතික්ෂේපිත" : "Rejected")}
-                            </span>
-                          </td>
-                          <td>
-                            {p.status === "pending" ? (
-                              <div style={{ display: "flex", gap: "6px" }}>
-                                <button
-                                  type="button"
-                                  className="btn wa"
-                                  style={{ padding: "5px 12px", fontSize: "12px" }}
-                                  onClick={() => decide(p.id, "approved")}
-                                >
-                                  {isSi ? "අනුමත කරන්න" : "Approve"}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn"
-                                  style={{ padding: "5px 12px", fontSize: "12px", color: "var(--warn)" }}
-                                  onClick={() => decide(p.id, "rejected")}
-                                >
-                                  {isSi ? "ප්‍රතික්ෂේප කරන්න" : "Reject"}
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                className="btn"
-                                style={{ padding: "5px 10px", fontSize: "12px" }}
-                                onClick={() => decide(p.id, p.status === "approved" ? "pending" : "approved")}
-                              >
-                                {isSi ? "මාරු කරන්න" : "Toggle"}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div style={{ padding: "30px", textAlign: "center", color: "var(--muted)" }}>
-                <p>{isSi ? "මෙම කාණ්ඩයේ ගෙවීම් රිසිට්පත් නොමැත." : "No payment slips found in this category."}</p>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* ==================================================================== */}
-        {/* TAB 5: STUDENTS DIRECTORY                                            */}
-        {/* ==================================================================== */}
-        {tab === "students" && (
-          <section className="card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", flexWrap: "wrap", gap: "12px" }}>
-              <div>
-                <h2>{isSi ? `ශිෂ්‍ය නාමාවලිය (${studentsList.length})` : `Students directory (${studentsList.length})`}</h2>
-                <p style={{ margin: "4px 0 0" }}>
-                  {isSi ? "ලියාපදිංචි දරුවන්ගේ ශ්‍රේණි, විවෘත කළ මාස සහ සම්බන්ධතා විස්තර" : "List of registered students, grades, and unlocked months"}
-                </p>
-              </div>
-
-              <div>
-                <input
-                  type="text"
-                  placeholder={isSi ? "නම හෝ දුරකථන අංකයෙන් සොයන්න..." : "Search by student name or phone..."}
-                  className="app-input"
-                  style={{ width: "260px" }}
-                  value={studentSearch}
-                  onChange={e => setStudentSearch(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {searchedStudents.length ? (
-              <div style={{ overflowX: "auto" }}>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>{isSi ? "ශිෂ්‍ය නම" : "Student name"}</th>
-                      <th>{isSi ? "දුරකථන අංකය" : "Phone number"}</th>
-                      <th>{isSi ? "ශ්‍රේණිය" : "Grade"}</th>
-                      <th>{isSi ? "ගෙවීම් කළ මාස" : "Unlocked months"}</th>
-                      <th>{isSi ? "සම්බන්ධතාවය" : "Contact"}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {searchedStudents.map((stu, sIdx) => {
-                      const unlocked = S.pays.filter(p => p.uid === stu.id && p.status === "approved");
-                      return (
-                        <tr key={stu.id || sIdx}>
-                          <td>
-                            <strong>{stu.name}</strong>
-                          </td>
-                          <td style={{ color: "var(--muted)" }}>{stu.phone}</td>
-                          <td>
-                            <span className="badge-tag" style={{ background: "var(--bg)" }}>
-                              {isSi ? `${stu.grade || 5} ශ්‍රේණිය` : `Grade ${stu.grade || 5}`}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`badge-tag ${unlocked.length > 0 ? "ok" : ""}`}>
-                              {unlocked.length > 0
-                                ? (isSi ? `මාස ${unlocked.length}ක් විවෘතයි` : `${unlocked.length} months active`)
-                                : (isSi ? "තවම ගෙවා නැත" : "None unlocked")}
-                            </span>
-                          </td>
-                          <td>
-                            <a
-                              href={`https://wa.me/94${stu.phone.replace(/^0/, "")}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn wa"
-                              style={{ padding: "5px 12px", fontSize: "12px" }}
-                            >
-                              <svg style={{ width: 13, height: 13 }}><use href="#chat" /></svg>
-                              <span>{isSi ? "වට්ස්ඇප්" : "WhatsApp"}</span>
-                            </a>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div style={{ padding: "30px", textAlign: "center", color: "var(--muted)" }}>
-                <p>{isSi ? "සොයන ලද විස්තර වලට අදාළ සිසුන් හමු නොවීය." : "No students match your search."}</p>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* ==================================================================== */}
-        {/* TAB 6: SETTINGS                                                      */}
-        {/* ==================================================================== */}
-        {tab === "settings" && (
-          <section className="card" style={{ maxWidth: "700px" }}>
-            <h2>{isSi ? "පන්ති සැකසුම් සහ බැංකු විස්තර" : "Class settings & bank details"}</h2>
-            <p>{isSi ? "වෙබ් අඩවියේ පෙන්වන නම, දුරකථන අංක සහ රු. 2000 මාසික ගාස්තු බැංකු ගිණුම් විස්තර" : "Class name, hotline contact, and bank deposit details"}</p>
-
-            <form onSubmit={handleSaveSettings} className="app-form">
-              <label className="app-label">
-                <span>{isSi ? "පන්තියේ නම" : "Class name"}</span>
-                <input
-                  className="app-input"
-                  value={set.name}
-                  onChange={e => setSet({ ...set, name: e.target.value })}
-                />
-              </label>
-
-              <label className="app-label">
-                <span>{isSi ? "පන්ති සටන් පාඨය" : "Class slogan"}</span>
-                <input
-                  className="app-input"
-                  value={set.slogan}
-                  onChange={e => setSet({ ...set, slogan: e.target.value })}
-                />
-              </label>
-
-              <label className="app-label">
-                <span>{isSi ? "ක්ෂණික දුරකථන අංකය (WhatsApp)" : "Hotline / WhatsApp"}</span>
-                <input
-                  className="app-input"
-                  value={set.hotline}
-                  onChange={e => setSet({ ...set, hotline: e.target.value })}
-                />
-              </label>
-
-              <label className="app-label">
-                <span>{isSi ? "බැංකු ගිණුම් විස්තර (සිසුන්ට පෙනෙන විස්තර)" : "Bank account details (Visible to students)"}</span>
-                <textarea
-                  rows={5}
-                  className="app-textarea"
-                  value={set.bank}
-                  onChange={e => setSet({ ...set, bank: e.target.value })}
-                />
-              </label>
-
-              <label className="app-label">
-                <span>{isSi ? "පන්ති නිල ලාංඡනය" : "Class logo"}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="app-input"
-                  onChange={e => onLogoUpload(e.target.files[0])}
-                />
-              </label>
-
-              <button type="submit" className="btn gold" style={{ marginTop: "10px", alignSelf: "flex-start" }}>
-                <span>💾 {isSi ? "පන්ති සැකසුම් සුරකින්න" : "Save class settings"}</span>
-              </button>
-            </form>
-          </section>
-        )}
-      </main>
+          )}
+        </main>
+      </div>
 
       {/* ==================================================================== */}
       {/* CREATE / EDIT MONTHLY CLASS MODAL                                    */}
       {/* ==================================================================== */}
       {showPackageModal && (
         <div className="app-modal-overlay" onClick={() => setShowPackageModal(false)}>
-          <div className="app-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: "600px" }}>
+          <div
+            className="app-modal-card"
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: "600px",
+              background: "var(--card)",
+              color: "var(--ink)",
+              border: "2px solid var(--gold)"
+            }}
+          >
             <div className="app-modal-head">
               <h3>
-                {editingFolderId
-                  ? (isSi ? "📅 මාසික පන්තිය සංස්කරණය කරන්න" : "📅 Edit Monthly Class")
-                  : (isSi ? "📅 නව මාසික පන්තියක් එක් කරන්න" : "📅 Create New Monthly Class")}
+                {editingFolderId ? "📅 Edit Monthly Class" : "📅 Add New Monthly Class"}
               </h3>
               <button
                 type="button"
@@ -1305,29 +2433,29 @@ export default function Admin() {
               </button>
             </div>
 
-            <form onSubmit={handleSavePackage} className="app-form">
-              <div className="app-form-row">
-                <label className="app-label">
-                  <span>{isSi ? "ශ්‍රේණිය" : "Grade"}</span>
+            <form onSubmit={handleSavePackage}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <label className="adm-label">
+                  <span>Grade (ශ්‍රේණිය)</span>
                   <select
-                    className="app-select"
+                    className="adm-select si"
                     value={nf.grade}
                     onChange={e => setNf({ ...nf, grade: e.target.value })}
                   >
                     {[5, 4, 3].map(g => (
                       <option key={g} value={g}>
-                        {isSi ? `${g} ශ්‍රේණිය ${g === 5 ? "🔥 (190+ විශේෂ)" : ""}` : `Grade ${g} ${g === 5 ? "🔥 (190+ Special)" : ""}`}
+                        {g} ශ්‍රේණිය {g === 5 ? "🔥 (190+ විශේෂ)" : ""}
                       </option>
                     ))}
                   </select>
                 </label>
 
-                <label className="app-label">
-                  <span>{isSi ? "අදාළ මාසය (තෝරන්න හෝ ටයිප් කරන්න)" : "Month & Year"}</span>
+                <label className="adm-label">
+                  <span>Month &amp; Year (අදාළ මාසය)</span>
                   <input
                     list="month-options-list"
-                    className="app-input"
-                    placeholder={isSi ? "උදා: 2026 දෙසැම්බර්" : "e.g. 2026 December"}
+                    className="adm-input si"
+                    placeholder="උදා: 2026 දෙසැම්බර්"
                     value={nf.month}
                     onChange={e => {
                       const mVal = e.target.value;
@@ -1349,13 +2477,13 @@ export default function Admin() {
                 </label>
               </div>
 
-              {/* Checkbox to Highlight as Current Active Month */}
               <div
                 style={{
                   padding: "12px 14px",
-                  background: nf.isCurrentMonth ? "rgba(245, 166, 35, 0.14)" : "var(--bg)",
+                  marginBottom: "12px",
+                  background: nf.isCurrentMonth ? "rgba(255, 200, 74, 0.14)" : "var(--bg)",
                   border: nf.isCurrentMonth ? "1px solid var(--gold)" : "1px solid var(--line)",
-                  borderRadius: "10px",
+                  borderRadius: "12px",
                   display: "flex",
                   alignItems: "center",
                   gap: "10px"
@@ -1368,101 +2496,87 @@ export default function Admin() {
                   onChange={e => setNf({ ...nf, isCurrentMonth: e.target.checked })}
                   style={{ width: "18px", height: "18px", cursor: "pointer" }}
                 />
-                <label htmlFor="isCurrentMonthCheck" style={{ margin: 0, cursor: "pointer", fontSize: "13.5px", color: "var(--ink)", fontWeight: 700 }}>
-                  🔥 {isSi ? "මෙය මේ මාසයේ ක්‍රියාත්මක පන්තිය ලෙස Highlight කර ඉහළින්ම පෙන්වන්න" : "Highlight as Current Active Month at the top of Student Dashboard"}
+                <label htmlFor="isCurrentMonthCheck" style={{ margin: 0, cursor: "pointer", fontSize: "13.5px", fontWeight: 700 }}>
+                  🔥 මෙය මේ මාසයේ ක්‍රියාත්මක පන්තිය ලෙස Highlight කර පෙන්වන්න
                 </label>
               </div>
 
-              <label className="app-label">
-                <span>{isSi ? "මාසික පන්තියේ නම" : "Monthly Class Title"}</span>
+              <label className="adm-label">
+                <span>Monthly Class Title (මාසික පන්තියේ නම)</span>
                 <input
-                  className="app-input"
-                  placeholder={isSi ? "උදා: 2026 දෙසැම්බර් මාසයේ පන්තිය (190+ පළාත් පේපර් සහ සජීවී පන්ති)" : "e.g. December 2026 Monthly Class"}
+                  className="adm-input si"
                   value={nf.name}
                   onChange={e => setNf({ ...nf, name: e.target.value })}
                   required
                 />
               </label>
 
-              <div className="app-form-row">
-                <label className="app-label">
-                  <span>{isSi ? "මාසික පන්ති ගාස්තුව (රු.)" : "Monthly Fee (Rs.)"}</span>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <label className="adm-label">
+                  <span>Monthly Fee (මාසික ගාස්තුව රු.)</span>
                   <input
                     type="number"
-                    className="app-input"
-                    placeholder="2000"
+                    className="adm-input"
                     value={nf.price}
                     onChange={e => setNf({ ...nf, price: e.target.value })}
                     required
                   />
                 </label>
 
-                <label className="app-label">
-                  <span>{isSi ? "පන්ති විස්තර ටැගය" : "Papers / Sessions tag"}</span>
+                <label className="adm-label">
+                  <span>Sessions Tag</span>
                   <input
-                    className="app-input"
-                    placeholder={isSi ? "උදා: දිනකට පේපර් 2ක් + Zoom Live" : "e.g. 2 Papers Daily + Zoom Live"}
+                    className="adm-input si"
                     value={nf.papersCount}
                     onChange={e => setNf({ ...nf, papersCount: e.target.value })}
                   />
                 </label>
               </div>
 
-              <div className="app-form-row">
-                <label className="app-label">
-                  <span>🔴 {isSi ? "මෙම මාසයේ Zoom සජීවී පන්ති සබැඳිය (Zoom Live Link)" : "Zoom Live Class URL"}</span>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <label className="adm-label">
+                  <span>🔴 Main Zoom Live Link</span>
                   <input
-                    className="app-input"
+                    className="adm-input"
                     placeholder="https://zoom.us/j/..."
                     value={nf.zoomUrl}
                     onChange={e => setNf({ ...nf, zoomUrl: e.target.value })}
                   />
                 </label>
 
-                <label className="app-label">
-                  <span>⏰ {isSi ? "Zoom සජීවී පන්ති කාලසටහන" : "Zoom Live Class Schedule"}</span>
+                <label className="adm-label">
+                  <span>⏰ Zoom Live Schedule</span>
                   <input
-                    className="app-input"
-                    placeholder={isSi ? "උදා: සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 ට" : "e.g. Every Sat & Sun at 7:00 PM"}
+                    className="adm-input si"
                     value={nf.zoomSchedule}
                     onChange={e => setNf({ ...nf, zoomSchedule: e.target.value })}
                   />
                 </label>
               </div>
 
-              <label className="app-label">
-                <span>{isSi ? "ආවරණය වන විෂයයන්" : "Covered subjects"}</span>
+              <label className="adm-label">
+                <span>Covered Subjects (විෂයයන්)</span>
                 <input
-                  className="app-input"
-                  placeholder={isSi ? "උදා: පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි" : "e.g. Environmental Studies, Sinhala, Mathematics, Tamil, English"}
+                  className="adm-input si"
                   value={nf.subjects}
                   onChange={e => setNf({ ...nf, subjects: e.target.value })}
                 />
               </label>
 
-              <label className="app-label">
-                <span>{isSi ? "විස්තරය" : "Description"}</span>
-                <textarea
-                  rows={2}
-                  className="app-textarea"
-                  placeholder={isSi ? "මෙම මාසයේ පන්තිය පිළිබඳ කෙටි හැඳින්වීමක්..." : "Brief overview of what students receive this month..."}
-                  value={nf.desc}
-                  onChange={e => setNf({ ...nf, desc: e.target.value })}
-                />
-              </label>
-
-              <div style={{ display: "flex", gap: "10px", marginTop: "14px" }}>
-                <button type="submit" className="btn gold" style={{ flex: 1, justifyContent: "center" }}>
-                  {editingFolderId
-                    ? (isSi ? "වෙනස්කම් සුරකින්න" : "Save changes")
-                    : (isSi ? "📅 මාසික පන්තිය සාදන්න" : "📅 Create Monthly Class")}
+              <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+                <button
+                  type="submit"
+                  className="adm-chip gold"
+                  style={{ flex: 1, justifyContent: "center", padding: "12px" }}
+                >
+                  {editingFolderId ? "Save Changes" : "📅 Create Monthly Class"}
                 </button>
                 <button
                   type="button"
-                  className="btn"
+                  className="adm-chip"
                   onClick={() => setShowPackageModal(false)}
                 >
-                  {isSi ? "අවලංගු කරන්න" : "Cancel"}
+                  Cancel
                 </button>
               </div>
             </form>
@@ -1475,7 +2589,7 @@ export default function Admin() {
         <div className="app-modal-overlay" onClick={() => setViewSlip(null)}>
           <div className="app-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: "560px" }}>
             <div className="app-modal-head">
-              <h3>{isSi ? "රු. 2000 මාසික ගාස්තු බැංකු රිසිට්පත" : "Bank deposit receipt"}</h3>
+              <h3>රු. 2000 මාසික ගාස්තු බැංකු රිසිට්පත</h3>
               <button
                 type="button"
                 className="app-modal-close"
@@ -1507,40 +2621,23 @@ export default function Admin() {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
               <div>
-                <span className="badge-tag gold" style={{ marginBottom: "6px", display: "inline-block" }}>
+                <span className="adm-chip gold" style={{ marginBottom: "6px" }}>
                   🎥 {previewVideoItem.subject}
                 </span>
-                <h3 style={{ margin: 0, fontSize: "18px", color: "var(--cream, #fff)" }}>
+                <h3 className="si" style={{ margin: 0, fontSize: "18px", color: "#fff" }}>
                   {previewVideoItem.title}
                 </h3>
               </div>
               <button
                 type="button"
-                className="btn"
+                className="adm-chip"
                 onClick={() => setPreviewVideoItem(null)}
-                style={{ padding: "6px 14px", flexShrink: 0 }}
               >
-                ✕ {isSi ? "වසන්න" : "Close"}
+                ✕ Close
               </button>
             </div>
 
             <VideoPlayer url={previewVideoItem.url} title={previewVideoItem.title} />
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginTop: "4px" }}>
-              <span style={{ color: "var(--gold)", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
-                <span>✨</span>
-                <span>{isSi ? "මෙම වීඩියෝව වෙබ් අඩවිය තුළම වාදනය වේ." : "Playing directly inside the website."}</span>
-              </span>
-              <a
-                href={previewVideoItem.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn ghost"
-                style={{ fontSize: "12px", padding: "6px 12px" }}
-              >
-                <span>YouTube හි විවෘත කරන්න ↗</span>
-              </a>
-            </div>
           </div>
         </div>
       )}
