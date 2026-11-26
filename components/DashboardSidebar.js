@@ -12,7 +12,7 @@ export default function DashboardSidebar({
   foldersCount = 0,
   studentsCount = 0,
 }) {
-  const { me, login, lang, toggleLang } = useApp();
+  const { me, login, lang } = useApp();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -22,33 +22,33 @@ export default function DashboardSidebar({
   const adminNav = isSi
     ? [
         { id: "overview", label: "දළ විශ්ලේෂණය", icon: "#grid" },
-        { id: "packages", label: "ප්‍රශ්න පත්‍ර පැකේජ", icon: "#folder", badge: foldersCount },
-        { id: "content", label: "පාඩම් සහ සටහන්", icon: "#doc" },
-        { id: "payments", label: "ගෙවීම් රිසිට්පත්", icon: "#card", badge: pendingCount, isAlert: pendingCount > 0 },
+        { id: "packages", label: "මාසික පන්ති කළමනාකරණය", icon: "#folder", badge: foldersCount },
+        { id: "content", label: "Zoom / Video / PDF එක් කරන්න", icon: "#doc" },
+        { id: "payments", label: "මාසික ගෙවීම් රිසිට්පත්", icon: "#card", badge: pendingCount, isAlert: pendingCount > 0 },
         { id: "students", label: "ශිෂ්‍ය නාමාවලිය", icon: "#users", badge: studentsCount },
         { id: "settings", label: "පන්ති සැකසුම්", icon: "#cog" },
       ]
     : [
         { id: "overview", label: "Dashboard overview", icon: "#grid" },
-        { id: "packages", label: "Paper bundles", icon: "#folder", badge: foldersCount },
-        { id: "content", label: "Lessons & notes", icon: "#doc" },
-        { id: "payments", label: "Payment slips", icon: "#card", badge: pendingCount, isAlert: pendingCount > 0 },
+        { id: "packages", label: "Monthly classes", icon: "#folder", badge: foldersCount },
+        { id: "content", label: "Add Zoom / Video / PDF", icon: "#doc" },
+        { id: "payments", label: "Monthly fee slips", icon: "#card", badge: pendingCount, isAlert: pendingCount > 0 },
         { id: "students", label: "Students", icon: "#users", badge: studentsCount },
         { id: "settings", label: "Class settings", icon: "#cog" },
       ];
 
   const studentNav = isSi
     ? [
-        { id: "overview", label: "ප්‍රගති විශ්ලේෂණය", icon: "#grid" },
-        { id: "all_packages", label: "සියලු පැකේජ", icon: "#folder", badge: foldersCount },
-        { id: "my_packages", label: "මගේ පාඩම්", icon: "#doc" },
+        { id: "all_packages", label: "මාසික පන්ති ලැයිස්තුව", icon: "#folder", badge: foldersCount },
+        { id: "my_packages", label: "මගේ විවෘත මාස", icon: "#doc" },
+        { id: "overview", label: "190+ ප්‍රගති විශ්ලේෂණය", icon: "#grid" },
         { id: "timer", label: "වේග පාලන කාල ගණකය", icon: "#clock" },
         { id: "my_slips", label: "ගෙවීම් රිසිට්පත්", icon: "#card" },
       ]
     : [
+        { id: "all_packages", label: "Monthly classes", icon: "#folder", badge: foldersCount },
+        { id: "my_packages", label: "My unlocked months", icon: "#doc" },
         { id: "overview", label: "Progress & Analysis", icon: "#grid" },
-        { id: "all_packages", label: "All bundles", icon: "#folder", badge: foldersCount },
-        { id: "my_packages", label: "My lessons", icon: "#doc" },
         { id: "timer", label: "Speed timer", icon: "#clock" },
         { id: "my_slips", label: "Payment slips", icon: "#card" },
       ];
@@ -88,7 +88,7 @@ export default function DashboardSidebar({
           <small>
             {isAdmin
               ? (isSi ? "ප්‍රධාන පරිපාලක" : "Administrator")
-              : (isSi ? `${me?.grade || 5} ශ්‍රේණිය` : `Grade ${me?.grade || 5}`)}
+              : (isSi ? `${me?.grade || 5} ශ්‍රේණියේ ශිෂ්‍ය` : `Grade ${me?.grade || 5} Student`)}
           </small>
         </div>
       </div>
@@ -152,13 +152,13 @@ export default function DashboardSidebar({
             fontSize: "12.5px",
             justifyContent: "center",
             background: "rgba(255,255,255,0.06)",
-            color: "var(--side-ink)",
-            borderColor: "rgba(255,255,255,0.12)",
+            color: "#fca5a5",
+            borderColor: "rgba(252,165,165,0.2)",
           }}
-          title={isSi ? "පද්ධතියෙන් ඉවත් වන්න" : "Log out"}
+          title={isSi ? "ගිණුමෙන් ඉවත් වන්න" : "Log out"}
         >
           <svg style={{ width: 14, height: 14 }}><use href="#logout" /></svg>
-          <span>{isSi ? "ඉවත් වන්න" : "Log out"}</span>
+          <span>{isSi ? "ඉවත් වන්න" : "Logout"}</span>
         </button>
       </div>
     </aside>

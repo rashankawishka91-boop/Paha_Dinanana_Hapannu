@@ -2,18 +2,19 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useApp, uid, readFile, getYoutubeEmbedUrl, isYoutubeUrl } from "../../lib/Provider";
+import { useApp, uid, readFile, getYoutubeEmbedUrl, isYoutubeUrl, MONTH_OPTIONS } from "../../lib/Provider";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import VideoPlayer from "../../components/VideoPlayer";
 
 export default function Admin() {
-  const { S, update, me, login, lang, toggleLang, ready } = useApp();
+  const { S, update, me, login, lang, ready } = useApp();
   const router = useRouter();
 
   const isSi = lang === "si";
 
   const [tab, setTab] = useState("overview"); // overview, packages, content, payments, students, settings
   const [filterStatus, setFilterStatus] = useState("all");
+  const [adminGradeFilter, setAdminGradeFilter] = useState("all");
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState(null);
   const [selectedFolderForContent, setSelectedFolderForContent] = useState("");
@@ -21,23 +22,30 @@ export default function Admin() {
   const [viewSlip, setViewSlip] = useState(null);
   const [previewVideoItem, setPreviewVideoItem] = useState(null);
 
-  // Form states
+  // New / Edit Monthly Class Form State
   const [nf, setNf] = useState({
     grade: 5,
+    month: "2026 නොවැම්බර්",
+    isCurrentMonth: true,
     name: "",
-    category: isSi ? "පළාත් ප්‍රශ්න පත්‍ර" : "Provincial Papers",
+    category: isSi ? "මාසික ප්‍රශ්න පත්‍ර පන්තිය" : "Monthly Paper Class",
     price: "2000",
-    papersCount: isSi ? "දිනකට පේපර් 2ක්" : "2 Papers Daily",
+    papersCount: isSi ? "දිනකට පේපර් 2ක් + Zoom Live" : "2 Papers Daily + Zoom Live",
     subjects: isSi ? "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි" : "Environmental Studies, Sinhala, Mathematics, Tamil, English",
+    zoomUrl: "https://zoom.us/j/94771234567",
+    zoomSchedule: isSi ? "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)" : "Every Saturday & Sunday 7:00 PM (Zoom Live)",
     desc: ""
   });
 
+  // New Lesson Item (Zoom / Video / PDF) Form State
   const [ni, setNi] = useState({
     fid: "",
-    type: "video",
-    subject: isSi ? "පරිසරය" : "Environmental Studies",
+    type: "video", // "zoom" | "video" | "pdf"
+    week: "1 වන සතිය",
+    subject: isSi ? "විෂයයන් 5ම" : "All 5 Subjects",
     title: "",
-    url: ""
+    url: "",
+    schedule: ""
   });
 
   const [set, setSet] = useState({
@@ -93,16 +101,33 @@ export default function Admin() {
     });
   };
 
+  const handleSetCurrentMonth = (folder) => {
+    update(d => {
+      d.folders.forEach(x => {
+        if (Number(x.grade) === Number(folder.grade)) {
+          x.isCurrentMonth = x.id === folder.id;
+        }
+      });
+    });
+  };
+
   const handleOpenCreatePackage = () => {
     setEditingFolderId(null);
+    const defaultMonth = "2026 දෙසැම්බර්";
     setNf({
       grade: 5,
-      name: "",
-      category: isSi ? "පළාත් ප්‍රශ්න පත්‍ර කට්ටල" : "Provincial Paper Bundles",
+      month: defaultMonth,
+      isCurrentMonth: true,
+      name: `${defaultMonth} මාසයේ පන්තිය (190+ පළාත් පේපර් සහ සජීවී පන්ති)`,
+      category: isSi ? "මාසික ප්‍රශ්න පත්‍ර පන්තිය" : "Monthly Paper Class",
       price: "2000",
-      papersCount: isSi ? "දිනකට පේපර් 2ක්" : "2 Papers Daily",
+      papersCount: isSi ? "දිනකට පේපර් 2ක් + Zoom Live" : "2 Papers Daily + Zoom Live",
       subjects: isSi ? "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි" : "Environmental Studies, Sinhala, Mathematics, Tamil, English",
-      desc: ""
+      zoomUrl: "https://zoom.us/j/94771234567",
+      zoomSchedule: isSi ? "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)" : "Every Saturday & Sunday 7:00 PM (Zoom Live)",
+      desc: isSi
+        ? "රු. 2000 මාසික පන්ති ගාස්තුව ගෙවූ පසු මෙම මාසයට අදාළ සියලුම සජීවී Zoom පන්ති, වීඩියෝ විවරණ සහ PDF ප්‍රශ්න පත්‍ර සම්පූර්ණයෙන්ම විවෘත වේ."
+        : "Pay Rs. 2000 monthly fee to unlock all Zoom live classes, video discussions, and PDF papers for this month."
     });
     setShowPackageModal(true);
   };
@@ -111,11 +136,15 @@ export default function Admin() {
     setEditingFolderId(f.id);
     setNf({
       grade: f.grade || 5,
+      month: f.month || "2026 නොවැම්බර්",
+      isCurrentMonth: Boolean(f.isCurrentMonth),
       name: f.name || "",
-      category: f.category || (isSi ? "පළාත් ප්‍රශ්න පත්‍ර කට්ටල" : "Provincial Paper Bundles"),
+      category: f.category || (isSi ? "මාසික ප්‍රශ්න පත්‍ර පන්තිය" : "Monthly Paper Class"),
       price: f.price?.toString() || "2000",
-      papersCount: f.papersCount || (isSi ? "දිනකට පේපර් 2ක්" : "2 Papers Daily"),
+      papersCount: f.papersCount || (isSi ? "දිනකට පේපර් 2ක් + Zoom Live" : "2 Papers Daily + Zoom Live"),
       subjects: f.subjects || (isSi ? "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි" : "Environmental Studies, Sinhala, Mathematics, Tamil, English"),
+      zoomUrl: f.zoomUrl || "https://zoom.us/j/94771234567",
+      zoomSchedule: f.zoomSchedule || (isSi ? "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 ට" : "Every Saturday & Sunday 7:00 PM"),
       desc: f.desc || ""
     });
     setShowPackageModal(true);
@@ -124,38 +153,53 @@ export default function Admin() {
   const handleSavePackage = (e) => {
     e.preventDefault();
     if (!nf.name.trim()) {
-      return alert(isSi ? "කරුණාකර පැකේජයේ නම ඇතුළත් කරන්න." : "Please enter the package name.");
+      return alert(isSi ? "කරුණාකර මාසික පන්තියේ නම ඇතුළත් කරන්න." : "Please enter the monthly class name.");
     }
-    const priceNum = parseInt(nf.price) || 0;
-    if (priceNum <= 0) {
-      return alert(isSi ? "කරුණාකර වලංගු මිලක් ඇතුළත් කරන්න." : "Please enter a valid price.");
-    }
+    const priceNum = parseInt(nf.price) || 2000;
+    const gradeNum = parseInt(nf.grade) || 5;
 
     update(d => {
+      // If marked as current month, unmark other current months in the same grade so only the chosen month is highlighted
+      if (nf.isCurrentMonth) {
+        d.folders.forEach(x => {
+          if (Number(x.grade) === gradeNum) {
+            x.isCurrentMonth = false;
+          }
+        });
+      }
+
       if (editingFolderId) {
         const idx = d.folders.findIndex(f => f.id === editingFolderId);
         if (idx !== -1) {
           d.folders[idx] = {
             ...d.folders[idx],
-            grade: parseInt(nf.grade) || 5,
+            grade: gradeNum,
+            month: nf.month.trim() || "2026 නොවැම්බර්",
+            isCurrentMonth: Boolean(nf.isCurrentMonth),
             name: nf.name.trim(),
             category: nf.category,
             price: priceNum,
             papersCount: nf.papersCount.trim(),
             subjects: nf.subjects.trim(),
+            zoomUrl: nf.zoomUrl.trim(),
+            zoomSchedule: nf.zoomSchedule.trim(),
             desc: nf.desc.trim()
           };
         }
       } else {
         const newFolderId = uid();
-        d.folders.push({
+        d.folders.unshift({
           id: newFolderId,
-          grade: parseInt(nf.grade) || 5,
+          grade: gradeNum,
+          month: nf.month.trim() || "2026 දෙසැම්බර්",
+          isCurrentMonth: Boolean(nf.isCurrentMonth),
           name: nf.name.trim(),
           category: nf.category,
           price: priceNum,
-          papersCount: nf.papersCount.trim() || (isSi ? "දිනකට පේපර් 2ක්" : "2 Papers Daily"),
+          papersCount: nf.papersCount.trim() || (isSi ? "දිනකට පේපර් 2ක් + Zoom Live" : "2 Papers Daily + Zoom Live"),
           subjects: nf.subjects.trim() || (isSi ? "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි" : "All 5 Subjects"),
+          zoomUrl: nf.zoomUrl.trim(),
+          zoomSchedule: nf.zoomSchedule.trim(),
           desc: nf.desc.trim()
         });
       }
@@ -166,15 +210,15 @@ export default function Admin() {
     setEditingFolderId(null);
     alert(
       isEdit
-        ? (isSi ? "පැකේජය සාර්ථකව යාවත්කාලීන විය!" : "Package updated successfully!")
-        : (isSi ? "නව පැකේජය සාර්ථකව නිර්මාණය විය! දැන් මෙය මුල් පිටුවේ සහ ශිෂ්‍ය පුවරුවේ දිස්වේ." : "New package created successfully! It is now live on Home and Student Dashboard.")
+        ? (isSi ? "මාසික පන්තිය සාර්ථකව යාවත්කාලීන විය!" : "Monthly class updated successfully!")
+        : (isSi ? "නව මාසික පන්තිය සාර්ථකව එක් කරන ලදී! දැන් එය අදාළ ශ්‍රේණියේ ශිෂ්‍ය පුවරුවේ දිස්වේ." : "New monthly class added! It is now live on the Student Dashboard.")
     );
   };
 
   const handleDeletePackage = (f) => {
     const confirmMsg = isSi
-      ? `"${f.name}" පැකේජය ඉවත් කිරීමට ඔබට සහතිකද? මෙහි ඇති සියලුම පාඩම් සහ ලිපිගොනුද ඉවත් වනු ඇත.`
-      : `Are you sure you want to delete "${f.name}"? All lessons and PDFs inside it will also be deleted.`;
+      ? `"${f.name}" මාසික පන්තිය ඉවත් කිරීමට ඔබට සහතිකද? මෙහි ඇති සියලුම Zoom සබැඳි, වීඩියෝ සහ PDF ලිපිගොනුද ඉවත් වනු ඇත.`
+      : `Are you sure you want to delete "${f.name}"? All Zoom links, videos, and PDFs inside it will also be deleted.`;
     if (confirm(confirmMsg)) {
       update(d => {
         d.folders = d.folders.filter(x => x.id !== f.id);
@@ -191,25 +235,32 @@ export default function Admin() {
     }
 
     const isYt = isYoutubeUrl(ni.url);
-    const finalType = isYt ? "video" : ni.type;
+    const finalType = ni.type === "zoom" ? "zoom" : isYt ? "video" : ni.type;
 
     update(d => {
       d.items.push({
         id: uid(),
         fid,
         type: finalType,
+        week: ni.week || "1 වන සතිය",
         subject: ni.subject,
         title: ni.title.trim(),
-        url: ni.url.trim()
+        url: ni.url.trim(),
+        schedule: ni.schedule?.trim() || ""
       });
     });
 
     setNi(prev => ({
       ...prev,
       title: "",
-      url: ""
+      url: "",
+      schedule: ""
     }));
-    alert(isSi ? "නව පාඩම හෝ සටහන සාර්ථකව එක් කරන ලදී!" : "New lesson or note added successfully!");
+    alert(
+      isSi
+        ? "නව ඉගෙනුම් අයිතමය (Zoom / Video / PDF) අදාළ මාසයට සාර්ථකව එක් කරන ලදී!"
+        : "New item (Zoom / Video / PDF) added to the selected month!"
+    );
   };
 
   const onLogoUpload = f => {
@@ -235,6 +286,14 @@ export default function Admin() {
   const pendingCount = S.pays.filter(p => p.status === "pending").length;
   const approvedCount = S.pays.filter(p => p.status === "approved").length;
   const filteredPays = S.pays.filter(p => filterStatus === "all" || p.status === filterStatus);
+
+  const filteredAdminFolders = S.folders.filter(
+    f => adminGradeFilter === "all" || Number(f.grade) === Number(adminGradeFilter)
+  );
+
+  const activeContentFolder = S.folders.find(
+    f => f.id === (selectedFolderForContent || S.folders[0]?.id)
+  );
 
   const searchedStudents = studentsList.filter(stu => {
     const q = studentSearch.toLowerCase();
@@ -262,7 +321,7 @@ export default function Admin() {
         <div className="top" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <span className="sp" style={{ fontWeight: 800 }}>
-              {isSi ? "👑 ගුරු පාලක මැදිරිය" : "👑 Admin Portal"}
+              {isSi ? "👑 ගුරු පාලක මැදිරිය (මාසික පන්ති කළමනාකරණය)" : "👑 Admin Portal (Monthly Classes Management)"}
             </span>
           </div>
         </div>
@@ -273,17 +332,17 @@ export default function Admin() {
             <p>
               {isSi ? "පාලක පුවරුව" : "Admin portal"} / {" "}
               {tab === "overview" && (isSi ? "දළ විශ්ලේෂණය" : "Dashboard")}
-              {tab === "packages" && (isSi ? "ප්‍රශ්න පත්‍ර පැකේජ" : "Paper bundles")}
-              {tab === "content" && (isSi ? "පාඩම් සහ සටහන්" : "Lessons & notes")}
-              {tab === "payments" && (isSi ? "ගෙවීම් රිසිට්පත්" : "Payment slips")}
+              {tab === "packages" && (isSi ? "මාසික පන්ති කළමනාකරණය" : "Monthly classes")}
+              {tab === "content" && (isSi ? "Zoom / Video / PDF එක් කරන්න" : "Add Zoom / Video / PDF")}
+              {tab === "payments" && (isSi ? "මාසික ගෙවීම් රිසිට්පත්" : "Monthly fee slips")}
               {tab === "students" && (isSi ? "ශිෂ්‍ය නාමාවලිය" : "Students")}
               {tab === "settings" && (isSi ? "පන්ති සැකසුම්" : "Class settings")}
             </p>
             <h1>
               {tab === "overview" && (isSi ? "දළ විශ්ලේෂණය" : "Dashboard overview")}
-              {tab === "packages" && (isSi ? "ප්‍රශ්න පත්‍ර පැකේජ" : "Paper bundles")}
-              {tab === "content" && (isSi ? "පාඩම් සහ සටහන්" : "Lessons & notes")}
-              {tab === "payments" && (isSi ? "ගෙවීම් රිසිට්පත්" : "Payment slips")}
+              {tab === "packages" && (isSi ? "මාසෙන් මාසෙට පන්ති කළමනාකරණය" : "Month-by-Month Classes")}
+              {tab === "content" && (isSi ? "මාසික පන්තියට Zoom / Video / PDF එක් කරන්න" : "Add Zoom / Video / PDF to Month")}
+              {tab === "payments" && (isSi ? "රු. 2000 මාසික ගෙවීම් රිසිට්පත්" : "Rs. 2000 Monthly Fee Slips")}
               {tab === "students" && (isSi ? "ශිෂ්‍ය නාමාවලිය" : "Students directory")}
               {tab === "settings" && (isSi ? "පන්ති සැකසුම්" : "Class settings")}
             </h1>
@@ -296,19 +355,23 @@ export default function Admin() {
               onClick={handleOpenCreatePackage}
             >
               <svg><use href="#plus" /></svg>
-              <span>{isSi ? "නව පැකේජයක් සාදන්න" : "Create new bundle"}</span>
+              <span>{isSi ? "📅 අලුත් මාසයක් එක් කරන්න" : "📅 Add New Month"}</span>
             </button>
-            <Link className="btn" href="/dashboard">
-              <svg><use href="#eye" /></svg>
-              <span>{isSi ? "ශිෂ්‍ය පෙනුම" : "Student view"}</span>
-            </Link>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setTab("content")}
+            >
+              <span>🎥 {isSi ? "Zoom / Video / PDF දාන්න" : "Add Zoom / Video / PDF"}</span>
+            </button>
           </div>
         </div>
 
-        {/* TAB 1: OVERVIEW */}
+        {/* ==================================================================== */}
+        {/* TAB 1: OVERVIEW                                                      */}
+        {/* ==================================================================== */}
         {tab === "overview" && (
           <>
-            {/* 4 Stats Cards */}
             <section className="stats" aria-label="Summary">
               <div className="stat" onClick={() => setTab("students")}>
                 <div className="l">
@@ -321,11 +384,11 @@ export default function Admin() {
 
               <div className="stat" onClick={() => setTab("packages")}>
                 <div className="l">
-                  <span>{isSi ? "ප්‍රශ්න පත්‍ර පැකේජ" : "Paper bundles"}</span>
+                  <span>{isSi ? "මාසික පන්ති ගණන" : "Monthly classes"}</span>
                   <svg><use href="#folder" /></svg>
                 </div>
                 <div className="v">{S.folders.length}</div>
-                <small>{isSi ? "ක්‍රියාත්මක සියලු කට්ටල" : "Active bundles"}</small>
+                <small>{isSi ? "සියලු ශ්‍රේණිවල ක්‍රියාත්මක මාස" : "Active monthly classes"}</small>
               </div>
 
               <div
@@ -337,7 +400,7 @@ export default function Admin() {
                   <svg><use href="#clock" /></svg>
                 </div>
                 <div className={`v ${pendingCount > 0 ? "warn" : ""}`}>{pendingCount}</div>
-                <small>{isSi ? "තහවුරු කිරීමට ඉතිරි ගෙවීම්" : "Waiting for approval"}</small>
+                <small>{isSi ? "රු. 2000 මාසික ගාස්තු රිසිට්පත්" : "Waiting for approval"}</small>
               </div>
 
               <div
@@ -345,19 +408,18 @@ export default function Admin() {
                 onClick={() => { setTab("payments"); setFilterStatus("approved"); }}
               >
                 <div className="l">
-                  <span>{isSi ? "අනුමත ගෙවීම්" : "Approved payments"}</span>
+                  <span>{isSi ? "අනුමත මාසික ගෙවීම්" : "Approved payments"}</span>
                   <svg><use href="#check" /></svg>
                 </div>
                 <div className="v ok">{approvedCount}</div>
-                <small>{isSi ? "විවෘත කරදුන් මුළු පැකේජ" : "Bundles unlocked"}</small>
+                <small>{isSi ? "විවෘත කරදුන් මුළු මාස ගණන" : "Months unlocked"}</small>
               </div>
             </section>
 
-            {/* 2 Column Layout: Quick Actions & Class Progress */}
             <div className="cols">
               <section className="card">
                 <h2>{isSi ? "ක්ෂණික ක්‍රියාමාර්ග" : "Quick actions"}</h2>
-                <p>{isSi ? "දෛනික පරිපාලන කෙටිමං" : "Shortcuts for daily work"}</p>
+                <p>{isSi ? "මාසික පන්ති සහ ඉගෙනුම් ද්‍රව්‍ය කළමනාකරණය" : "Manage monthly classes and materials"}</p>
 
                 <button
                   type="button"
@@ -366,8 +428,8 @@ export default function Admin() {
                 >
                   <span className="ic"><svg><use href="#folder" /></svg></span>
                   <span>
-                    <b>{isSi ? "නව ප්‍රශ්න පත්‍ර පැකේජයක් සාදන්න" : "Create new paper bundle"}</b>
-                    <small>{isSi ? "මුල් පිටුවේ සහ ශිෂ්‍ය පුවරුවේ ක්ෂණිකව පළවේ" : "Appears on the home page and student dashboard straight away"}</small>
+                    <b>{isSi ? "📅 අලුත් මාසයක් / මාසික පන්තියක් එක් කරන්න" : "📅 Add a New Monthly Class"}</b>
+                    <small>{isSi ? "ඕනෑම ශ්‍රේණියකට නව මාසයක් එක්කර මේ මාසය ලෙස Highlight කරන්න" : "Create a new month for any grade and highlight as current month"}</small>
                   </span>
                   <svg className="go"><use href="#arrow" /></svg>
                 </button>
@@ -379,8 +441,8 @@ export default function Admin() {
                 >
                   <span className="ic"><svg><use href="#video" /></svg></span>
                   <span>
-                    <b>{isSi ? "වීඩියෝ සහ සටහන් එක් කරන්න" : "Add video or PDF lessons"}</b>
-                    <small>{isSi ? "පවතින ඕනෑම පැකේජයකට පාඩම් එක්කරන්න" : "Attach content to any paper bundle"}</small>
+                    <b>{isSi ? "🔴 Zoom Live Link, වීඩියෝ සහ PDF එක් කරන්න" : "🔴 Add Zoom Live Link, Video & PDF"}</b>
+                    <small>{isSi ? "අදාළ මාසය තුළට සජීවී Zoom සබැඳි, YouTube වීඩියෝ සහ PDF පේපර්ස් දාන්න" : "Add Zoom links, YouTube recordings, and PDF papers inside any month"}</small>
                   </span>
                   <svg className="go"><use href="#arrow" /></svg>
                 </button>
@@ -392,8 +454,8 @@ export default function Admin() {
                 >
                   <span className="ic"><svg><use href="#card" /></svg></span>
                   <span>
-                    <b>{isSi ? "ගෙවීම් රිසිට්පත් පරීක්ෂාව" : "Review payment slips"}</b>
-                    <small>{isSi ? `${pendingCount} ක් අනුමැතිය අපේක්ෂාවෙන්` : `${pendingCount} slips waiting for approval`}</small>
+                    <b>{isSi ? "💳 රු. 2000 මාසික ගෙවීම් රිසිට්පත් අනුමත කරන්න" : "💳 Approve Rs. 2000 Monthly Fee Slips"}</b>
+                    <small>{isSi ? `${pendingCount} ක් අනුමැතිය අපේක්ෂාවෙන් පවතී` : `${pendingCount} slips waiting for approval`}</small>
                   </span>
                   <svg className="go"><use href="#arrow" /></svg>
                 </button>
@@ -406,32 +468,32 @@ export default function Admin() {
                   <span className="ic"><svg><use href="#cog" /></svg></span>
                   <span>
                     <b>{isSi ? "බැංකු විස්තර සහ පන්ති සැකසුම්" : "Bank details & settings"}</b>
-                    <small>{isSi ? "ගිණුම් අංක සහ ක්ෂණික දුරකථන අංකය සංස්කරණය" : "Update account numbers and the contact hotline"}</small>
+                    <small>{isSi ? "ගිණුම් අංක සහ ක්ෂණික දුරකථන අංකය සංස්කරණය" : "Update account numbers and contact hotline"}</small>
                   </span>
                   <svg className="go"><use href="#arrow" /></svg>
                 </button>
               </section>
 
               <section className="card">
-                <h2>{isSi ? "190+ පන්තියේ තත්ත්වය" : "Class progress"}</h2>
-                <p>{isSi ? "විෂයයන් 5ම ආවරණය සහ පේපර් සැලැස්ම" : "Coverage across all scholarship subjects"}</p>
+                <h2>{isSi ? "මාසික පන්ති පද්ධතියේ තත්ත්වය" : "Monthly Class System Status"}</h2>
+                <p>{isSi ? "ශ්‍රේණි අනුව ක්‍රියාත්මක මාස සහ මාසික ගාස්තු" : "Active months and monthly fee summary"}</p>
 
                 <dl>
                   <div>
                     <dt>{isSi ? "ක්‍රියාත්මක ශ්‍රේණි" : "Active grades"}</dt>
-                    <dd>{isSi ? "5 ශ්‍රේණිය (ප්‍රමුඛ), 4 ශ්‍රේණිය" : "Grade 5 (Primary), Grade 4"}</dd>
+                    <dd>{isSi ? "1, 2, 3, 4 සහ 5 ශ්‍රේණිය (190+ විශේෂ)" : "Grades 1, 2, 3, 4 & Grade 5 (190+)"}</dd>
                   </div>
                   <div>
-                    <dt>{isSi ? "පවතින පැකේජ" : "Available bundles"}</dt>
-                    <dd>{S.folders.length} {isSi ? "කට්ටල" : "bundles"}</dd>
+                    <dt>{isSi ? "සම්මත මාසික පන්ති ගාස්තුව" : "Standard monthly fee"}</dt>
+                    <dd style={{ color: "var(--gold-ink)", fontWeight: 700 }}>{isSi ? "රු. 2000 (මසකට)" : "Rs. 2000 / month"}</dd>
                   </div>
                   <div>
-                    <dt>{isSi ? "එකතු කළ පාඩම් සහ සටහන්" : "Lessons & PDFs"}</dt>
+                    <dt>{isSi ? "පවතින මුළු මාසික පන්ති" : "Total monthly classes"}</dt>
+                    <dd>{S.folders.length} {isSi ? "මාස" : "months"}</dd>
+                  </div>
+                  <div>
+                    <dt>{isSi ? "එකතු කළ Zoom / Video / PDF" : "Total Zoom / Video / PDF items"}</dt>
                     <dd>{S.items.length} {isSi ? "අයිතම" : "items"}</dd>
-                  </div>
-                  <div>
-                    <dt>{isSi ? "AI සහයක" : "AI tutor"}</dt>
-                    <dd className="ok">{isSi ? "සක්‍රියයි" : "Active"}</dd>
                   </div>
                   <div>
                     <dt>{isSi ? "ක්ෂණික දුරකථන අංකය" : "WhatsApp hotline"}</dt>
@@ -440,66 +502,114 @@ export default function Admin() {
                 </dl>
 
                 <div className="tip">
-                  <b>{isSi ? "උපදෙස:" : "Tip:"}</b>{" "}
+                  <b>{isSi ? "💡 වැදගත්:" : "💡 Note:"}</b>{" "}
                   {isSi
-                    ? "ඔබ නව පේපර් කට්ටලයක් සාදන විට එය එකවරම වෙබ් අඩවියේ මුල් පිටුවේ සහ ශිෂ්‍ය පුවරුවේ දිස්වන බැවින් දරුවන්ට ක්ෂණිකව ලියාපදිංචි වී ගෙවීම් කළ හැක."
-                    : "A new bundle shows up instantly on the home page and student dashboard, so students can enrol right away."}
+                    ? "ශිෂ්‍යයෙකු ලියාපදිංචි වූ ශ්‍රේණියට අදාළ මාස ලැයිස්තුව ඔවුන් ලොග් වූ සැණින් දිස්වේ. ඔබ \"මේ මාසය\" ලෙස ලකුණු කරන මාසය රන්වන් පැහැයෙන් ඉහළින්ම Highlight වී පෙනේ."
+                    : "Students automatically see the months for their grade upon login. The month marked as 'Current Month' is highlighted at the top in gold."}
                 </div>
               </section>
             </div>
           </>
         )}
 
-        {/* TAB 2: PACKAGES */}
+        {/* ==================================================================== */}
+        {/* TAB 2: MONTHLY CLASSES MANAGEMENT (ADD/EDIT MONTHS & HIGHLIGHT)      */}
+        {/* ==================================================================== */}
         {tab === "packages" && (
           <section className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
               <div>
-                <h2>{isSi ? `ප්‍රශ්න පත්‍ර පැකේජ (${S.folders.length})` : `Paper bundles (${S.folders.length})`}</h2>
+                <h2>{isSi ? `මාසික පන්ති ලැයිස්තුව (${filteredAdminFolders.length})` : `Monthly Classes (${filteredAdminFolders.length})`}</h2>
                 <p style={{ margin: "4px 0 0" }}>
                   {isSi
-                    ? "මෙහි සාදන ඕනෑම පැකේජයක් මුල් පිටුවේ සහ ශිෂ්‍ය පුවරුවේ ක්ෂණිකව දිස්වේ."
-                    : "Any bundle created here is instantly visible on the home page and student dashboard."}
+                    ? "අලුත් මාස එක් කරන්න, මේ මාසයේ පන්තිය Highlight කරන්න, සහ එක් එක් මාසයට Zoom / Video / PDF එක් කරන්න."
+                    : "Add new months, highlight the current active month, and manage Zoom / Video / PDF items."}
                 </p>
               </div>
-              <button type="button" className="btn gold" onClick={handleOpenCreatePackage}>
-                <svg><use href="#plus" /></svg>
-                <span>{isSi ? "නව පැකේජයක් සාදන්න" : "Create new bundle"}</span>
-              </button>
+
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+                {/* Grade Filter Pills */}
+                {["all", 5, 4, 3, 2, 1].map(g => (
+                  <button
+                    key={g}
+                    type="button"
+                    className={`btn ${adminGradeFilter === g ? "gold" : ""}`}
+                    style={{ padding: "6px 12px", fontSize: "12.5px" }}
+                    onClick={() => setAdminGradeFilter(g)}
+                  >
+                    {g === "all"
+                      ? (isSi ? "සියලු ශ්‍රේණි" : "All Grades")
+                      : (isSi ? `${g} ශ්‍රේණිය` : `Grade ${g}`)}
+                  </button>
+                ))}
+
+                <button type="button" className="btn gold" onClick={handleOpenCreatePackage}>
+                  <svg><use href="#plus" /></svg>
+                  <span>{isSi ? "📅 අලුත් මාසයක් එක් කරන්න" : "📅 Add New Month"}</span>
+                </button>
+              </div>
             </div>
 
             <div className="pkg-grid">
-              {S.folders.map(f => {
-                const count = S.items.filter(i => i.fid === f.id).length;
+              {filteredAdminFolders.map(f => {
+                const folderItems = S.items.filter(i => i.fid === f.id);
+                const vCount = folderItems.filter(i => i.type === "video" || getYoutubeEmbedUrl(i.url)).length;
+                const pCount = folderItems.filter(i => i.type === "pdf").length;
+                const zCount = folderItems.filter(i => i.type === "zoom").length;
+
                 return (
-                  <div key={f.id} className="pkg-card">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <div
+                    key={f.id}
+                    className="pkg-card"
+                    style={{
+                      border: f.isCurrentMonth ? "2px solid var(--gold)" : "1px solid var(--line)",
+                      background: f.isCurrentMonth
+                        ? "linear-gradient(180deg, rgba(245, 166, 35, 0.1), var(--surface))"
+                        : "var(--surface)"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                       <span className="badge-tag gold">
-                        {isSi ? `${f.grade} ශ්‍රේණිය` : `Grade ${f.grade}`}
+                        🎓 {isSi ? `${f.grade} ශ්‍රේණිය` : `Grade ${f.grade}`}
                       </span>
-                      <span className="badge-tag" style={{ background: "var(--bg)", color: "var(--muted)" }}>
-                        {f.papersCount || (isSi ? "දිනකට පේපර් 2ක්" : "2 Papers Daily")}
+                      <span className="badge-tag" style={{ background: "var(--bg)", fontWeight: 700 }}>
+                        📅 {f.month || (isSi ? "මාසික පන්තිය" : "Monthly")}
                       </span>
+                      {f.isCurrentMonth ? (
+                        <span className="badge-tag ok" style={{ fontWeight: 800 }}>
+                          🔥 {isSi ? "මේ මාසය (Highlighted)" : "Current Month"}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn"
+                          style={{ padding: "2px 8px", fontSize: "11px" }}
+                          onClick={() => handleSetCurrentMonth(f)}
+                          title={isSi ? "මෙම ශ්‍රේණියේ වත්මන් මාසය ලෙස Highlight කරන්න" : "Set as Current Highlighted Month for this grade"}
+                        >
+                          ⭐ {isSi ? "මේ මාසය ලෙස දාන්න" : "Set as Current"}
+                        </button>
+                      )}
                     </div>
 
                     <h3>{f.name}</h3>
 
-                    <div style={{ fontSize: "13.5px", color: "var(--ink)" }}>
-                      🎯 <b>{isSi ? "විෂයයන්:" : "Subjects:"}</b> {f.subjects || (isSi ? "විෂයයන් 5ම ආවරණය" : "All 5 Subjects")}
+                    <div style={{ fontSize: "12.5px", color: "var(--ink)" }}>
+                      🎯 <b>{isSi ? "විෂයයන්:" : "Subjects:"}</b> {f.subjects}
                     </div>
 
-                    {f.desc && (
-                      <p style={{ margin: 0, fontSize: "13px", color: "var(--muted)", lineHeight: 1.4 }}>
-                        {f.desc}
-                      </p>
+                    {f.zoomUrl && (
+                      <div style={{ fontSize: "12px", color: "#2563eb", background: "rgba(37, 99, 235, 0.08)", padding: "6px 10px", borderRadius: "8px" }}>
+                        🔴 <b>Zoom Live:</b> {f.zoomSchedule || f.zoomUrl}
+                      </div>
                     )}
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: "12px", borderTop: "1px solid var(--line)" }}>
                       <span className="price">
-                        {isSi ? `රු. ${f.price}` : `Rs. ${f.price}`}
+                        {isSi ? `රු. ${f.price || 2000}` : `Rs. ${f.price || 2000}`}
                       </span>
-                      <span style={{ fontSize: "13px", color: "var(--muted)" }}>
-                        📄 {count} {isSi ? "පාඩම්" : "lessons"}
+                      <span style={{ fontSize: "12px", color: "var(--muted)", fontWeight: 600 }}>
+                        🔴 {zCount + (f.zoomUrl ? 1 : 0)} Zoom · 🎥 {vCount} Video · 📄 {pCount} PDF
                       </span>
                     </div>
 
@@ -515,7 +625,7 @@ export default function Admin() {
                         }}
                       >
                         <svg style={{ width: 15, height: 15 }}><use href="#plus" /></svg>
-                        <span>{isSi ? "පාඩම්" : "Lessons"}</span>
+                        <span>{isSi ? "Zoom / Video / PDF දාන්න" : "Add Zoom / Video / PDF"}</span>
                       </button>
 
                       <button
@@ -523,7 +633,7 @@ export default function Admin() {
                         className="btn"
                         style={{ padding: "8px 12px" }}
                         onClick={() => handleEditPackage(f)}
-                        title={isSi ? "සංස්කරණය" : "Edit"}
+                        title={isSi ? "මාසය සංස්කරණය කරන්න" : "Edit Month"}
                       >
                         <svg style={{ width: 15, height: 15 }}><use href="#edit" /></svg>
                       </button>
@@ -545,17 +655,19 @@ export default function Admin() {
           </section>
         )}
 
-        {/* TAB 3: CONTENT / LESSONS */}
+        {/* ==================================================================== */}
+        {/* TAB 3: ADD ZOOM LIVE LINK / VIDEO / PDF TO SELECTED MONTH            */}
+        {/* ==================================================================== */}
         {tab === "content" && (
           <div className="cols">
-            {/* Add Lesson Form */}
+            {/* Left Column: Add Zoom Live / Video / PDF Form */}
             <section className="card">
-              <h2>{isSi ? "නව පාඩමක් හෝ සටහනක් එක් කරන්න" : "Add video or PDF lesson"}</h2>
-              <p>{isSi ? "වීඩියෝ විවරණ හෝ ප්‍රශ්න පත්‍ර ලිපිගොනු" : "Attach content to any paper bundle"}</p>
+              <h2>{isSi ? "මාසික පන්තියට Zoom / Video / PDF එක් කරන්න" : "Add Zoom / Video / PDF to Month"}</h2>
+              <p>{isSi ? "තෝරාගත් මාසය තුළට සජීවී Zoom පන්ති සබැඳි, YouTube වීඩියෝ හෝ PDF ප්‍රශ්න පත්‍ර එක් කරන්න" : "Attach Zoom live links, YouTube video lessons, or PDF papers to any month"}</p>
 
               <form onSubmit={handleAddItem} className="app-form">
                 <label className="app-label">
-                  <span>{isSi ? "අදාළ ප්‍රශ්න පත්‍ර පැකේජය" : "Target paper bundle"}</span>
+                  <span>{isSi ? "1. අදාළ මාසික පන්තිය තෝරන්න (ශ්‍රේණිය සහ මාසය)" : "1. Select Target Monthly Class"}</span>
                   <select
                     className="app-select"
                     value={ni.fid || selectedFolderForContent || S.folders[0]?.id}
@@ -566,7 +678,9 @@ export default function Admin() {
                   >
                     {S.folders.map(f => (
                       <option key={f.id} value={f.id}>
-                        {isSi ? `${f.grade} ශ්‍රේණිය - ${f.name} (රු. ${f.price})` : `Grade ${f.grade} - ${f.name} (Rs. ${f.price})`}
+                        {isSi
+                          ? `${f.grade} ශ්‍රේණිය | ${f.month || ""} ${f.isCurrentMonth ? "🔥 (මේ මාසය)" : ""} - ${f.name}`
+                          : `Grade ${f.grade} | ${f.month || ""} ${f.isCurrentMonth ? "🔥 (Current)" : ""} - ${f.name}`}
                       </option>
                     ))}
                   </select>
@@ -574,61 +688,118 @@ export default function Admin() {
 
                 <div className="app-form-row">
                   <label className="app-label">
-                    <span>{isSi ? "අදාළ විෂය" : "Subject"}</span>
-                    <select
-                      className="app-select"
-                      value={ni.subject}
-                      onChange={e => setNi({ ...ni, subject: e.target.value })}
-                    >
-                      <option value={isSi ? "පරිසරය" : "Environmental Studies"}>🌿 {isSi ? "පරිසරය" : "Environmental Studies"}</option>
-                      <option value={isSi ? "මව්බස" : "Sinhala (Mother Tongue)"}>📖 {isSi ? "මව්බස" : "Sinhala (Mother Tongue)"}</option>
-                      <option value={isSi ? "ගණිතය" : "Mathematics"}>🔢 {isSi ? "ගණිතය" : "Mathematics"}</option>
-                      <option value={isSi ? "දෙමළ" : "Tamil"}>🗣️ {isSi ? "දෙමළ" : "Tamil"}</option>
-                      <option value={isSi ? "ඉංග්‍රීසි" : "English"}>🔤 {isSi ? "ඉංග්‍රීසි" : "English"}</option>
-                      <option value={isSi ? "විෂයයන් 5ම" : "All 5 Subjects"}>🌟 {isSi ? "විෂයයන් 5ම ආවරණය" : "All 5 Subjects"}</option>
-                    </select>
-                  </label>
-
-                  <label className="app-label">
-                    <span>{isSi ? "අන්තර්ගත වර්ගය" : "Content type"}</span>
+                    <span>{isSi ? "2. ඇතුළත් කරන වර්ගය (Zoom / Video / PDF)" : "2. Content Type"}</span>
                     <select
                       className="app-select"
                       value={ni.type}
                       onChange={e => setNi({ ...ni, type: e.target.value })}
                     >
-                      <option value="video">🎥 {isSi ? "වීඩියෝ විවරණය" : "Video Discussion"}</option>
-                      <option value="pdf">📄 {isSi ? "ප්‍රශ්න පත්‍රය හෝ සටහන (PDF)" : "Paper / PDF"}</option>
+                      <option value="zoom">🔴 {isSi ? "Zoom සජීවී පන්ති සබැඳිය (Zoom Live Link)" : "Zoom Live Class Link"}</option>
+                      <option value="video">🎥 {isSi ? "වීඩියෝ විවරණය (YouTube Video)" : "Video Discussion (YouTube)"}</option>
+                      <option value="pdf">📄 {isSi ? "ප්‍රශ්න පත්‍රය හෝ සටහන (PDF)" : "Question Paper / Note (PDF)"}</option>
+                    </select>
+                  </label>
+
+                  <label className="app-label">
+                    <span>{isSi ? "3. සතිය / කාණ්ඩය" : "3. Week / Session"}</span>
+                    <select
+                      className="app-select"
+                      value={ni.week}
+                      onChange={e => setNi({ ...ni, week: e.target.value })}
+                    >
+                      <option value="1 වන සතිය">🗓️ {isSi ? "1 වන සතිය" : "Week 01"}</option>
+                      <option value="2 වන සතිය">🗓️ {isSi ? "2 වන සතිය" : "Week 02"}</option>
+                      <option value="3 වන සතිය">🗓️ {isSi ? "3 වන සතිය" : "Week 03"}</option>
+                      <option value="4 වන සතිය">🗓️ {isSi ? "4 වන සතිය" : "Week 04"}</option>
+                      <option value="විශේෂ පන්තිය">⭐ {isSi ? "විශේෂ පන්තිය" : "Special Session"}</option>
                     </select>
                   </label>
                 </div>
 
                 <label className="app-label">
-                  <span>{isSi ? "පාඩමේ හෝ සටහනේ මාතෘකාව" : "Lesson / note title"}</span>
+                  <span>{isSi ? "4. අදාළ විෂය" : "4. Subject"}</span>
+                  <select
+                    className="app-select"
+                    value={ni.subject}
+                    onChange={e => setNi({ ...ni, subject: e.target.value })}
+                  >
+                    <option value={isSi ? "විෂයයන් 5ම" : "All 5 Subjects"}>🌟 {isSi ? "විෂයයන් 5ම ආවරණය" : "All 5 Subjects"}</option>
+                    <option value={isSi ? "පරිසරය" : "Environmental Studies"}>🌿 {isSi ? "පරිසරය" : "Environmental Studies"}</option>
+                    <option value={isSi ? "මව්බස" : "Sinhala (Mother Tongue)"}>📖 {isSi ? "මව්බස" : "Sinhala (Mother Tongue)"}</option>
+                    <option value={isSi ? "ගණිතය" : "Mathematics"}>🔢 {isSi ? "ගණිතය" : "Mathematics"}</option>
+                    <option value={isSi ? "දෙමළ" : "Tamil"}>🗣️ {isSi ? "දෙමළ" : "Tamil"}</option>
+                    <option value={isSi ? "ඉංග්‍රීසි" : "English"}>🔤 {isSi ? "ඉංග්‍රීසි" : "English"}</option>
+                  </select>
+                </label>
+
+                <label className="app-label">
+                  <span>
+                    {ni.type === "zoom"
+                      ? (isSi ? "5. සජීවී Zoom පන්තියේ මාතෘකාව" : "5. Zoom Live Class Title")
+                      : ni.type === "pdf"
+                      ? (isSi ? "5. PDF ප්‍රශ්න පත්‍රයේ හෝ සටහනේ මාතෘකාව" : "5. PDF Paper / Note Title")
+                      : (isSi ? "5. වීඩියෝ පාඩමේ මාතෘකාව" : "5. Video Lesson Title")}
+                  </span>
                   <input
                     className="app-input"
-                    placeholder={isSi ? "උදා: බස්නාහිර පළාත් පේපර් 01 - පරිසරය විවරණය" : "e.g. Western Province Paper 01 - Science Breakdown"}
+                    placeholder={
+                      ni.type === "zoom"
+                        ? (isSi ? "උදා: සෙනසුරාදා රාත්‍රී 7.00 සජීවී Zoom පේපර් සාකච්ඡාව" : "e.g. Saturday 7:00 PM Live Zoom Paper Discussion")
+                        : ni.type === "pdf"
+                        ? (isSi ? "උදා: බස්නාහිර පළාත් පේපර් 01 - සම්පූර්ණ ප්‍රශ්න පත්‍රය (PDF)" : "e.g. Western Province Paper 01 - Complete PDF")
+                        : (isSi ? "උදා: බස්නාහිර පළාත් පේපර් 01 - සම්පූර්ණ වීඩියෝ විවරණය" : "e.g. Western Province Paper 01 - Video Discussion")
+                    }
                     value={ni.title}
                     onChange={e => setNi({ ...ni, title: e.target.value })}
                     required
                   />
                 </label>
 
+                {ni.type === "zoom" && (
+                  <label className="app-label">
+                    <span>{isSi ? "පන්තිය පැවැත්වෙන දිනය සහ වේලාව (විකල්ප)" : "Live Class Date & Time (Optional)"}</span>
+                    <input
+                      className="app-input"
+                      placeholder={isSi ? "උදා: සෙනසුරාදා ප.ව. 7.00 - 9.00" : "e.g. Saturday 7:00 PM - 9:00 PM"}
+                      value={ni.schedule}
+                      onChange={e => setNi({ ...ni, schedule: e.target.value })}
+                    />
+                  </label>
+                )}
+
                 <label className="app-label">
-                  <span>{isSi ? "සබැඳිය (YouTube හෝ PDF URL)" : "Link (YouTube or PDF URL)"}</span>
+                  <span>
+                    {ni.type === "zoom"
+                      ? (isSi ? "6. Zoom Meeting Link (සබැඳිය)" : "6. Zoom Meeting URL")
+                      : ni.type === "pdf"
+                      ? (isSi ? "6. PDF ගොනුවේ සබැඳිය (Google Drive / Direct PDF Link)" : "6. PDF File URL")
+                      : (isSi ? "6. YouTube වීඩියෝ සබැඳිය (YouTube URL)" : "6. YouTube Video URL")}
+                  </span>
                   <input
                     className="app-input"
-                    placeholder={isSi ? "https://www.youtube.com/watch?v=... හෝ PDF සබැඳිය" : "https://www.youtube.com/watch?v=... or PDF URL"}
+                    placeholder={
+                      ni.type === "zoom"
+                        ? "https://zoom.us/j/..."
+                        : ni.type === "pdf"
+                        ? "https://drive.google.com/... හෝ PDF URL"
+                        : "https://www.youtube.com/watch?v=..."
+                    }
                     value={ni.url}
                     onChange={e => {
                       const val = e.target.value;
-                      setNi({ ...ni, url: val, type: isYoutubeUrl(val) ? "video" : ni.type });
+                      const autoType = val.includes("zoom.us")
+                        ? "zoom"
+                        : isYoutubeUrl(val)
+                        ? "video"
+                        : ni.type;
+                      setNi({ ...ni, url: val, type: autoType });
                     }}
                     required
                   />
                 </label>
 
                 {/* Instant Live YouTube Video Preview */}
-                {getYoutubeEmbedUrl(ni.url) && (
+                {ni.type !== "zoom" && getYoutubeEmbedUrl(ni.url) && (
                   <div style={{ marginTop: "10px", padding: "14px", background: "var(--surface)", border: "1px solid var(--gold)", borderRadius: "12px" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
                       <span style={{ fontWeight: 700, fontSize: "13px", color: "var(--gold)", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -638,123 +809,185 @@ export default function Admin() {
                       <span className="badge-tag gold" style={{ fontSize: "11px" }}>{isSi ? "වෙබ් අඩවිය තුළම වාදනය වේ" : "Plays on site"}</span>
                     </div>
                     <VideoPlayer url={ni.url} title={ni.title || "Video Preview"} />
-                    <small style={{ color: "var(--muted)", display: "block", marginTop: "8px", fontSize: "12px" }}>
-                      {isSi ? "✅ මෙම වීඩියෝව වෙබ් අඩවිය තුළම සිසුන්ට සුමටව නැරඹිය හැක." : "✅ This video will play smoothly right inside the website for students."}
-                    </small>
                   </div>
                 )}
 
                 <button type="submit" className="btn gold" style={{ marginTop: "8px" }}>
                   <svg><use href="#plus" /></svg>
-                  <span>{isSi ? "අයිතමය එක් කරන්න" : "Add item"}</span>
+                  <span>
+                    {ni.type === "zoom"
+                      ? (isSi ? "🔴 Zoom සජීවී පන්ති සබැඳිය එක් කරන්න" : "🔴 Add Zoom Live Link")
+                      : ni.type === "pdf"
+                      ? (isSi ? "📄 PDF ප්‍රශ්න පත්‍රය එක් කරන්න" : "📄 Add PDF Paper")
+                      : (isSi ? "🎥 වීඩියෝ පාඩම එක් කරන්න" : "🎥 Add Video Lesson")}
+                  </span>
                 </button>
               </form>
             </section>
 
-            {/* Existing Lessons in Selected Bundle */}
+            {/* Right Column: Main Zoom Link Quick Updater & Existing Items in Selected Month */}
             <section className="card">
-              <h2>{isSi ? "පැකේජයේ පවතින පාඩම්" : "Lessons in selected bundle"}</h2>
-              <p>
-                {isSi ? "තෝරාගත් පැකේජය:" : "Selected bundle:"} {" "}
-                <b>{S.folders.find(f => f.id === (selectedFolderForContent || S.folders[0]?.id))?.name}</b>
-              </p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                <div>
+                  <h2>{isSi ? "තෝරාගත් මාසයේ පවතින පාඩම්" : "Materials in Selected Month"}</h2>
+                  <p style={{ margin: "4px 0 0" }}>
+                    <b>{activeContentFolder?.month}</b> — {activeContentFolder?.name}
+                  </p>
+                </div>
+                {activeContentFolder && (
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ padding: "6px 12px", fontSize: "12px" }}
+                    onClick={() => handleEditPackage(activeContentFolder)}
+                  >
+                    ✏️ {isSi ? "මාසයේ ප්‍රධාන Zoom Link වෙනස් කරන්න" : "Edit Month's Main Zoom Link"}
+                  </button>
+                )}
+              </div>
+
+              {/* Active Month's Main Zoom Banner Summary */}
+              {activeContentFolder && (
+                <div
+                  style={{
+                    margin: "12px 0 16px",
+                    padding: "12px 14px",
+                    background: "rgba(37, 99, 235, 0.08)",
+                    border: "1px solid rgba(59, 130, 246, 0.35)",
+                    borderRadius: "10px",
+                    fontSize: "12.5px"
+                  }}
+                >
+                  <div style={{ fontWeight: 700, color: "#1d4ed8", marginBottom: "4px" }}>
+                    🔴 {isSi ? "මෙම මාසයේ ප්‍රධාන Zoom සජීවී පන්ති සබැඳිය:" : "Main Zoom Live Link for this Month:"}
+                  </div>
+                  <div style={{ color: "var(--ink)", wordBreak: "break-all" }}>
+                    <b>Link:</b> {activeContentFolder.zoomUrl || (isSi ? "ඇතුළත් කර නැත" : "Not set")}
+                  </div>
+                  <div style={{ color: "var(--muted)", marginTop: "2px" }}>
+                    <b>{isSi ? "කාලසටහන:" : "Schedule:"}</b> {activeContentFolder.zoomSchedule || "-"}
+                  </div>
+                </div>
+              )}
 
               {S.items.filter(i => i.fid === (selectedFolderForContent || S.folders[0]?.id)).length ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {S.items
                     .filter(i => i.fid === (selectedFolderForContent || S.folders[0]?.id))
-                    .map(i => (
-                      <div
-                        key={i.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "12px 14px",
-                          background: "var(--bg)",
-                          border: "1px solid var(--line)",
-                          borderRadius: "10px",
-                          gap: "10px"
-                        }}
-                      >
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ display: "flex", gap: "6px", alignItems: "center", marginBottom: "4px" }}>
-                            <span className="badge-tag gold" style={{ fontSize: "11px", padding: "1px 8px" }}>
-                              {i.type === "video" || getYoutubeEmbedUrl(i.url) ? (isSi ? "🎥 වීඩියෝ" : "🎥 Video") : (isSi ? "📄 PDF" : "📄 PDF")}
-                            </span>
-                            <span style={{ fontSize: "12px", color: "var(--muted)" }}>[{i.subject}]</span>
+                    .map(i => {
+                      const isZoom = i.type === "zoom";
+                      const isVid = !isZoom && (i.type === "video" || Boolean(getYoutubeEmbedUrl(i.url)));
+                      return (
+                        <div
+                          key={i.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "12px 14px",
+                            background: isZoom ? "rgba(37, 99, 235, 0.06)" : "var(--bg)",
+                            border: isZoom ? "1px solid rgba(59, 130, 246, 0.3)" : "1px solid var(--line)",
+                            borderRadius: "10px",
+                            gap: "10px"
+                          }}
+                        >
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ display: "flex", gap: "6px", alignItems: "center", marginBottom: "4px", flexWrap: "wrap" }}>
+                              <span
+                                className="badge-tag"
+                                style={{
+                                  fontSize: "11px",
+                                  padding: "1px 8px",
+                                  background: isZoom ? "#2563eb" : "rgba(245, 166, 35, 0.2)",
+                                  color: isZoom ? "#fff" : "var(--gold-ink)",
+                                  fontWeight: 700
+                                }}
+                              >
+                                {isZoom
+                                  ? "🔴 Zoom Live"
+                                  : isVid
+                                  ? (isSi ? "🎥 වීඩියෝ" : "🎥 Video")
+                                  : (isSi ? "📄 PDF" : "📄 PDF")}
+                              </span>
+                              {i.week && (
+                                <span style={{ fontSize: "11.5px", fontWeight: 600, color: "var(--ink)" }}>
+                                  [{i.week}]
+                                </span>
+                              )}
+                              <span style={{ fontSize: "12px", color: "var(--muted)" }}>[{i.subject}]</span>
+                            </div>
+                            <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {i.title}
+                            </div>
                           </div>
-                          <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {i.title}
-                          </div>
-                        </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          {getYoutubeEmbedUrl(i.url) ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            {!isZoom && getYoutubeEmbedUrl(i.url) ? (
+                              <button
+                                type="button"
+                                className="btn gold"
+                                style={{ padding: "6px 12px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "5px" }}
+                                onClick={() => setPreviewVideoItem(i)}
+                              >
+                                <svg style={{ width: 13, height: 13 }}><use href="#video" /></svg>
+                                <span>{isSi ? "නරඹන්න" : "Watch"}</span>
+                              </button>
+                            ) : null}
+                            <a
+                              href={i.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn"
+                              style={{ padding: "6px 12px", fontSize: "12px" }}
+                            >
+                              <svg style={{ width: 13, height: 13 }}><use href="#eye" /></svg>
+                              <span>{isZoom ? "Zoom ↗" : (isSi ? "සබැඳිය" : "Link")}</span>
+                            </a>
                             <button
                               type="button"
-                              className="btn gold"
-                              style={{ padding: "6px 12px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "5px" }}
-                              onClick={() => setPreviewVideoItem(i)}
+                              className="btn"
+                              style={{ padding: "6px 10px", color: "var(--warn)" }}
+                              onClick={() => {
+                                const confirmMsg = isSi ? "මෙම අයිතමය ඉවත් කිරීමට අවශ්‍යද?" : "Delete this item?";
+                                if (confirm(confirmMsg)) {
+                                  update(d => {
+                                    d.items = d.items.filter(x => x.id !== i.id);
+                                  });
+                                }
+                              }}
+                              title={isSi ? "ඉවත් කරන්න" : "Delete"}
                             >
-                              <svg style={{ width: 13, height: 13 }}><use href="#video" /></svg>
-                              <span>{isSi ? "වෙබ් අඩවියෙන් නරඹන්න" : "Watch on Site"}</span>
+                              <svg style={{ width: 13, height: 13 }}><use href="#trash" /></svg>
                             </button>
-                          ) : null}
-                          <a
-                            href={i.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn"
-                            style={{ padding: "6px 12px", fontSize: "12px" }}
-                            title={isSi ? "බාහිර සබැඳිය" : "External link"}
-                          >
-                            <svg style={{ width: 13, height: 13 }}><use href="#eye" /></svg>
-                            <span>{isSi ? "සබැඳිය" : "Link"}</span>
-                          </a>
-                          <button
-                            type="button"
-                            className="btn"
-                            style={{ padding: "6px 10px", color: "var(--warn)" }}
-                            onClick={() => {
-                              const confirmMsg = isSi ? "මෙම අයිතමය ඉවත් කිරීමට අවශ්‍යද?" : "Delete this item?";
-                              if (confirm(confirmMsg)) {
-                                update(d => {
-                                  d.items = d.items.filter(x => x.id !== i.id);
-                                });
-                              }
-                            }}
-                            title={isSi ? "ඉවත් කරන්න" : "Delete"}
-                          >
-                            <svg style={{ width: 13, height: 13 }}><use href="#trash" /></svg>
-                          </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               ) : (
                 <div style={{ padding: "26px", textAlign: "center", color: "var(--muted)" }}>
-                  <p>{isSi ? "මෙම පැකේජයට තවම පාඩම් එක්කර නැත. වම්පස පෝරමයෙන් එක් කරන්න." : "No lessons in this bundle yet. Add one using the form on the left."}</p>
+                  <p>{isSi ? "මෙම මාසයට තවම පාඩම් එක්කර නැත. වම්පස පෝරමයෙන් Zoom / Video / PDF එක් කරන්න." : "No materials in this month yet. Add Zoom / Video / PDF using the form on the left."}</p>
                 </div>
               )}
             </section>
           </div>
         )}
 
-        {/* TAB 4: PAYMENTS */}
+        {/* ==================================================================== */}
+        {/* TAB 4: MONTHLY PAYMENTS (RS. 2000 SLIPS APPROVAL)                    */}
+        {/* ==================================================================== */}
         {tab === "payments" && (
           <section className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", flexWrap: "wrap", gap: "12px" }}>
               <div>
-                <h2>{isSi ? "ගෙවීම් රිසිට්පත් පරීක්ෂාව" : "Payment slips"}</h2>
+                <h2>{isSi ? "රු. 2000 මාසික පන්ති ගාස්තු රිසිට්පත් පරීක්ෂාව" : "Rs. 2000 Monthly Fee Slips"}</h2>
                 <p style={{ margin: "4px 0 0" }}>
                   {isSi
-                    ? "දරුවන් උඩුගත කළ බැංකු රිසිට්පත් පරීක්ෂා කර අනුමත කරන්න."
-                    : "Review and approve bank deposit slips uploaded by students."}
+                    ? "දරුවන් උඩුගත කළ රු. 2000 මාසික බැංකු රිසිට්පත් අනුමත කළ සැණින් ඔවුන්ට අදාළ මාසයේ සියලුම පන්ති විවෘත වේ."
+                    : "Approving a student's Rs. 2000 slip immediately unlocks all Zoom, Video, and PDF lessons for that month."}
                 </p>
               </div>
 
-              {/* Status Filters */}
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                 {["all", "pending", "approved", "rejected"].map(st => (
                   <button
@@ -779,8 +1012,8 @@ export default function Admin() {
                   <thead>
                     <tr>
                       <th>{isSi ? "ශිෂ්‍යයා" : "Student"}</th>
-                      <th>{isSi ? "ප්‍රශ්න පත්‍ර පැකේජය" : "Paper bundle"}</th>
-                      <th>{isSi ? "මුදල" : "Fee"}</th>
+                      <th>{isSi ? "මාසය සහ පන්තිය" : "Month & Class"}</th>
+                      <th>{isSi ? "මාසික ගාස්තුව" : "Fee"}</th>
                       <th>{isSi ? "දිනය" : "Date"}</th>
                       <th>{isSi ? "රිසිට්පත" : "Receipt"}</th>
                       <th>{isSi ? "තත්ත්වය" : "Status"}</th>
@@ -795,14 +1028,21 @@ export default function Admin() {
                         <tr key={p.id}>
                           <td>
                             <strong>{u.name || (isSi ? "ශිෂ්‍ය නම" : "Student Name")}</strong>
-                            <div style={{ color: "var(--muted)", fontSize: "12px" }}>{u.phone}</div>
+                            <div style={{ color: "var(--muted)", fontSize: "12px" }}>
+                              {u.phone} · {isSi ? `${u.grade || 5} ශ්‍රේණිය` : `Grade ${u.grade || 5}`}
+                            </div>
                           </td>
                           <td>
-                            <span>{f.name || (isSi ? "පැකේජය" : "Bundle")}</span>
+                            {f.month && (
+                              <span className="badge-tag gold" style={{ marginRight: "6px", fontSize: "11px" }}>
+                                📅 {f.month}
+                              </span>
+                            )}
+                            <span>{f.name || (isSi ? "මාසික පන්තිය" : "Monthly Class")}</span>
                           </td>
                           <td>
                             <strong style={{ color: "var(--gold-ink)" }}>
-                              {isSi ? `රු. ${f.price || 0}` : `Rs. ${f.price || 0}`}
+                              {isSi ? `රු. ${f.price || 2000}` : `Rs. ${f.price || 2000}`}
                             </strong>
                           </td>
                           <td style={{ color: "var(--muted)", fontSize: "13px" }}>{p.date}</td>
@@ -873,14 +1113,16 @@ export default function Admin() {
           </section>
         )}
 
-        {/* TAB 5: STUDENTS DIRECTORY */}
+        {/* ==================================================================== */}
+        {/* TAB 5: STUDENTS DIRECTORY                                            */}
+        {/* ==================================================================== */}
         {tab === "students" && (
           <section className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", flexWrap: "wrap", gap: "12px" }}>
               <div>
                 <h2>{isSi ? `ශිෂ්‍ය නාමාවලිය (${studentsList.length})` : `Students directory (${studentsList.length})`}</h2>
                 <p style={{ margin: "4px 0 0" }}>
-                  {isSi ? "ලියාපදිංචි දරුවන්ගේ නාමාවලිය සහ සම්බන්ධතා විස්තර" : "List of registered students and contact details"}
+                  {isSi ? "ලියාපදිංචි දරුවන්ගේ ශ්‍රේණි, විවෘත කළ මාස සහ සම්බන්ධතා විස්තර" : "List of registered students, grades, and unlocked months"}
                 </p>
               </div>
 
@@ -904,7 +1146,7 @@ export default function Admin() {
                       <th>{isSi ? "ශිෂ්‍ය නම" : "Student name"}</th>
                       <th>{isSi ? "දුරකථන අංකය" : "Phone number"}</th>
                       <th>{isSi ? "ශ්‍රේණිය" : "Grade"}</th>
-                      <th>{isSi ? "අනුමත පැකේජ" : "Unlocked bundles"}</th>
+                      <th>{isSi ? "ගෙවීම් කළ මාස" : "Unlocked months"}</th>
                       <th>{isSi ? "සම්බන්ධතාවය" : "Contact"}</th>
                     </tr>
                   </thead>
@@ -925,7 +1167,7 @@ export default function Admin() {
                           <td>
                             <span className={`badge-tag ${unlocked.length > 0 ? "ok" : ""}`}>
                               {unlocked.length > 0
-                                ? (isSi ? `පැකේජ ${unlocked.length}ක් විවෘතයි` : `${unlocked.length} bundles active`)
+                                ? (isSi ? `මාස ${unlocked.length}ක් විවෘතයි` : `${unlocked.length} months active`)
                                 : (isSi ? "තවම ගෙවා නැත" : "None unlocked")}
                             </span>
                           </td>
@@ -955,11 +1197,13 @@ export default function Admin() {
           </section>
         )}
 
-        {/* TAB 6: SETTINGS */}
+        {/* ==================================================================== */}
+        {/* TAB 6: SETTINGS                                                      */}
+        {/* ==================================================================== */}
         {tab === "settings" && (
           <section className="card" style={{ maxWidth: "700px" }}>
             <h2>{isSi ? "පන්ති සැකසුම් සහ බැංකු විස්තර" : "Class settings & bank details"}</h2>
-            <p>{isSi ? "වෙබ් අඩවියේ පෙන්වන නම, දුරකථන අංක සහ ගිණුම් විස්තර" : "Class name, hotline contact, and bank deposit details"}</p>
+            <p>{isSi ? "වෙබ් අඩවියේ පෙන්වන නම, දුරකථන අංක සහ රු. 2000 මාසික ගාස්තු බැංකු ගිණුම් විස්තර" : "Class name, hotline contact, and bank deposit details"}</p>
 
             <form onSubmit={handleSaveSettings} className="app-form">
               <label className="app-label">
@@ -1017,22 +1261,17 @@ export default function Admin() {
         )}
       </main>
 
-      {/* Floating Action Button */}
-      <Link href="/ai-tutor" className="fab">
-        <svg><use href="#spark" /></svg>
-        <span>190+ AI Tutor</span>
-        <span className="live">Live</span>
-      </Link>
-
-      {/* CREATE / EDIT PACKAGE MODAL */}
+      {/* ==================================================================== */}
+      {/* CREATE / EDIT MONTHLY CLASS MODAL                                    */}
+      {/* ==================================================================== */}
       {showPackageModal && (
         <div className="app-modal-overlay" onClick={() => setShowPackageModal(false)}>
-          <div className="app-modal-card" onClick={e => e.stopPropagation()}>
+          <div className="app-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: "600px" }}>
             <div className="app-modal-head">
               <h3>
                 {editingFolderId
-                  ? (isSi ? "පැකේජය සංස්කරණය කරන්න" : "Edit paper bundle")
-                  : (isSi ? "නව ප්‍රශ්න පත්‍ර පැකේජයක් සාදන්න" : "Create new paper bundle")}
+                  ? (isSi ? "📅 මාසික පන්තිය සංස්කරණය කරන්න" : "📅 Edit Monthly Class")
+                  : (isSi ? "📅 නව මාසික පන්තියක් එක් කරන්න" : "📅 Create New Monthly Class")}
               </h3>
               <button
                 type="button"
@@ -1061,36 +1300,61 @@ export default function Admin() {
                 </label>
 
                 <label className="app-label">
-                  <span>{isSi ? "පැකේජ වර්ගය" : "Category"}</span>
-                  <select
-                    className="app-select"
-                    value={nf.category}
-                    onChange={e => setNf({ ...nf, category: e.target.value })}
-                  >
-                    <option value={isSi ? "පළාත් ප්‍රශ්න පත්‍ර කට්ටල" : "Provincial Paper Bundles"}>
-                      🏛️ {isSi ? "පළාත් ප්‍රශ්න පත්‍ර කට්ටල" : "Provincial Paper Bundles"}
-                    </option>
-                    <option value={isSi ? "190+ සුපිරි අනුමාන පේපර්" : "190+ Target Model Papers"}>
-                      ⭐ {isSi ? "190+ සුපිරි අනුමාන පේපර්" : "190+ Target Model Papers"}
-                    </option>
-                    <option value={isSi ? "ශිෂ්‍යත්ව පූර්ව අඩිතාලම" : "Scholarship Pre-Foundation"}>
-                      🌱 {isSi ? "ශිෂ්‍යත්ව පූර්ව අඩිතාලම" : "Scholarship Pre-Foundation"}
-                    </option>
-                    <option value={isSi ? "විෂය විශේෂ පුහුණුව" : "Subject Mastery Drills"}>
-                      🎯 {isSi ? "විෂය විශේෂ පුහුණුව" : "Subject Mastery Drills"}
-                    </option>
-                    <option value={isSi ? "කෙටි සටහන් සහ විභාග රහස්" : "Short Notes & Exam Secrets"}>
-                      💡 {isSi ? "කෙටි සටහන් සහ විභාග රහස්" : "Short Notes & Exam Secrets"}
-                    </option>
-                  </select>
+                  <span>{isSi ? "අදාළ මාසය (තෝරන්න හෝ ටයිප් කරන්න)" : "Month & Year"}</span>
+                  <input
+                    list="month-options-list"
+                    className="app-input"
+                    placeholder={isSi ? "උදා: 2026 දෙසැම්බර්" : "e.g. 2026 December"}
+                    value={nf.month}
+                    onChange={e => {
+                      const mVal = e.target.value;
+                      setNf(prev => ({
+                        ...prev,
+                        month: mVal,
+                        name: !editingFolderId
+                          ? `${mVal} මාසයේ පන්තිය (190+ පළාත් පේපර් සහ සජීවී පන්ති)`
+                          : prev.name
+                      }));
+                    }}
+                    required
+                  />
+                  <datalist id="month-options-list">
+                    {MONTH_OPTIONS.map(m => (
+                      <option key={m} value={m} />
+                    ))}
+                  </datalist>
+                </label>
+              </div>
+
+              {/* Checkbox to Highlight as Current Active Month */}
+              <div
+                style={{
+                  padding: "12px 14px",
+                  background: nf.isCurrentMonth ? "rgba(245, 166, 35, 0.14)" : "var(--bg)",
+                  border: nf.isCurrentMonth ? "1px solid var(--gold)" : "1px solid var(--line)",
+                  borderRadius: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px"
+                }}
+              >
+                <input
+                  type="checkbox"
+                  id="isCurrentMonthCheck"
+                  checked={Boolean(nf.isCurrentMonth)}
+                  onChange={e => setNf({ ...nf, isCurrentMonth: e.target.checked })}
+                  style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                />
+                <label htmlFor="isCurrentMonthCheck" style={{ margin: 0, cursor: "pointer", fontSize: "13.5px", color: "var(--ink)", fontWeight: 700 }}>
+                  🔥 {isSi ? "මෙය මේ මාසයේ ක්‍රියාත්මක පන්තිය ලෙස Highlight කර ඉහළින්ම පෙන්වන්න" : "Highlight as Current Active Month at the top of Student Dashboard"}
                 </label>
               </div>
 
               <label className="app-label">
-                <span>{isSi ? "පැකේජයේ නම" : "Bundle name"}</span>
+                <span>{isSi ? "මාසික පන්තියේ නම" : "Monthly Class Title"}</span>
                 <input
                   className="app-input"
-                  placeholder={isSi ? "උදා: පළාත් ප්‍රශ්න පත්‍ර කට්ටලය 04 (බස්නාහිර සහ මධ්‍යම)" : "e.g. Provincial Paper Bundle 04 (Western & Central)"}
+                  placeholder={isSi ? "උදා: 2026 දෙසැම්බර් මාසයේ පන්තිය (190+ පළාත් පේපර් සහ සජීවී පන්ති)" : "e.g. December 2026 Monthly Class"}
                   value={nf.name}
                   onChange={e => setNf({ ...nf, name: e.target.value })}
                   required
@@ -1099,7 +1363,7 @@ export default function Admin() {
 
               <div className="app-form-row">
                 <label className="app-label">
-                  <span>{isSi ? "ගාස්තුව (රු.)" : "Fee (Rs.)"}</span>
+                  <span>{isSi ? "මාසික පන්ති ගාස්තුව (රු.)" : "Monthly Fee (Rs.)"}</span>
                   <input
                     type="number"
                     className="app-input"
@@ -1111,12 +1375,34 @@ export default function Admin() {
                 </label>
 
                 <label className="app-label">
-                  <span>{isSi ? "ප්‍රශ්න පත්‍ර ගණන" : "Papers count tag"}</span>
+                  <span>{isSi ? "පන්ති විස්තර ටැගය" : "Papers / Sessions tag"}</span>
                   <input
                     className="app-input"
-                    placeholder={isSi ? "උදා: දිනකට පේපර් 2ක් හෝ පේපර් 15ක්" : "e.g. 2 Papers Daily or 15 Papers"}
+                    placeholder={isSi ? "උදා: දිනකට පේපර් 2ක් + Zoom Live" : "e.g. 2 Papers Daily + Zoom Live"}
                     value={nf.papersCount}
                     onChange={e => setNf({ ...nf, papersCount: e.target.value })}
+                  />
+                </label>
+              </div>
+
+              <div className="app-form-row">
+                <label className="app-label">
+                  <span>🔴 {isSi ? "මෙම මාසයේ Zoom සජීවී පන්ති සබැඳිය (Zoom Live Link)" : "Zoom Live Class URL"}</span>
+                  <input
+                    className="app-input"
+                    placeholder="https://zoom.us/j/..."
+                    value={nf.zoomUrl}
+                    onChange={e => setNf({ ...nf, zoomUrl: e.target.value })}
+                  />
+                </label>
+
+                <label className="app-label">
+                  <span>⏰ {isSi ? "Zoom සජීවී පන්ති කාලසටහන" : "Zoom Live Class Schedule"}</span>
+                  <input
+                    className="app-input"
+                    placeholder={isSi ? "උදා: සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 ට" : "e.g. Every Sat & Sun at 7:00 PM"}
+                    value={nf.zoomSchedule}
+                    onChange={e => setNf({ ...nf, zoomSchedule: e.target.value })}
                   />
                 </label>
               </div>
@@ -1136,7 +1422,7 @@ export default function Admin() {
                 <textarea
                   rows={2}
                   className="app-textarea"
-                  placeholder={isSi ? "පැකේජය පිළිබඳ කෙටි හැඳින්වීමක්..." : "Brief overview of what students receive..."}
+                  placeholder={isSi ? "මෙම මාසයේ පන්තිය පිළිබඳ කෙටි හැඳින්වීමක්..." : "Brief overview of what students receive this month..."}
                   value={nf.desc}
                   onChange={e => setNf({ ...nf, desc: e.target.value })}
                 />
@@ -1146,7 +1432,7 @@ export default function Admin() {
                 <button type="submit" className="btn gold" style={{ flex: 1, justifyContent: "center" }}>
                   {editingFolderId
                     ? (isSi ? "වෙනස්කම් සුරකින්න" : "Save changes")
-                    : (isSi ? "පැකේජය සාදන්න" : "Create bundle")}
+                    : (isSi ? "📅 මාසික පන්තිය සාදන්න" : "📅 Create Monthly Class")}
                 </button>
                 <button
                   type="button"
@@ -1166,7 +1452,7 @@ export default function Admin() {
         <div className="app-modal-overlay" onClick={() => setViewSlip(null)}>
           <div className="app-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: "560px" }}>
             <div className="app-modal-head">
-              <h3>{isSi ? "බැංකු රිසිට්පත" : "Bank deposit receipt"}</h3>
+              <h3>{isSi ? "රු. 2000 මාසික ගාස්තු බැංකු රිසිට්පත" : "Bank deposit receipt"}</h3>
               <button
                 type="button"
                 className="app-modal-close"
