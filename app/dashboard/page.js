@@ -773,6 +773,23 @@ export default function Dash() {
             >
               <span>Payment slips</span>
             </button>
+
+            <button
+              type="button"
+              className="sd-nav-item"
+              onClick={() => {
+                login(null);
+                router.replace("/login");
+              }}
+              style={{
+                marginTop: "auto",
+                color: "#dc2626",
+                border: "1px solid rgba(220, 38, 38, 0.25)",
+                background: "rgba(220, 38, 38, 0.06)"
+              }}
+            >
+              <span>🚪 {isSi ? "පිටවන්න (Logout)" : "Logout"}</span>
+            </button>
           </nav>
         </aside>
 

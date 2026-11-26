@@ -915,8 +915,8 @@ export default function Home() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-              gap: "22px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))",
+              gap: "16px",
               alignItems: "stretch"
             }}
           >
@@ -931,7 +931,7 @@ export default function Home() {
                   className="clean-card"
                   style={{
                     border: isPrimaryGrade ? "2px solid var(--h-gold)" : "1px solid var(--h-line)",
-                    padding: "24px",
+                    padding: "16px 18px",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between",
@@ -941,22 +941,22 @@ export default function Home() {
                 >
                   {/* Top Section */}
                   <div>
-                    {/* 1. Card Header Row: Number Badge + Short Tag */}
+                    {/* 1. Compact Card Header Row */}
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        gap: "10px",
-                        marginBottom: "16px"
+                        gap: "8px",
+                        marginBottom: "10px"
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <div
                           style={{
-                            width: "44px",
-                            height: "44px",
-                            borderRadius: "12px",
+                            width: "38px",
+                            height: "38px",
+                            borderRadius: "10px",
                             background: isPrimaryGrade
                               ? "linear-gradient(135deg, #f5a623, #d97706)"
                               : "var(--h-gold-bg)",
@@ -964,46 +964,41 @@ export default function Home() {
                             display: "grid",
                             placeItems: "center",
                             fontWeight: 800,
-                            fontSize: "1.25rem",
+                            fontSize: "1.1rem",
                             flexShrink: 0
                           }}
                         >
                           0{g.grade}
                         </div>
-                        <div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--h-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                            {isSi ? "ශිෂ්‍යත්ව අංශය" : "Primary Level"}
-                          </div>
-                          <div style={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--h-heading)", lineHeight: 1.2 }}>
-                            {isSi ? `${g.grade} ශ්‍රේණිය` : `Grade ${g.grade}`}
-                          </div>
+                        <div style={{ fontSize: "1.02rem", fontWeight: 800, color: "var(--h-heading)", lineHeight: 1.2 }}>
+                          {isSi ? `${g.grade} ශ්‍රේණිය` : `Grade ${g.grade}`}
                         </div>
                       </div>
 
-                      <span className={`clean-pill ${isPrimaryGrade ? "gold" : "sub"}`}>
+                      <span className={`clean-pill ${isPrimaryGrade ? "gold" : "sub"}`} style={{ fontSize: "0.72rem" }}>
                         {g.shortTag}
                       </span>
                     </div>
 
-                    {/* 2. Fixed-Height Title & Subtitle */}
-                    <div style={{ minHeight: "86px", marginBottom: "14px" }}>
-                      <h3 style={{ fontSize: "1.18rem", color: "var(--h-heading)", margin: "0 0 6px", lineHeight: 1.3 }}>
+                    {/* 2. Compact Title & Subtitle */}
+                    <div style={{ marginBottom: "10px" }}>
+                      <h3 style={{ fontSize: "1.05rem", color: "var(--h-heading)", margin: "0 0 3px", lineHeight: 1.3 }}>
                         {g.title}
                       </h3>
-                      <p style={{ fontSize: "0.86rem", color: "var(--h-muted)", margin: 0, lineHeight: 1.48 }}>
+                      <p style={{ fontSize: "0.82rem", color: "var(--h-muted)", margin: 0, lineHeight: 1.4 }}>
                         {g.subtitle}
                       </p>
                     </div>
 
-                    {/* 3. Structured 3-Row Schedule & Info Table */}
+                    {/* 3. Compact Schedule & Month Info Box */}
                     <div
                       style={{
                         background: "var(--h-panel2)",
                         border: "1px solid var(--h-line)",
-                        borderRadius: "14px",
-                        marginBottom: "16px",
+                        borderRadius: "12px",
+                        marginBottom: "12px",
                         overflow: "hidden",
-                        fontSize: "0.83rem"
+                        fontSize: "0.8rem"
                       }}
                     >
                       <div
@@ -1011,13 +1006,13 @@ export default function Home() {
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          padding: "10px 14px",
+                          padding: "7px 12px",
                           borderBottom: "1px solid var(--h-line)",
                           gap: "8px"
                         }}
                       >
                         <span style={{ color: "var(--h-muted)", fontWeight: 600 }}>
-                          ⏰ {isSi ? "Zoom කාලසටහන" : "Zoom Time"}
+                          ⏰ {isSi ? "වේලාව" : "Time"}
                         </span>
                         <strong style={{ color: "var(--h-gold)", textAlign: "right" }}>
                           {g.scheduleShort}
@@ -1029,98 +1024,61 @@ export default function Home() {
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          padding: "10px 14px",
-                          borderBottom: "1px solid var(--h-line)",
+                          padding: "7px 12px",
                           gap: "8px"
                         }}
                       >
                         <span style={{ color: "var(--h-muted)", fontWeight: 600 }}>
-                          📅 {isSi ? "ක්‍රියාත්මක මාසය" : "Active Month"}
+                          📅 {isSi ? "මාසය" : "Month"}
                         </span>
                         <strong style={{ color: "var(--h-green)", textAlign: "right" }}>
                           {curFolder ? curFolder.month : "2026 නොවැම්බර්"}
                         </strong>
                       </div>
-
-                      <div
-                        style={{
-                          padding: "10px 14px",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "3px"
-                        }}
-                      >
-                        <span style={{ color: "var(--h-muted)", fontWeight: 600, fontSize: "0.78rem" }}>
-                          🎯 {isSi ? "ආවරණය වන විෂයයන්:" : "Covered Subjects:"}
-                        </span>
-                        <strong style={{ color: "var(--h-ink)", fontSize: "0.83rem", lineHeight: 1.35 }}>
-                          {g.subjects}
-                        </strong>
-                      </div>
                     </div>
 
-                    {/* 4. Uniform 3 Checkmark Feature Rows */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "9px", marginBottom: "20px" }}>
-                      {g.features.map((feat, idx) => (
+                    {/* 4. Compact Feature Rows */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginBottom: "14px" }}>
+                      {g.features.slice(0, 2).map((feat, idx) => (
                         <div
                           key={idx}
                           style={{
                             display: "flex",
-                            alignItems: "flex-start",
-                            gap: "9px",
-                            fontSize: "0.85rem",
+                            alignItems: "center",
+                            gap: "7px",
+                            fontSize: "0.81rem",
                             color: "var(--h-ink)",
-                            lineHeight: 1.4
+                            lineHeight: 1.35
                           }}
                         >
-                          <span
-                            style={{
-                              width: "20px",
-                              height: "20px",
-                              borderRadius: "50%",
-                              background: "var(--h-green-bg)",
-                              color: "var(--h-green)",
-                              display: "grid",
-                              placeItems: "center",
-                              fontSize: "0.72rem",
-                              fontWeight: 800,
-                              flexShrink: 0,
-                              marginTop: "1px"
-                            }}
-                          >
-                            ✓
-                          </span>
+                          <span style={{ color: "var(--h-green)", fontWeight: 800 }}>✓</span>
                           <span>{feat}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* 5. Pinned Footer Bar: Monthly Fee + Register CTA */}
+                  {/* 5. Compact Footer Bar: Monthly Fee + Register CTA */}
                   <div
                     style={{
-                      paddingTop: "16px",
+                      paddingTop: "12px",
                       borderTop: "1px solid var(--h-line)",
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      gap: "12px",
+                      gap: "10px",
                       marginTop: "auto"
                     }}
                   >
-                    <div>
-                      <small style={{ display: "block", fontSize: "0.74rem", color: "var(--h-muted)", fontWeight: 600 }}>
-                        {isSi ? "මාසික පන්ති ගාස්තුව" : "Monthly Class Fee"}
-                      </small>
-                      <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--h-gold)", lineHeight: 1.1 }}>
-                        {isSi ? `රු. ${g.fee.toLocaleString()}` : `Rs. ${g.fee.toLocaleString()}`}
-                      </div>
+                    <div style={{ fontSize: "1.22rem", fontWeight: 800, color: "var(--h-gold)", lineHeight: 1.1 }}>
+                      {isSi ? `රු. ${g.fee.toLocaleString()}` : `Rs. ${g.fee.toLocaleString()}`}
+                      <span style={{ fontSize: "0.72rem", color: "var(--h-muted)", fontWeight: 600 }}> / මසකට</span>
                     </div>
 
                     <Link
                       href="/login?mode=reg"
                       className="btn"
-                      style={{ fontSize: "0.85rem", padding: "10px 18px", whiteSpace: "nowrap" }}
+                      style={{ fontSize: "0.82rem", padding: "8px 14px", whiteSpace: "nowrap" }}
                     >
                       {isSi ? `${g.grade} ශ්‍රේණියට එක්වන්න →` : `Join Grade ${g.grade} →`}
                     </Link>
@@ -1185,7 +1143,7 @@ export default function Home() {
         )}
 
         {filteredFolders.length ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "12px" }}>
             {filteredFolders.map(f => {
               const status = getFolderStatus(f.id);
               const isUnlocked = status === "approved";

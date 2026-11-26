@@ -1,11 +1,18 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useApp } from "../lib/Provider";
 
 export default function Header() {
   const { S, me, login, lang, toggleLang, theme, toggleTheme, t } = useApp();
+  const router = useRouter();
   const isSi = lang === "si";
   const isLight = theme === "light";
+
+  const handleLogout = () => {
+    login(null);
+    router.replace("/login");
+  };
 
   return (
     <header className="hd centered-hd">
@@ -76,8 +83,9 @@ export default function Header() {
               👤 <span>{me.name?.split(" ")[0]} ({me.admin ? (isSi ? "පාලක" : "Admin") : (isSi ? "පුවරුව" : "Dashboard")})</span>
             </Link>
             <button
+              type="button"
               className="hd-btn hd-btn-ghost"
-              onClick={() => login(null)}
+              onClick={handleLogout}
               title={t("logout")}
             >
               <span>{t("logout")}</span>

@@ -1215,6 +1215,22 @@ export default function Admin() {
           <Link href="/ai-tutor" className="adm-live">
             ✦ 190+ AI Tutor <span>Live</span>
           </Link>
+
+          <button
+            type="button"
+            className="adm-nav"
+            onClick={() => {
+              login(null);
+              router.replace("/login");
+            }}
+            style={{
+              marginTop: "8px",
+              color: "#f87171",
+              borderColor: "rgba(248, 113, 113, 0.35)"
+            }}
+          >
+            <span>🚪 පිටවන්න (Logout)</span>
+          </button>
         </aside>
 
         {/* ================================================================== */}
