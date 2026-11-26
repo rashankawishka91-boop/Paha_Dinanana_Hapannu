@@ -241,17 +241,17 @@ export async function POST(req) {
       content: m.content || "",
     }));
 
-    // 1. Try Groq API with official current production models
+    // 1. Try Groq API with active production models available on this account
     if (activeGroqKey) {
       const candidateModels = [
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-        "gemma2-9b-it"
+        "openai/gpt-oss-120b",
+        "qwen/qwen3.8-27b",
+        "openai/gpt-oss-20b"
       ];
 
       for (const mod of candidateModels) {
         const modelCtrl = new AbortController();
-        const timer = setTimeout(() => modelCtrl.abort(), 8500);
+        const timer = setTimeout(() => modelCtrl.abort(), 9000);
 
         try {
           const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -266,7 +266,7 @@ export async function POST(req) {
                 { role: "system", content: systemPrompt },
                 ...recentMessages,
               ],
-              max_tokens: 900,
+              max_tokens: 1400,
               temperature: 0.35, // Lower temperature for accurate, focused textbook answers
             }),
             signal: modelCtrl.signal,
@@ -276,7 +276,10 @@ export async function POST(req) {
 
           if (groqRes.ok) {
             const gData = await groqRes.json();
-            const text = gData?.choices?.[0]?.message?.content?.trim();
+            let text = gData?.choices?.[0]?.message?.content?.trim();
+            if (!text && gData?.choices?.[0]?.message?.reasoning) {
+              text = gData.choices[0].message.reasoning.trim();
+            }
             if (text && text.length > 3) {
               return NextResponse.json({
                 reply: text,

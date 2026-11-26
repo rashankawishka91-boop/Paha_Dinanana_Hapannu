@@ -385,6 +385,29 @@ export default function AiTutorPage() {
           --green: #0f7a4b;
         }
 
+        .ait-root h1,
+        .ait-root h2,
+        .ait-root h3,
+        .ait-root h4,
+        .ait-root h5 {
+          color: var(--ink);
+        }
+
+        .ait-root .ait-msg-row.user .ait-bubble,
+        .ait-root .ait-msg-row.user .ait-bubble * {
+          color: #ffffff !important;
+        }
+
+        .ait-root .ait-msg-row.bot .ait-bubble {
+          color: var(--ink) !important;
+        }
+
+        .ait-root .ait-msg-row.bot .ait-p,
+        .ait-root .ait-msg-row.bot .ait-bullet,
+        .ait-root .ait-msg-row.bot td {
+          color: var(--ink);
+        }
+
         .ait-container {
           max-width: 1080px;
           margin: 0 auto;
