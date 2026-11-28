@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useApp, uid, readFile, getYoutubeEmbedUrl, isYoutubeUrl, MONTH_OPTIONS } from "../../lib/Provider";
+import { deleteSupabaseUser } from "../../lib/supabase";
 import VideoPlayer from "../../components/VideoPlayer";
 
 const WEEKS_LIST = ["1 වන සතිය", "2 වන සතිය", "3 වන සතිය", "4 වන සතිය"];
@@ -64,6 +65,12 @@ export default function Admin() {
     subjects: "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි",
     zoomUrl: "https://zoom.us/j/94771234567",
     zoomSchedule: "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)",
+    zoomWeeks: {
+      "1 වන සතිය": "",
+      "2 වන සතිය": "",
+      "3 වන සතිය": "",
+      "4 වන සතිය": ""
+    },
     desc: ""
   });
 
@@ -170,16 +177,46 @@ export default function Admin() {
     });
   };
 
-  // Toggle attendance for a student on a specific week in a monthly class
+  // Remove / delete a registered student permanently
+  const handleDeleteStudent = (stu) => {
+    if (!stu || stu.admin) return;
+    if (!confirm(`"${stu.name}" (${stu.phone}) සිසුවා පද්ධතියෙන් ස්ථිරවම ඉවත් කිරීමට ඔබට සහතිකද?`)) {
+      return;
+    }
+    update(d => {
+      d.users = d.users.filter(u => u.id !== stu.id);
+      d.pays = d.pays.filter(p => p.uid !== stu.id);
+      if (d.attendance) {
+        Object.keys(d.attendance).forEach(k => {
+          if (k.endsWith(`__${stu.id}`)) {
+            delete d.attendance[k];
+          }
+        });
+      }
+    });
+    deleteSupabaseUser(stu.id);
+  };
+
+  // Cycle attendance for a student on a specific week: Unmarked -> Present -> Absent -> Unmarked
   const toggleStudentAttendance = (folderId, studentId, weekLabel) => {
     const targetFolderId = folderId === "all" ? (S.folders[0]?.id || "f1") : folderId;
     update(d => {
       if (!d.attendance) d.attendance = {};
       const key = `${targetFolderId}__${studentId}`;
-      const rec = d.attendance[key] || { sessions: {}, lastJoined: "" };
-      rec.sessions[weekLabel] = !rec.sessions[weekLabel];
-      if (rec.sessions[weekLabel]) {
+      const rec = d.attendance[key] || { sessions: {}, lastJoined: "", weekDates: {} };
+      const cur = rec.sessions[weekLabel];
+      const isCurrentlyPresent = cur === true || cur === "present";
+      const isCurrentlyAbsent = cur === "absent";
+
+      if (!isCurrentlyPresent && !isCurrentlyAbsent) {
+        rec.sessions[weekLabel] = "present";
         rec.lastJoined = new Date().toLocaleDateString();
+        if (!rec.weekDates) rec.weekDates = {};
+        rec.weekDates[weekLabel] = new Date().toLocaleDateString();
+      } else if (isCurrentlyPresent) {
+        rec.sessions[weekLabel] = "absent";
+      } else {
+        delete rec.sessions[weekLabel];
       }
       d.attendance[key] = rec;
     });
@@ -192,9 +229,28 @@ export default function Admin() {
       if (!d.attendance) d.attendance = {};
       studentsArray.forEach(stu => {
         const key = `${targetFolderId}__${stu.id}`;
-        const rec = d.attendance[key] || { sessions: {}, lastJoined: "" };
-        rec.sessions[weekLabel] = true;
+        const rec = d.attendance[key] || { sessions: {}, lastJoined: "", weekDates: {} };
+        rec.sessions[weekLabel] = "present";
         rec.lastJoined = new Date().toLocaleDateString();
+        if (!rec.weekDates) rec.weekDates = {};
+        rec.weekDates[weekLabel] = new Date().toLocaleDateString();
+        d.attendance[key] = rec;
+      });
+    });
+  };
+
+  // Mark all students who did NOT attend the Zoom class as Absent for the selected week
+  const markRemainingAbsentForWeek = (studentsArray, folderId, weekLabel) => {
+    const targetFolderId = folderId === "all" ? (S.folders[0]?.id || "f1") : folderId;
+    update(d => {
+      if (!d.attendance) d.attendance = {};
+      studentsArray.forEach(stu => {
+        const key = `${targetFolderId}__${stu.id}`;
+        const rec = d.attendance[key] || { sessions: {}, lastJoined: "", weekDates: {} };
+        const cur = rec.sessions[weekLabel];
+        if (cur !== true && cur !== "present") {
+          rec.sessions[weekLabel] = "absent";
+        }
         d.attendance[key] = rec;
       });
     });
@@ -205,9 +261,10 @@ export default function Admin() {
     const key = `${targetFolderId}__${studentId}`;
     const rec = S.attendance?.[key] || { sessions: {}, lastJoined: "" };
     const sessions = rec.sessions || {};
-    const attendedCount = WEEKS_LIST.filter(w => Boolean(sessions[w])).length;
+    const attendedCount = WEEKS_LIST.filter(w => sessions[w] === true || sessions[w] === "present").length;
+    const absentCount = WEEKS_LIST.filter(w => sessions[w] === "absent").length;
     const pct = Math.round((attendedCount / WEEKS_LIST.length) * 100);
-    return { sessions, attendedCount, pct, lastJoined: rec.lastJoined };
+    return { sessions, attendedCount, absentCount, pct, lastJoined: rec.lastJoined };
   };
 
   const formatWhatsAppHref = (phone) => {
@@ -240,6 +297,12 @@ export default function Admin() {
       subjects: "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි",
       zoomUrl: "https://zoom.us/j/94771234567",
       zoomSchedule: "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)",
+      zoomWeeks: {
+        "1 වන සතිය": "https://zoom.us/j/94771234567",
+        "2 වන සතිය": "https://zoom.us/j/94771234567",
+        "3 වන සතිය": "https://zoom.us/j/94771234567",
+        "4 වන සතිය": "https://zoom.us/j/94771234567"
+      },
       desc: "මාසික පන්ති ගාස්තුව ගෙවූ පසු මෙම මාසයට අදාළ සියලුම සජීවී Zoom පන්ති, වීඩියෝ විවරණ සහ PDF ප්‍රශ්න පත්‍ර සම්පූර්ණයෙන්ම විවෘත වේ."
     });
     setShowPackageModal(true);
@@ -258,6 +321,12 @@ export default function Admin() {
       subjects: f.subjects || "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි",
       zoomUrl: f.zoomUrl || "https://zoom.us/j/94771234567",
       zoomSchedule: f.zoomSchedule || "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 ට",
+      zoomWeeks: f.zoomWeeks || {
+        "1 වන සතිය": f.zoomUrl || "",
+        "2 වන සතිය": f.zoomUrl || "",
+        "3 වන සතිය": f.zoomUrl || "",
+        "4 වන සතිය": f.zoomUrl || ""
+      },
       desc: f.desc || ""
     });
     setShowPackageModal(true);
@@ -295,6 +364,7 @@ export default function Admin() {
             subjects: nf.subjects.trim(),
             zoomUrl: nf.zoomUrl.trim(),
             zoomSchedule: nf.zoomSchedule.trim(),
+            zoomWeeks: nf.zoomWeeks || {},
             desc: nf.desc.trim()
           };
         }
@@ -312,6 +382,7 @@ export default function Admin() {
           subjects: nf.subjects.trim() || "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි",
           zoomUrl: nf.zoomUrl.trim(),
           zoomSchedule: nf.zoomSchedule.trim(),
+          zoomWeeks: nf.zoomWeeks || {},
           desc: nf.desc.trim()
         });
       }
@@ -472,7 +543,7 @@ export default function Admin() {
 
   const selectedRosterFolder = S.folders.find(f => f.id === selectedRosterFolderId);
 
-  // Filter students for the Roster & Attendance tab
+  // Filter students for the Roster & Attendance tab (Fixed for All Months & Specific Month)
   const rosterStudents = studentsList.filter(stu => {
     const q = studentSearch.toLowerCase();
     const matchesSearch =
@@ -494,6 +565,14 @@ export default function Admin() {
       if (rosterPayFilter === "pending") return payStatus === "pending";
       // If "all", show all students in that folder's grade
       return stuGrade === Number(selectedRosterFolder.grade);
+    }
+
+    // When "All Months" is selected, apply payment filter across any month
+    if (rosterPayFilter === "paid") {
+      return S.pays.some(p => p.uid === stu.id && p.status === "approved");
+    }
+    if (rosterPayFilter === "pending") {
+      return S.pays.some(p => p.uid === stu.id && p.status === "pending");
     }
 
     return true;
@@ -1136,6 +1215,12 @@ export default function Admin() {
           background: rgba(16, 185, 129, 0.22);
           border-color: #10b981;
           color: var(--green);
+        }
+
+        .adm-wk-btn.absent {
+          background: rgba(239, 68, 68, 0.2);
+          border-color: #ef4444;
+          color: #f87171;
         }
 
         @media (max-width: 1020px) {
@@ -2222,7 +2307,8 @@ export default function Admin() {
                             selectedRosterFolderId === "all"
                               ? S.folders.find(f => Number(f.grade) === stuGrade)?.id || "f1"
                               : selectedRosterFolderId;
-                          return getStudentAttendanceInfo(targetFid, stu.id).sessions[attendanceWeek];
+                          const sessVal = getStudentAttendanceInfo(targetFid, stu.id).sessions[attendanceWeek];
+                          return sessVal === true || sessVal === "present";
                         }).length
                       }
                     </b>
@@ -2263,14 +2349,22 @@ export default function Admin() {
                       className="adm-chip gold"
                       onClick={() => markAllPresentForWeek(rosterStudents, selectedRosterFolderId, attendanceWeek)}
                     >
-                      ✓ සියලු දෙනා පැමිණි බව ලකුණු කරන්න ({attendanceWeek})
+                      ✓ සියලු දෙනා පැමිණි බව ({attendanceWeek})
+                    </button>
+                    <button
+                      type="button"
+                      className="adm-chip danger"
+                      onClick={() => markRemainingAbsentForWeek(rosterStudents, selectedRosterFolderId, attendanceWeek)}
+                      title="Zoom සඳහා ලොග් නොවූ සිසුන් නොපැමිණි (Absent) ලෙස සලකුණු කරන්න"
+                    >
+                      ✕ නොපැමිණි අය ලකුණු කරන්න
                     </button>
                     <button
                       type="button"
                       className="adm-chip wa"
                       onClick={copyAllRosterPhones}
                     >
-                      {copiedPhones ? "✔ අංක Copy විය!" : "📋 දුරකථන අංක Copy කරන්න"}
+                      {copiedPhones ? "✔ අංක Copy විය!" : "📋 දුරකථන අංක Copy"}
                     </button>
                   </div>
                 </div>
@@ -2292,8 +2386,13 @@ export default function Admin() {
                       onChange={e => {
                         const val = e.target.value;
                         setSelectedRosterFolderId(val);
-                        const fObj = S.folders.find(x => x.id === val);
-                        if (fObj) setRosterGradeFilter(fObj.grade);
+                        if (val === "all") {
+                          setRosterGradeFilter("all");
+                          setRosterPayFilter("all");
+                        } else {
+                          const fObj = S.folders.find(x => x.id === val);
+                          if (fObj) setRosterGradeFilter(fObj.grade);
+                        }
                       }}
                     >
                       <option value="all">🌟 සියලුම මාසික පන්ති (All Months)</option>
@@ -2418,7 +2517,11 @@ export default function Admin() {
                             selectedRosterFolderId === "all"
                               ? S.folders.find(f => Number(f.grade) === stuGrade)?.id || "f1"
                               : selectedRosterFolderId;
-                          const payRecord = S.pays.filter(p => p.uid === stu.id && p.fid === targetFid).pop();
+                          const payRecord =
+                            selectedRosterFolderId === "all"
+                              ? S.pays.filter(p => p.uid === stu.id && p.status === "approved").pop() ||
+                                S.pays.filter(p => p.uid === stu.id).pop()
+                              : S.pays.filter(p => p.uid === stu.id && p.fid === targetFid).pop();
                           const isPaidForSelectedMonth = payRecord?.status === "approved";
                           const isPendingForSelectedMonth = payRecord?.status === "pending";
                           const att = getStudentAttendanceInfo(targetFid, stu.id);
@@ -2492,16 +2595,18 @@ export default function Admin() {
                               <td style={{ textAlign: "center" }}>
                                 <div style={{ display: "inline-flex", gap: "6px" }}>
                                   {WEEKS_LIST.map((w, wIdx) => {
-                                    const isPresent = Boolean(att.sessions[w]);
+                                    const val = att.sessions[w];
+                                    const isPresent = val === true || val === "present";
+                                    const isAbsent = val === "absent";
                                     return (
                                       <button
                                         key={w}
                                         type="button"
                                         onClick={() => toggleStudentAttendance(targetFid, stu.id, w)}
-                                        className={`adm-wk-btn ${isPresent ? "on" : ""}`}
-                                        title={`${w} - ${isPresent ? "පැමිණ ඇත (Present)" : "පැමිණ නැත (Absent)"}`}
+                                        className={`adm-wk-btn ${isPresent ? "on" : isAbsent ? "absent" : ""}`}
+                                        title={`${w} - ${isPresent ? "පැමිණ ඇත (Present)" : isAbsent ? "පැමිණ නැත (Absent)" : "සලකුණු කර නැත"}`}
                                       >
-                                        {isPresent ? "✓" : `W${wIdx + 1}`}
+                                        {isPresent ? "✓" : isAbsent ? "✕" : `W${wIdx + 1}`}
                                       </button>
                                     );
                                   })}
@@ -2542,6 +2647,16 @@ export default function Admin() {
                                       {isPaidForSelectedMonth ? "🔒 Lock" : "🔓 Unlock"}
                                     </button>
                                   )}
+
+                                  <button
+                                    type="button"
+                                    className="adm-chip danger"
+                                    style={{ padding: "5px 10px", fontSize: "12.5px" }}
+                                    onClick={() => handleDeleteStudent(stu)}
+                                    title="Remove registered student"
+                                  >
+                                    🗑️ Remove
+                                  </button>
                                 </div>
                               </td>
                             </tr>
@@ -2914,6 +3029,40 @@ export default function Admin() {
                     onChange={e => setNf({ ...nf, zoomSchedule: e.target.value })}
                   />
                 </label>
+              </div>
+
+              {/* 4-WEEK ZOOM LINKS FOR THIS MONTH */}
+              <div
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: "12px",
+                  background: "var(--bg)",
+                  border: "1px solid var(--line)",
+                  marginBottom: "12px"
+                }}
+              >
+                <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--gold)", marginBottom: "8px" }}>
+                  📅 සති 4 සඳහා Zoom Live Links (4-Week Zoom Links)
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  {WEEKS_LIST.map(w => (
+                    <label key={w} className="adm-label" style={{ marginBottom: 0 }}>
+                      <span style={{ fontSize: "12px" }}>{w} Zoom Link</span>
+                      <input
+                        className="adm-input"
+                        style={{ padding: "8px 10px", fontSize: "13px" }}
+                        placeholder={nf.zoomUrl || "https://zoom.us/j/..."}
+                        value={nf.zoomWeeks?.[w] || ""}
+                        onChange={e =>
+                          setNf(prev => ({
+                            ...prev,
+                            zoomWeeks: { ...(prev.zoomWeeks || {}), [w]: e.target.value }
+                          }))
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <label className="adm-label">

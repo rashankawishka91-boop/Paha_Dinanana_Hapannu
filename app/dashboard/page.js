@@ -24,6 +24,7 @@ export default function Dash() {
   const [activeSubjectFilter, setActiveSubjectFilter] = useState("all");
   const [activeTypeFilter, setActiveTypeFilter] = useState("all"); // "all", "zoom", "video", "pdf"
   const [theaterVideo, setTheaterVideo] = useState(null);
+  const [viewPdfItem, setViewPdfItem] = useState(null);
 
   // Speed Practice Timer state
   const [timerSeconds, setTimerSeconds] = useState(45 * 60);
@@ -152,12 +153,15 @@ export default function Dash() {
   // Automatically mark student attendance when they join a Zoom Live Class
   const recordZoomAttendance = (folderId, weekLabel = "1 වන සතිය") => {
     if (!currentMe || !folderId) return;
+    const todayStr = new Date().toLocaleDateString();
     update(s => {
       if (!s.attendance) s.attendance = {};
       const key = `${folderId}__${currentMe.id}`;
-      const existing = s.attendance[key] || { sessions: {}, lastJoined: "" };
-      existing.sessions[weekLabel] = true;
+      const existing = s.attendance[key] || { sessions: {}, lastJoined: "", weekDates: {} };
+      existing.sessions[weekLabel] = "present";
       existing.lastJoined = new Date().toLocaleString();
+      if (!existing.weekDates) existing.weekDates = {};
+      existing.weekDates[weekLabel] = todayStr;
       s.attendance[key] = existing;
     });
   };
@@ -907,6 +911,85 @@ export default function Dash() {
                     </div>
                   </section>
 
+                  {/* 4-WEEK ZOOM LIVE SCHEDULE & AUTO ATTENDANCE TRACKER */}
+                  {(() => {
+                    const attRec = S.attendance?.[`${f.id}__${currentMe.id}`] || { sessions: {}, weekDates: {} };
+                    const weeksArr = ["1 වන සතිය", "2 වන සතිය", "3 වන සතිය", "4 වන සතිය"];
+                    return (
+                      <section className="sd-sec" style={{ marginBottom: "20px" }}>
+                        <h3>🔴 සති 4 සජීවී Zoom පන්ති සහ ඔබගේ පැමිණීම (4-Week Zoom &amp; Attendance)</h3>
+                        <p>Zoom සබැඳිය හරහා පන්තියට සම්බන්ධ වූ විගස එම දිනයට ඔබගේ පැමිණීම ස්වයංක්‍රීයව සලකුණු වේ.</p>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+                            gap: "12px",
+                            marginTop: "12px"
+                          }}
+                        >
+                          {weeksArr.map((wLabel, wIdx) => {
+                            const itemZoom = rawItems.find(x => x.type === "zoom" && x.week === wLabel);
+                            const wkUrl = f.zoomWeeks?.[wLabel]?.trim() || itemZoom?.url || f.zoomUrl;
+                            const attVal = attRec.sessions?.[wLabel];
+                            const isPresent = attVal === true || attVal === "present";
+                            const isAbsent = attVal === "absent";
+                            const attDate = attRec.weekDates?.[wLabel];
+
+                            return (
+                              <div
+                                key={wLabel}
+                                style={{
+                                  background: "var(--panel)",
+                                  border: isPresent ? "2px solid var(--green)" : "1px solid var(--line)",
+                                  borderRadius: "16px",
+                                  padding: "14px 16px",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  justifyContent: "space-between",
+                                  gap: "10px"
+                                }}
+                              >
+                                <div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                                    <span className="sd-tag t-now si" style={{ margin: 0 }}>{wLabel}</span>
+                                    {isPresent ? (
+                                      <span className="sd-tag t-ok" style={{ margin: 0 }}>✅ පැමිණ ඇත</span>
+                                    ) : isAbsent ? (
+                                      <span className="sd-tag" style={{ margin: 0, background: "rgba(239,68,68,0.16)", color: "#ef4444" }}>✕ පැමිණ නැත</span>
+                                    ) : (
+                                      <span className="sd-tag" style={{ margin: 0, background: "var(--panel2)", color: "var(--muted)" }}>⏳ Live</span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize: "13px", color: "var(--muted)" }}>
+                                    {attDate
+                                      ? `📅 දිනය: ${attDate}`
+                                      : itemZoom?.schedule || f.zoomSchedule || `Week ${wIdx + 1} Zoom Session`}
+                                  </div>
+                                </div>
+
+                                {wkUrl ? (
+                                  <a
+                                    href={wkUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="sd-btn"
+                                    style={{ textAlign: "center", fontSize: "13px", padding: "8px 12px" }}
+                                    onClick={() => recordZoomAttendance(f.id, wLabel)}
+                                  >
+                                    🔴 Join {wLabel} Zoom ↗
+                                  </a>
+                                ) : (
+                                  <span style={{ fontSize: "12.5px", color: "var(--muted)" }}>Zoom link soon</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    );
+                  })()}
+
                   {/* Materials Filter Tabs */}
                   <section className="sd-sec">
                     <h3>Class lessons, videos &amp; PDF papers</h3>
@@ -1004,22 +1087,43 @@ export default function Dash() {
                               </div>
 
                               {!isYt && (
-                                <div className="sd-act">
+                                <div className="sd-act" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
                                   <span className="fee">
                                     {isZoom ? "Zoom Live" : "PDF Document"}
                                   </span>
-                                  <a
-                                    className="sd-btn"
-                                    href={i.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    download={i.fileName || undefined}
-                                    onClick={() => {
-                                      if (isZoom) recordZoomAttendance(f.id, i.week || "1 වන සතිය");
-                                    }}
-                                  >
-                                    {isZoom ? "Join Zoom ↗" : "Open PDF ↗"}
-                                  </a>
+
+                                  {isZoom ? (
+                                    <a
+                                      className="sd-btn"
+                                      href={i.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={() => recordZoomAttendance(f.id, i.week || "1 වන සතිය")}
+                                    >
+                                      Join Zoom ↗
+                                    </a>
+                                  ) : (
+                                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                                      <button
+                                        type="button"
+                                        className="sd-btn alt"
+                                        style={{ padding: "8px 14px", fontSize: "13px" }}
+                                        onClick={() => setViewPdfItem(i)}
+                                      >
+                                        👁️ බලන්න (View)
+                                      </button>
+                                      <a
+                                        className="sd-btn"
+                                        style={{ padding: "8px 14px", fontSize: "13px" }}
+                                        href={i.url}
+                                        download={i.fileName || `${i.title || "lesson"}.pdf`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        ⬇️ Download
+                                      </a>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </article>
@@ -1594,6 +1698,85 @@ export default function Dash() {
             </div>
 
             <VideoPlayer url={theaterVideo.url} title={theaterVideo.title} />
+          </div>
+        </div>
+      )}
+
+      {/* IN-APP PDF / DOCUMENT VIEWER & DOWNLOAD MODAL */}
+      {viewPdfItem && (
+        <div
+          className="app-modal-overlay"
+          onClick={() => setViewPdfItem(null)}
+        >
+          <div
+            className="app-modal-card"
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: "900px",
+              width: "95%",
+              background: "var(--panel)",
+              color: "var(--ink)",
+              border: "2px solid var(--gold)",
+              padding: "20px"
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", marginBottom: "14px" }}>
+              <div>
+                <span className="sd-tag t-ok si" style={{ marginBottom: "4px" }}>
+                  📄 {viewPdfItem.week || ""} · {viewPdfItem.subject || "PDF Document"}
+                </span>
+                <h3 className="si" style={{ margin: 0, fontSize: "18px" }}>
+                  {viewPdfItem.title}
+                </h3>
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <a
+                  href={viewPdfItem.url}
+                  download={viewPdfItem.fileName || `${viewPdfItem.title || "lesson"}.pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sd-btn"
+                  style={{ margin: 0, padding: "8px 16px", fontSize: "13.5px" }}
+                >
+                  ⬇️ Download PDF
+                </a>
+                <button
+                  type="button"
+                  className="sd-btn alt"
+                  onClick={() => setViewPdfItem(null)}
+                  style={{ margin: 0, padding: "8px 14px", fontSize: "13.5px" }}
+                >
+                  ✕ Close
+                </button>
+              </div>
+            </div>
+
+            {viewPdfItem.url?.startsWith("data:image/") ? (
+              <div style={{ textAlign: "center", maxHeight: "72vh", overflow: "auto", background: "#fff", borderRadius: "12px", padding: "10px" }}>
+                <img
+                  src={viewPdfItem.url}
+                  alt={viewPdfItem.title}
+                  style={{ maxWidth: "100%", borderRadius: "8px" }}
+                />
+              </div>
+            ) : (
+              <iframe
+                src={
+                  viewPdfItem.url?.includes("drive.google.com")
+                    ? viewPdfItem.url.replace(/\/view(\?.*)?$/, "/preview")
+                    : viewPdfItem.url
+                }
+                title={viewPdfItem.title}
+                style={{
+                  width: "100%",
+                  height: "70vh",
+                  border: "1px solid var(--line)",
+                  borderRadius: "12px",
+                  background: "#ffffff"
+                }}
+              />
+            )}
           </div>
         </div>
       )}
