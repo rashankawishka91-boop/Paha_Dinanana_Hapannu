@@ -19,6 +19,8 @@ export default function Admin() {
   const [adminGradeFilter, setAdminGradeFilter] = useState("all");
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState(null);
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [gradeEdits, setGradeEdits] = useState([]);
   const [selectedFolderForContent, setSelectedFolderForContent] = useState("");
   const [studentSearch, setStudentSearch] = useState("");
   const [viewSlip, setViewSlip] = useState(null);
@@ -117,7 +119,10 @@ export default function Admin() {
         hotline: S.set.hotline || "0705 771 778"
       });
     }
-  }, [ready, S.set]);
+    if (ready && Array.isArray(S.gradeDetails)) {
+      setGradeEdits(S.gradeDetails);
+    }
+  }, [ready, S.set, S.gradeDetails]);
 
   useEffect(() => {
     if (S.folders.length && !selectedFolderForContent) {
@@ -346,6 +351,22 @@ export default function Admin() {
     });
   };
 
+  const handleEditItem = (item) => {
+    setEditingItemId(item.id);
+    setInputMode(item.url?.startsWith("data:") ? "upload" : "link");
+    setUploadedFileName(item.fileName || "");
+    setNi({
+      fid: item.fid || selectedFolderForContent || S.folders[0]?.id,
+      type: item.type || "video",
+      week: item.week || "1 වන සතිය",
+      subject: item.subject || "විෂයයන් 5ම",
+      title: item.title || "",
+      url: item.url || "",
+      fileName: item.fileName || "",
+      schedule: item.schedule || ""
+    });
+  };
+
   const handleAddItem = (e) => {
     e.preventDefault();
     const fid = ni.fid || selectedFolderForContent || S.folders[0]?.id;
@@ -355,6 +376,30 @@ export default function Admin() {
 
     const isYt = isYoutubeUrl(ni.url);
     const finalType = ni.type === "zoom" ? "zoom" : isYt ? "video" : ni.type;
+
+    if (editingItemId) {
+      update(d => {
+        const idx = d.items.findIndex(x => x.id === editingItemId);
+        if (idx !== -1) {
+          d.items[idx] = {
+            ...d.items[idx],
+            fid,
+            type: finalType,
+            week: ni.week || "1 වන සතිය",
+            subject: ni.subject,
+            title: ni.title.trim(),
+            url: ni.url.trim(),
+            fileName: ni.fileName || "",
+            schedule: ni.schedule?.trim() || ""
+          };
+        }
+      });
+      setEditingItemId(null);
+      setNi(prev => ({ ...prev, title: "", url: "", fileName: "", schedule: "" }));
+      setUploadedFileName("");
+      alert("පාඩම් විස්තර සාර්ථකව යාවත්කාලීන කරන ලදී!");
+      return;
+    }
 
     update(d => {
       d.items.push({
@@ -379,6 +424,18 @@ export default function Admin() {
     }));
     setUploadedFileName("");
     alert("නව ඉගෙනුම් අයිතමය (Zoom / Video / PDF) අදාළ මාසයට සාර්ථකව එක් කරන ලදී!");
+  };
+
+  const handleSaveGradeDetails = (e) => {
+    e.preventDefault();
+    update(d => {
+      d.gradeDetails = gradeEdits.map(g => ({
+        ...g,
+        grade: Number(g.grade),
+        fee: Number(g.fee) || (Number(g.grade) === 3 ? 800 : 1000)
+      }));
+    });
+    alert("3, 4 සහ 5 ශ්‍රේණිවල පන්ති විස්තර සහ කාලසටහන් සාර්ථකව සුරකින ලදී!");
   };
 
   const onLogoUpload = f => {
@@ -1467,6 +1524,14 @@ export default function Admin() {
                       {g === "all" ? "All Grades (3, 4, 5)" : `Grade ${g} (${g} ශ්‍රේණිය)`}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    className="adm-chip wa"
+                    onClick={() => setTab("settings")}
+                    title="Edit Grade 3, 4, 5 Home Page Class Details & Schedules"
+                  >
+                    🎓 Edit Grade 3, 4, 5 Details
+                  </button>
                 </div>
               </div>
 
@@ -1566,9 +1631,9 @@ export default function Admin() {
                           type="button"
                           className="adm-chip"
                           onClick={() => handleEditPackage(f)}
-                          title="Edit Month"
+                          title="Edit Month Details"
                         >
-                          ✏️
+                          ✏️ Edit Details
                         </button>
 
                         <button
@@ -1595,10 +1660,25 @@ export default function Admin() {
               {/* LEFT PANEL: EASY STREAMLINED FORM WITH LINK OR DIRECT FILE UPLOAD */}
               <section className="adm-panel">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "6px" }}>
-                  <h2>1. Add Zoom / Video / PDF</h2>
-                  <span className="adm-chip gold" style={{ padding: "3px 10px", fontSize: "12px" }}>
-                    Link හෝ File Upload
-                  </span>
+                  <h2>{editingItemId ? "✏️ Edit Zoom / Video / PDF Details" : "1. Add Zoom / Video / PDF"}</h2>
+                  {editingItemId ? (
+                    <button
+                      type="button"
+                      className="adm-chip danger"
+                      style={{ padding: "3px 10px", fontSize: "12px" }}
+                      onClick={() => {
+                        setEditingItemId(null);
+                        setNi(prev => ({ ...prev, title: "", url: "", fileName: "", schedule: "" }));
+                        setUploadedFileName("");
+                      }}
+                    >
+                      ✕ Cancel Edit
+                    </button>
+                  ) : (
+                    <span className="adm-chip gold" style={{ padding: "3px 10px", fontSize: "12px" }}>
+                      Link හෝ File Upload
+                    </span>
+                  )}
                 </div>
                 <p>Select the month, choose Zoom / Video / PDF, and paste a link or upload a file directly from your device.</p>
 
@@ -1826,11 +1906,13 @@ export default function Admin() {
                       className="adm-chip gold"
                       style={{ width: "100%", justifyContent: "center", padding: "12px 18px", fontSize: "15px" }}
                     >
-                      ＋ {ni.type === "zoom"
-                        ? "Add Zoom Live Link to Month"
+                      {editingItemId
+                        ? "💾 Save Lesson Changes"
+                        : ni.type === "zoom"
+                        ? "＋ Add Zoom Live Link to Month"
                         : ni.type === "pdf"
-                        ? "Add PDF Paper / Note to Month"
-                        : "Add Video Lesson to Month"}
+                        ? "＋ Add PDF Paper / Note to Month"
+                        : "＋ Add Video Lesson to Month"}
                     </button>
                   </div>
                 </form>
@@ -1936,6 +2018,15 @@ export default function Admin() {
                               >
                                 {isUploadedFile ? "⬇ Download" : "Open ↗"}
                               </a>
+                              <button
+                                type="button"
+                                className="adm-chip"
+                                style={{ padding: "5px 10px", fontSize: "12px" }}
+                                onClick={() => handleEditItem(i)}
+                                title="Edit Lesson Details"
+                              >
+                                ✏️ Edit
+                              </button>
                               <button
                                 type="button"
                                 className="adm-chip danger"
@@ -2491,63 +2582,180 @@ export default function Admin() {
           {/* TAB 6: SETTINGS                                                  */}
           {/* ================================================================ */}
           {tab === "settings" && (
-            <section className="adm-panel" style={{ maxWidth: "720px" }}>
-              <h2>Class settings &amp; bank details</h2>
-              <p>Update class name, hotline contact, and monthly fee bank account details</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
+              <section className="adm-panel" style={{ maxWidth: "820px" }}>
+                <h2>Class settings &amp; bank details</h2>
+                <p>Update class name, hotline contact, and monthly fee bank account details</p>
 
-              <form onSubmit={handleSaveSettings}>
-                <label className="adm-label">
-                  <span>Class Name (පන්තියේ නම)</span>
-                  <input
-                    className="adm-input si"
-                    value={set.name}
-                    onChange={e => setSet({ ...set, name: e.target.value })}
-                  />
-                </label>
+                <form onSubmit={handleSaveSettings}>
+                  <label className="adm-label">
+                    <span>Class Name (පන්තියේ නම)</span>
+                    <input
+                      className="adm-input si"
+                      value={set.name}
+                      onChange={e => setSet({ ...set, name: e.target.value })}
+                    />
+                  </label>
 
-                <label className="adm-label">
-                  <span>Class Slogan (පන්ති තේමා පාඨය)</span>
-                  <input
-                    className="adm-input si"
-                    value={set.slogan}
-                    onChange={e => setSet({ ...set, slogan: e.target.value })}
-                  />
-                </label>
+                  <label className="adm-label">
+                    <span>Class Slogan (පන්ති තේමා පාඨය)</span>
+                    <input
+                      className="adm-input si"
+                      value={set.slogan}
+                      onChange={e => setSet({ ...set, slogan: e.target.value })}
+                    />
+                  </label>
 
-                <label className="adm-label">
-                  <span>WhatsApp Hotline (ක්ෂණික දුරකථන අංකය)</span>
-                  <input
-                    className="adm-input"
-                    value={set.hotline}
-                    onChange={e => setSet({ ...set, hotline: e.target.value })}
-                  />
-                </label>
+                  <label className="adm-label">
+                    <span>WhatsApp Hotline (ක්ෂණික දුරකථන අංකය)</span>
+                    <input
+                      className="adm-input"
+                      value={set.hotline}
+                      onChange={e => setSet({ ...set, hotline: e.target.value })}
+                    />
+                  </label>
 
-                <label className="adm-label">
-                  <span>Bank Account Details (සිසුන්ට පෙනෙන බැංකු ගිණුම් විස්තර)</span>
-                  <textarea
-                    rows={5}
-                    className="adm-textarea si"
-                    value={set.bank}
-                    onChange={e => setSet({ ...set, bank: e.target.value })}
-                  />
-                </label>
+                  <label className="adm-label">
+                    <span>Bank Account Details (සිසුන්ට පෙනෙන බැංකු ගිණුම් විස්තර)</span>
+                    <textarea
+                      rows={5}
+                      className="adm-textarea si"
+                      value={set.bank}
+                      onChange={e => setSet({ ...set, bank: e.target.value })}
+                    />
+                  </label>
 
-                <label className="adm-label">
-                  <span>Class Official Logo (නිල ලාංඡනය)</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="adm-input"
-                    onChange={e => onLogoUpload(e.target.files[0])}
-                  />
-                </label>
+                  <label className="adm-label">
+                    <span>Class Official Logo (නිල ලාංඡනය)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="adm-input"
+                      onChange={e => onLogoUpload(e.target.files[0])}
+                    />
+                  </label>
 
-                <button type="submit" className="adm-chip gold" style={{ padding: "11px 22px", fontSize: "15px" }}>
-                  💾 Save Class Settings
-                </button>
-              </form>
-            </section>
+                  <button type="submit" className="adm-chip gold" style={{ padding: "11px 22px", fontSize: "15px" }}>
+                    💾 Save Class Settings
+                  </button>
+                </form>
+              </section>
+
+              {/* GRADE 3, 4, 5 HOME CLASS DETAILS & SCHEDULES EDITOR */}
+              <section className="adm-panel">
+                <h2>🎓 3, 4, 5 ශ්‍රේණි පන්ති විස්තර සහ කාලසටහන් වෙනස් කිරීම (Home Class Details)</h2>
+                <p>Home පිටුවේ පෙන්වන එක් එක් ශ්‍රේණියේ පන්ති නම, විස්තරය, Zoom වේලාව, විෂයයන් සහ මාසික ගාස්තුව මෙතැනින් වෙනස් කළ හැක.</p>
+
+                <form onSubmit={handleSaveGradeDetails}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: "16px", marginBottom: "18px" }}>
+                    {gradeEdits.map((gObj, gIdx) => (
+                      <div
+                        key={gObj.grade}
+                        style={{
+                          background: "var(--bg)",
+                          border: "1px solid var(--line)",
+                          borderRadius: "16px",
+                          padding: "18px"
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                          <span className="adm-chip gold" style={{ padding: "4px 12px", fontSize: "13px" }}>
+                            🎓 {gObj.grade} ශ්‍රේණිය (Grade {gObj.grade})
+                          </span>
+                          <strong style={{ color: "var(--gold)" }}>Rs. {gObj.fee}</strong>
+                        </div>
+
+                        <label className="adm-label">
+                          <span>Class Title (පන්තියේ නම)</span>
+                          <input
+                            className="adm-input si"
+                            value={gObj.title || ""}
+                            onChange={e => {
+                              const next = [...gradeEdits];
+                              next[gIdx] = { ...next[gIdx], title: e.target.value };
+                              setGradeEdits(next);
+                            }}
+                          />
+                        </label>
+
+                        <label className="adm-label">
+                          <span>Subtitle (කෙටි විස්තරය)</span>
+                          <textarea
+                            rows={2}
+                            className="adm-textarea si"
+                            value={gObj.subtitle || ""}
+                            onChange={e => {
+                              const next = [...gradeEdits];
+                              next[gIdx] = { ...next[gIdx], subtitle: e.target.value };
+                              setGradeEdits(next);
+                            }}
+                          />
+                        </label>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                          <label className="adm-label">
+                            <span>Monthly Fee (රු.)</span>
+                            <input
+                              type="number"
+                              className="adm-input"
+                              value={gObj.fee || ""}
+                              onChange={e => {
+                                const next = [...gradeEdits];
+                                next[gIdx] = { ...next[gIdx], fee: e.target.value };
+                                setGradeEdits(next);
+                              }}
+                            />
+                          </label>
+
+                          <label className="adm-label">
+                            <span>Tag</span>
+                            <input
+                              className="adm-input si"
+                              value={gObj.shortTag || ""}
+                              onChange={e => {
+                                const next = [...gradeEdits];
+                                next[gIdx] = { ...next[gIdx], shortTag: e.target.value };
+                                setGradeEdits(next);
+                              }}
+                            />
+                          </label>
+                        </div>
+
+                        <label className="adm-label">
+                          <span>Zoom Schedule (කාලසටහන)</span>
+                          <input
+                            className="adm-input si"
+                            value={gObj.scheduleShort || ""}
+                            onChange={e => {
+                              const next = [...gradeEdits];
+                              next[gIdx] = { ...next[gIdx], scheduleShort: e.target.value, schedule: e.target.value };
+                              setGradeEdits(next);
+                            }}
+                          />
+                        </label>
+
+                        <label className="adm-label" style={{ marginBottom: 0 }}>
+                          <span>Subjects (විෂයයන්)</span>
+                          <input
+                            className="adm-input si"
+                            value={gObj.subjects || ""}
+                            onChange={e => {
+                              const next = [...gradeEdits];
+                              next[gIdx] = { ...next[gIdx], subjects: e.target.value };
+                              setGradeEdits(next);
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button type="submit" className="adm-chip gold" style={{ padding: "12px 24px", fontSize: "15px" }}>
+                    💾 Save Grade 3, 4, 5 Class Details
+                  </button>
+                </form>
+              </section>
+            </div>
           )}
         </main>
       </div>
@@ -2587,7 +2795,14 @@ export default function Admin() {
                   <select
                     className="adm-select si"
                     value={nf.grade}
-                    onChange={e => setNf({ ...nf, grade: e.target.value })}
+                    onChange={e => {
+                      const g = e.target.value;
+                      setNf(prev => ({
+                        ...prev,
+                        grade: g,
+                        price: !editingFolderId ? (Number(g) === 3 ? "800" : "1000") : prev.price
+                      }));
+                    }}
                   >
                     {[5, 4, 3].map(g => (
                       <option key={g} value={g}>

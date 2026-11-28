@@ -70,7 +70,7 @@ export default function Home() {
     );
   };
 
-  const GRADE_DETAILS = [
+  const DEFAULT_GRADE_DETAILS = [
     {
       grade: 5,
       shortTag: isSi ? "🔥 190+ ඉලක්කය" : "🔥 190+ Target",
@@ -153,6 +153,25 @@ export default function Home() {
           ]
     }
   ];
+
+  // Merge Admin-customized Grade Details (if any) when viewing in Sinhala or dynamically
+  const GRADE_DETAILS = DEFAULT_GRADE_DETAILS.map(defG => {
+    const custom = Array.isArray(S.gradeDetails)
+      ? S.gradeDetails.find(x => Number(x.grade) === Number(defG.grade))
+      : null;
+    if (!custom) return defG;
+    return isSi
+      ? {
+          ...defG,
+          ...custom,
+          fee: Number(custom.fee) || defG.fee,
+          features: Array.isArray(custom.features) && custom.features.length > 0 ? custom.features : defG.features
+        }
+      : {
+          ...defG,
+          fee: Number(custom.fee) || defG.fee
+        };
+  });
 
   const myGradeDetail = isStudent
     ? GRADE_DETAILS.find(g => g.grade === studentGrade) || GRADE_DETAILS[0]
