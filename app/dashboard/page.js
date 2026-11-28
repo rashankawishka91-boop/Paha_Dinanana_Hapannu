@@ -97,7 +97,7 @@ export default function Dash() {
       setOpen(folder.id);
     } else if (status === "pending") {
       alert(
-        "ඔබගේ රු. 2,000 ගෙවීම් රිසිට්පත ගුරුතුමා විසින් පරීක්ෂා කරමින් පවතී. අනුමත වූ වහාම මෙම මාසයේ සියලුම පන්ති විවෘත වේ."
+        "ඔබගේ ගෙවීම් රිසිට්පත ගුරුතුමා විසින් පරීක්ෂා කරමින් පවතී. අනුමත වූ වහාම මෙම මාසයේ සියලුම පන්ති විවෘත වේ."
       );
     } else {
       setPay(folder);
@@ -136,7 +136,7 @@ export default function Dash() {
       setFile(null);
       setFilePreview(null);
       alert(
-        "රු. 2,000 මාසික ගෙවීම් රිසිට්පත සාර්ථකව ලැබුණි! ගුරුතුමා අනුමත කළ විගස මෙම මාසයේ සියලුම පන්ති (Zoom, Video, PDF) විවෘත වේ."
+        "මාසික ගෙවීම් රිසිට්පත සාර්ථකව ලැබුණි! ගුරුතුමා අනුමත කළ විගස මෙම මාසයේ සියලුම පන්ති (Zoom, Video, PDF) විවෘත වේ."
       );
     });
   };
@@ -192,7 +192,7 @@ export default function Dash() {
   const avatarLetter = (currentMe.name || "S").trim().charAt(0).toUpperCase();
 
   const formatRs = (val) => {
-    const num = Number(val) || 2000;
+    const num = Number(val) || (Number(selectedGrade) === 3 ? 800 : 1000);
     return `Rs. ${num.toLocaleString()}`;
   };
 
@@ -809,12 +809,12 @@ export default function Dash() {
                     <div style={{ fontSize: "40px", marginBottom: "10px" }}>🔒</div>
                     <h2 className="si" style={{ margin: "0 0 8px" }}>මෙම මාසයේ පන්තිය විවෘත කර නොමැත</h2>
                     <p style={{ color: "var(--muted)", maxWidth: "460px", margin: "0 auto 18px" }}>
-                      Pay {formatRs(f?.price || 2000)} to unlock all Zoom live classes, recorded videos and PDF papers for this month.
+                      Pay {formatRs(f?.price || (Number(f?.grade) === 3 ? 800 : 1000))} to unlock all Zoom live classes, recorded videos and PDF papers for this month.
                     </p>
                     <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
                       {f && (
                         <button type="button" className="sd-btn" onClick={() => { setOpen(null); setPay(f); }}>
-                          Pay &amp; unlock ({formatRs(f.price || 2000)})
+                          Pay &amp; unlock ({formatRs(f.price || (Number(f.grade) === 3 ? 800 : 1000))})
                         </button>
                       )}
                       <button type="button" className="sd-btn alt" onClick={() => setOpen(null)}>
@@ -1095,7 +1095,7 @@ export default function Dash() {
 
                       <div className="r">
                         <small>Monthly class fee</small>
-                        <div className="sd-price">{formatRs(currentMonthFolder.price || 2000)}</div>
+                        <div className="sd-price">{formatRs(currentMonthFolder.price || (Number(currentMonthFolder.grade) === 3 ? 800 : 1000))}</div>
                         <small>
                           {heroUnlocked
                             ? "Already paid ✓"
@@ -1136,7 +1136,7 @@ export default function Dash() {
                   {/* MONTH-BY-MONTH LIST SECTION */}
                   <section className="sd-sec">
                     <h3>Month-by-month classes</h3>
-                    <p>Pay Rs. 2,000 for any month to open its Zoom classes, videos and PDF papers.</p>
+                    <p>Pay the monthly fee (Grade 3: Rs. 800 | Grades 4 &amp; 5: Rs. 1,000) for any month to open its Zoom classes, videos and PDF papers.</p>
 
                     <div className="sd-tabs" id="tabs">
                       <button
@@ -1223,7 +1223,7 @@ export default function Dash() {
                               <div className="sd-act">
                                 {isUnlocked ? (
                                   <>
-                                    <span className="fee">{formatRs(f.price || 2000)} · paid</span>
+                                    <span className="fee">{formatRs(f.price || (Number(f.grade) === 3 ? 800 : 1000))} · paid</span>
                                     <button
                                       type="button"
                                       className="sd-btn"
@@ -1234,7 +1234,7 @@ export default function Dash() {
                                   </>
                                 ) : isPending ? (
                                   <>
-                                    <span className="fee">{formatRs(f.price || 2000)} · slip sent</span>
+                                    <span className="fee">{formatRs(f.price || (Number(f.grade) === 3 ? 800 : 1000))} · slip sent</span>
                                     <button
                                       type="button"
                                       className="sd-btn alt"
@@ -1245,7 +1245,7 @@ export default function Dash() {
                                   </>
                                 ) : (
                                   <>
-                                    <span className="fee">{formatRs(f.price || 2000)}</span>
+                                    <span className="fee">{formatRs(f.price || (Number(f.grade) === 3 ? 800 : 1000))}</span>
                                     <button
                                       type="button"
                                       className="sd-btn alt"
@@ -1275,7 +1275,7 @@ export default function Dash() {
               {activeTab === "my_packages" && (
                 <section className="sd-sec" style={{ marginTop: 0 }}>
                   <h3>My unlocked months ({myUnlockedFolders.length})</h3>
-                  <p>All monthly classes where your Rs. 2,000 fee has been paid and unlocked.</p>
+                  <p>All monthly classes where your monthly fee has been paid and unlocked.</p>
 
                   {myUnlockedFolders.length ? (
                     <div>
@@ -1297,7 +1297,7 @@ export default function Dash() {
                               </div>
                             </div>
                             <div className="sd-act">
-                              <span className="fee">{formatRs(f.price || 2000)} · paid</span>
+                              <span className="fee">{formatRs(f.price || (Number(f.grade) === 3 ? 800 : 1000))} · paid</span>
                               <button
                                 type="button"
                                 className="sd-btn"
@@ -1315,7 +1315,7 @@ export default function Dash() {
                       <div style={{ fontSize: "34px", marginBottom: "8px" }}>🔒</div>
                       <h4 style={{ margin: "0 0 6px" }}>No unlocked months yet</h4>
                       <p style={{ color: "var(--muted)", margin: "0 auto 16px", maxWidth: "420px" }}>
-                        Choose any month from the monthly classes list and upload your Rs. 2,000 bank slip to unlock it.
+                        Choose any month from the monthly classes list and upload your bank slip to unlock it.
                       </p>
                       <button
                         type="button"
@@ -1421,7 +1421,7 @@ export default function Dash() {
               {activeTab === "my_slips" && (
                 <section className="sd-sec" style={{ marginTop: 0 }}>
                   <h3>Payment slips ({mySlips.length})</h3>
-                  <p>Track the status of your Rs. 2,000 monthly bank deposit slips.</p>
+                  <p>Track the status of your monthly bank deposit slips.</p>
 
                   {mySlips.length ? (
                     <div>
@@ -1443,7 +1443,7 @@ export default function Dash() {
                               <div className="m">Submitted on {p.date}</div>
                             </div>
                             <div className="sd-act">
-                              <span className="fee">{formatRs(f.price || 2000)}</span>
+                              <span className="fee">{formatRs(f.price || (Number(f.grade) === 3 ? 800 : 1000))}</span>
                               {isApp && (
                                 <button
                                   type="button"
@@ -1494,10 +1494,10 @@ export default function Dash() {
 
             <div style={{ background: "#f6ecdd", padding: "14px 16px", borderRadius: "14px", marginBottom: "16px" }}>
               <strong style={{ fontSize: "16px", display: "block", color: "#5a1424" }}>
-                Monthly class fee: {formatRs(pay.price || 2000)}
+                Monthly class fee: {formatRs(pay.price || (Number(pay.grade) === 3 ? 800 : 1000))}
               </strong>
               <span className="si" style={{ fontSize: "13.5px", color: "#6b5358" }}>
-                රු. {pay.price || 2000} ගෙවා රිසිට්පත උඩුගත කළ පසු මෙම මාසයේ සියලුම සජීවී Zoom පන්ති, වීඩියෝ සහ PDF ප්‍රශ්න පත්‍ර විවෘත වේ.
+                රු. {pay.price || (Number(pay.grade) === 3 ? 800 : 1000)} ගෙවා රිසිට්පත උඩුගත කළ පසු මෙම මාසයේ සියලුම සජීවී Zoom පන්ති, වීඩියෝ සහ PDF ප්‍රශ්න පත්‍ර විවෘත වේ.
               </span>
             </div>
 
@@ -1520,7 +1520,7 @@ export default function Dash() {
               </div>
 
               <label className="app-label" style={{ marginTop: "12px", color: "#2a1418", fontWeight: 700 }}>
-                <span>Upload Rs. 2,000 bank receipt / slip image:</span>
+                <span>Upload bank receipt / slip image:</span>
                 <input
                   type="file"
                   accept="image/*"

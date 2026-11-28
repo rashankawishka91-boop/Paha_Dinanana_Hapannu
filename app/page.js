@@ -85,7 +85,7 @@ export default function Home() {
       schedule: isSi
         ? "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)"
         : "Every Saturday & Sunday 7:00 PM - 9:00 PM (Zoom Live)",
-      fee: 2000,
+      fee: 1000,
       features: isSi
         ? [
             "දිනකට පළාත් ප්‍රශ්න පත්‍ර 2ක් සම්පූර්ණ විවරණය",
@@ -112,7 +112,7 @@ export default function Home() {
       schedule: isSi
         ? "සෑම සෙනසුරාදාම ප.ව. 4.00 - 6.00 (Zoom Live)"
         : "Every Saturday 4:00 PM - 6:00 PM (Zoom Live)",
-      fee: 2000,
+      fee: 1000,
       features: isSi
         ? [
             "ගණිත කෙටි ක්‍රම සහ තර්කන ගැටළු පුහුණුව",
@@ -139,7 +139,7 @@ export default function Home() {
       schedule: isSi
         ? "සෑම ඉරිදාම ප.ව. 3.00 - 5.00 (Zoom Live)"
         : "Every Sunday 3:00 PM - 5:00 PM (Zoom Live)",
-      fee: 2000,
+      fee: 800,
       features: isSi
         ? [
             "මනෝමය ගණිතය සහ මූලික ගණිත ක්‍රමවේද",
@@ -800,7 +800,7 @@ export default function Home() {
               </h3>
               <p style={{ fontSize: "0.88rem", color: "var(--h-muted)", margin: "0 0 14px" }}>
                 {isSi
-                  ? "ඔබ රු. 2,000 ගාස්තුව ගෙවා සක්‍රිය කරගත් මාසික පන්තිවලට මෙතැනින් කෙලින්ම ඇතුල් විය හැක."
+                  ? "ඔබ ගාස්තු ගෙවා සක්‍රිය කරගත් මාසික පන්තිවලට මෙතැනින් කෙලින්ම ඇතුල් විය හැක."
                   : "Directly enter the monthly classes you have paid for and activated."}
               </p>
 
@@ -879,8 +879,8 @@ export default function Home() {
                     </h4>
                     <p style={{ margin: 0, fontSize: "0.86rem", color: "var(--h-muted)" }}>
                       {isSi
-                        ? "රු. 2,000 මාසික පන්ති ගාස්තුව ගෙවා මේ මාසයේ සජීවී Zoom පන්ති, වීඩියෝ සහ PDF පේපර්ස් දැන්ම විවෘත කරගන්න."
-                        : "Pay the Rs. 2,000 monthly fee to unlock this month's live Zoom classes, videos, and PDF papers."}
+                        ? "මාසික පන්ති ගාස්තුව (3 ශ්‍රේණිය: රු. 800 | 4, 5 ශ්‍රේණි: රු. 1,000) ගෙවා මේ මාසයේ සජීවී Zoom පන්ති, වීඩියෝ සහ PDF පේපර්ස් දැන්ම විවෘත කරගන්න."
+                        : "Pay the monthly fee (Grade 3: Rs. 800 | Grades 4 & 5: Rs. 1,000) to unlock this month's live Zoom classes, videos, and PDF papers."}
                     </p>
                   </div>
                   <Link href="/dashboard" className="btn" style={{ fontSize: "0.85rem", padding: "10px 18px" }}>
@@ -1113,8 +1113,8 @@ export default function Home() {
                 ? `ඔබගේ ${studentGrade} ශ්‍රේණියට අදාළව මේ මාසයේ සහ පසුගිය මාසවල පැවැත්වෙන සියලුම පන්ති පහතින් දැක්වේ.`
                 : `Showing current and previous monthly classes tailored for Grade ${studentGrade}.`
               : isSi
-              ? "රු. 2,000 මාසික ගාස්තුව ගෙවා ඕනෑම මාසයක සජීවී Zoom පන්ති, වීඩියෝ සහ PDF පේපර්ස් විවෘත කරගන්න."
-              : "Pay Rs. 2,000 for any month to unlock its Zoom live classes, videos, and PDF papers."}
+              ? "මාසික ගාස්තුව (3 ශ්‍රේණිය: රු. 800 | 4, 5 ශ්‍රේණි: රු. 1,000) ගෙවා ඕනෑම මාසයක සජීවී Zoom පන්ති, වීඩියෝ සහ PDF පේපර්ස් විවෘත කරගන්න."
+              : "Pay the monthly fee (Grade 3: Rs. 800 | Grades 4 & 5: Rs. 1,000) for any month to unlock its Zoom live classes, videos, and PDF papers."}
           </p>
         </div>
 
@@ -1265,7 +1265,7 @@ export default function Home() {
                   >
                     <div>
                       <div style={{ fontSize: "1.18rem", fontWeight: 800, color: "var(--h-gold)", lineHeight: 1.1 }}>
-                        {isSi ? `රු. ${(f.price || 2000).toLocaleString()}` : `Rs. ${(f.price || 2000).toLocaleString()}`}
+                        {isSi ? `රු. ${(f.price || (Number(f.grade) === 3 ? 800 : 1000)).toLocaleString()}` : `Rs. ${(f.price || (Number(f.grade) === 3 ? 800 : 1000)).toLocaleString()}`}
                       </div>
                       <small style={{ fontSize: "0.72rem", color: "var(--h-muted)", fontWeight: 600 }}>
                         {isUnlocked ? (isSi ? "✓ ගෙවා ඇත" : "✓ Paid") : (isSi ? "මාසික ගාස්තුව" : "Monthly fee")}

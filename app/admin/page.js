@@ -57,7 +57,7 @@ export default function Admin() {
     isCurrentMonth: true,
     name: "",
     category: "මාසික පේපර් පන්තිය",
-    price: "2000",
+    price: "1000",
     papersCount: "දිනකට පේපර් 2ක් + Zoom Live",
     subjects: "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි",
     zoomUrl: "https://zoom.us/j/94771234567",
@@ -230,12 +230,12 @@ export default function Admin() {
       isCurrentMonth: true,
       name: `${defaultMonth} මාසයේ පන්තිය (190+ පළාත් පේපර් සහ සජීවී පන්ති)`,
       category: "මාසික පේපර් පන්තිය",
-      price: "2000",
+      price: "1000",
       papersCount: "දිනකට පේපර් 2ක් + Zoom Live",
       subjects: "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි",
       zoomUrl: "https://zoom.us/j/94771234567",
       zoomSchedule: "සෑම සෙනසුරාදා සහ ඉරිදාම ප.ව. 7.00 - 9.00 (Zoom Live)",
-      desc: "රු. 2000 මාසික පන්ති ගාස්තුව ගෙවූ පසු මෙම මාසයට අදාළ සියලුම සජීවී Zoom පන්ති, වීඩියෝ විවරණ සහ PDF ප්‍රශ්න පත්‍ර සම්පූර්ණයෙන්ම විවෘත වේ."
+      desc: "මාසික පන්ති ගාස්තුව ගෙවූ පසු මෙම මාසයට අදාළ සියලුම සජීවී Zoom පන්ති, වීඩියෝ විවරණ සහ PDF ප්‍රශ්න පත්‍ර සම්පූර්ණයෙන්ම විවෘත වේ."
     });
     setShowPackageModal(true);
   };
@@ -248,7 +248,7 @@ export default function Admin() {
       isCurrentMonth: Boolean(f.isCurrentMonth),
       name: f.name || "",
       category: f.category || "මාසික පේපර් පන්තිය",
-      price: f.price?.toString() || "2000",
+      price: f.price?.toString() || (Number(f.grade) === 3 ? "800" : "1000"),
       papersCount: f.papersCount || "දිනකට පේපර් 2ක් + Zoom Live",
       subjects: f.subjects || "පරිසරය, මව්බස, ගණිතය, දෙමළ, ඉංග්‍රීසි",
       zoomUrl: f.zoomUrl || "https://zoom.us/j/94771234567",
@@ -263,8 +263,8 @@ export default function Admin() {
     if (!nf.name.trim()) {
       return alert("කරුණාකර මාසික පන්තියේ නම ඇතුළත් කරන්න.");
     }
-    const priceNum = parseInt(nf.price) || 2000;
     const gradeNum = parseInt(nf.grade) || 5;
+    const priceNum = parseInt(nf.price) || (gradeNum === 3 ? 800 : 1000);
 
     update(d => {
       if (nf.isCurrentMonth) {
@@ -1259,7 +1259,7 @@ export default function Admin() {
               {tab === "overview" && "Dashboard overview"}
               {tab === "packages" && "Monthly classes"}
               {tab === "content" && "Add Zoom / Video / PDF"}
-              {tab === "payments" && "Monthly fee slips (Rs. 2,000)"}
+              {tab === "payments" && "Monthly fee slips"}
               {tab === "students" && "Students, Class Roster & Attendance"}
               {tab === "settings" && "Class settings"}
             </h1>
@@ -1400,7 +1400,7 @@ export default function Admin() {
                   >
                     <span className="ic">💳</span>
                     <span>
-                      <b>Approve Rs. 2000 Monthly Fee Slips</b>
+                      <b>Approve Monthly Fee Slips</b>
                       <small>{pendingCount} slips waiting for approval</small>
                     </span>
                     <span className="go">›</span>
@@ -1417,7 +1417,7 @@ export default function Admin() {
                   </div>
                   <div className="adm-kv">
                     <span>Standard monthly fee</span>
-                    <b className="fee">Rs. 2000 / month</b>
+                    <b className="fee">G3: Rs. 800 | G4 &amp; G5: Rs. 1,000</b>
                   </div>
                   <div className="adm-kv">
                     <span>Total monthly classes</span>
@@ -1530,7 +1530,7 @@ export default function Admin() {
                           </h3>
 
                           <div style={{ fontSize: "13.5px", color: "var(--muted)" }}>
-                            🔴 {zCount} Zoom · 🎥 {vCount} Videos · 📄 {pCount} PDFs · 💰 Rs. {f.price || 2000}
+                            🔴 {zCount} Zoom · 🎥 {vCount} Videos · 📄 {pCount} PDFs · 💰 Rs. {f.price || (Number(f.grade) === 3 ? 800 : 1000)}
                           </div>
                         </div>
                       </div>
@@ -1971,9 +1971,9 @@ export default function Admin() {
             <section className="adm-panel">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", flexWrap: "wrap", gap: "12px" }}>
                 <div>
-                  <h2>Rs. 2,000 Monthly Fee Slips</h2>
+                  <h2>Monthly Fee Slips</h2>
                   <p style={{ margin: "2px 0 0", color: "var(--muted)", fontSize: "14px" }}>
-                    Approving a student&apos;s Rs. 2,000 receipt immediately unlocks that month and adds them to that month&apos;s Paid Students Roster.
+                    Approving a student&apos;s receipt immediately unlocks that month and adds them to that month&apos;s Paid Students Roster.
                   </p>
                 </div>
 
@@ -2023,7 +2023,7 @@ export default function Admin() {
                             👤 {u.name || "Student"} ({u.phone})
                           </h4>
                           <div className="si" style={{ fontSize: "13.5px", color: "var(--muted)" }}>
-                            Class: {f.name} · <b style={{ color: "var(--gold)" }}>Rs. {f.price || 2000}</b>
+                            Class: {f.name} · <b style={{ color: "var(--gold)" }}>Rs. {f.price || (Number(f.grade) === 3 ? 800 : 1000)}</b>
                           </div>
                         </div>
 
@@ -2493,7 +2493,7 @@ export default function Admin() {
           {tab === "settings" && (
             <section className="adm-panel" style={{ maxWidth: "720px" }}>
               <h2>Class settings &amp; bank details</h2>
-              <p>Update class name, hotline contact, and Rs. 2,000 monthly fee bank account details</p>
+              <p>Update class name, hotline contact, and monthly fee bank account details</p>
 
               <form onSubmit={handleSaveSettings}>
                 <label className="adm-label">
